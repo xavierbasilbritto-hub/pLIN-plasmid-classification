@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# FASTA sequences (too large for GitHub — download from NCBI RefSeq)
+plasmid_sequences_for_training/
+
+# macOS
+.DS_Store
+*.swp
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/

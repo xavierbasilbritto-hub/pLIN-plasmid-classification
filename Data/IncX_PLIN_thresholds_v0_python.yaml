@@ -1,0 +1,41 @@
+incx_like_selection:
+  seed_plasmid: RefSeq_NZ_AP027441.1
+  distance_cutoff_to_seed_d: 0.12
+  n_selected: 178
+  note: Selection uses k-mer MinHash distance approximation in Python (Mash-like).
+    Replace with Mash when available.
+F_lineage_thresholds:
+  whole_plasmid_distance_d_max: 0.03
+  ANI_est_min: 0.97
+  interpretation: Same IncX backbone lineage (coarse).
+G_outbreak_thresholds:
+  whole_plasmid_distance_d_max: 0.005
+  ANI_est_min: 0.995
+  interpretation: Near-clonal plasmid (outbreak tier). Confirm with core-gene SNPs
+    when aligners are available.
+nearest_neighbor_distance_quantiles:
+  '0.01': -0.0
+  '0.05': -0.0
+  '0.1': -0.0
+  '0.25': 0.0006701762946695999
+  '0.5': 0.011491739269290981
+  '0.75': 0.024920767326417813
+  '0.9': 0.03843419614941911
+  '0.95': 0.04834676689365036
+  '0.99': 0.0716087515371163
+pairwise_distance_quantiles_sample3000:
+  '0.01': 0.011032721664706393
+  '0.05': 0.03166082210831231
+  '0.1': 0.04393912486687836
+  '0.25': 0.07007988841480715
+  '0.5': 0.109846417965676
+  '0.75': 0.15106625769646628
+  '0.9': 0.23010979802723042
+  '0.95': 0.3202873115361976
+  '0.99': 1.0
+limitations:
+- Core gene clusters are approximated using ORFs from a seed plasmid and k-mer containment
+  across selected IncX-like references; gene names require annotation with Bakta/Prokka
+  and clustering with Panaroo/MMseqs2.
+- SNP thresholds cannot be computed without alignment; use the provided d/ANI_est
+  as provisional and confirm with core-gene SNP distances once aligners are available.
