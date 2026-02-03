@@ -6,6 +6,15 @@ __pycache__/
 # FASTA sequences (too large for GitHub — download from NCBI RefSeq)
 plasmid_sequences_for_training/
 
+# Large output files
+output/mash/
+output/amrfinder/
+
+# Temporary/lock files
+~$*
+*.lock
+pyproject\ *.toml
+
 # macOS
 .DS_Store
 *.swp

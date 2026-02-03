@@ -1,0 +1,13 @@
+# Minimal ML/data science Python packages for pLIN analyses
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.2
+matplotlib>=3.7
+seaborn>=0.12
+joblib>=1.2
+jupyterlab>=4.0
+scikit-image>=0.20
+# Optional (large): uncomment if you want CPU TensorFlow or PyTorch wheels via pip
+# tensorflow-cpu>=2.12
+# torch>=2.1.0
+# torchvision>=0.15.1
