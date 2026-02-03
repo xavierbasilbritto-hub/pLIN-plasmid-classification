@@ -12,6 +12,12 @@ A hierarchical, permanent, reference-free classification system for bacterial pl
 - **Permanent**: Codes never change when new plasmids are added
 - **Reference-free**: No external database required — works on raw nucleotide sequences
 - **AMR-integrated**: Full integration with NCBI AMRFinderPlus for resistance gene surveillance
+- **Inc Auto-Detection**: KNN classifier (96.1% accuracy) identifies Inc groups from k-mer composition
+- **Mobility Prediction**: Classifies plasmids as conjugative, mobilizable, or non-mobilizable
+- **Outbreak Detection**: Flags clonal clusters sharing identical pLIN codes and AMR profiles
+- **Adaptive Thresholds**: Per-Inc-group distance threshold calibration from training data
+- **Multi-Linkage**: Selectable clustering methods (single, complete, average, weighted)
+- **Interactive GUI**: Streamlit web app with 6 analysis tabs — no command line needed
 - **ML-validated**: Nested cross-validation confirms compositional features predict Inc-group membership (F1=0.903)
 
 ## Dataset
@@ -39,101 +45,91 @@ A hierarchical, permanent, reference-free classification system for bacterial pl
 
 ```
 pLIN/
-├── setup.sh / setup.bat        # One-command setup (Mac/Linux / Windows)
-├── run_all.sh / run_all.bat    # Run complete pipeline
-├── assign_pLIN.py              # pLIN assignment pipeline
-├── run_amrfinder_all.sh        # AMRFinderPlus batch runner (auto-detects binary)
+├── plin_app.py                 # Streamlit GUI (main interactive app)
+├── assign_pLIN.py              # Batch pLIN assignment pipeline
+├── build_inc_centroids.py      # Train Inc group KNN classifier
 ├── integrate_pLIN_AMR.py       # pLIN + AMR integration script
 ├── generate_figures.py         # Publication figure generation
+├── create_architecture_pptx.py # PowerPoint architecture generator
+├── test_pLIN.py                # Test pLIN on 22 plasmids
+├── test_cladogram.py           # Test cladogram generation
+├── test_integrate_and_cladogram.py  # Test AMR + cladogram
+├── setup.sh / setup.bat        # One-command setup
+├── run_all.sh / run_all.bat    # Run complete pipeline
+├── run_amrfinder_all.sh        # AMRFinderPlus batch runner
 ├── requirements.txt            # Python dependencies
 ├── pLIN.ipynb                  # Main analytical notebook
-├── pLIN_executed.ipynb         # Executed notebook with outputs
 ├── manuscript_complete.md      # Complete manuscript
-├── manuscript_results.md       # Results section (standalone)
 ├── LICENSE                     # MIT License
 ├── Data/
-│   └── IncX_PLIN_thresholds_v0_python.yaml  # Threshold calibration data
+│   ├── inc_classifier.npz      # KNN classifier model (4.3 MB)
+│   ├── inc_centroids.npz       # Inc group centroid profiles
+│   └── IncX_PLIN_thresholds_v0_python.yaml
+├── test_plasmids/              # Test FASTA files (IncX, IncFII, IncH)
 ├── output/
-│   ├── pLIN_assignments.tsv                  # pLIN codes for all 6,346 plasmids
-│   ├── amrfinder/
-│   │   └── amrfinder_all_plasmids.tsv       # AMRFinderPlus raw detections
+│   ├── pLIN_Tool_Architecture.pptx  # 11-slide architecture presentation
+│   ├── pLIN_assignments.tsv
 │   ├── integrated/
-│   │   ├── pLIN_AMR_integrated.tsv          # Combined pLIN + AMR table
-│   │   └── pLIN_lineage_AMR_summary.tsv     # Per-lineage AMR profiles
-│   └── figures/
-│       ├── Figure1_dataset_overview.png/pdf
-│       ├── Figure2_AMR_prevalence.png/pdf
-│       ├── Figure3_critical_AMR.png/pdf
-│       ├── Figure4_pLIN_AMR_heatmap.png/pdf
-│       ├── Figure5_AMR_burden_virulence.png/pdf
-│       ├── Figure6_pLIN_hierarchy.png/pdf
-│       └── Figure7_composite_manuscript.png/pdf
+│   ├── figures/
+│   └── test/                   # Test output (cladograms, AMR results)
 └── README.md
 ```
 
-## Quick Start (All Platforms)
+## Quick Start
 
-### macOS / Linux
+### Interactive GUI (Recommended)
 
 ```bash
-# 1. Clone or download
+# 1. Clone and setup
 git clone https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification.git
 cd pLIN-plasmid-classification
+pip install -r requirements.txt
 
-# 2. Setup (creates venv, installs dependencies, creates directories)
-bash setup.sh
-
-# 3. Add your FASTA files
-#    Place .fasta files in:
-#      plasmid_sequences_for_training/IncFII/fastas/
-#      plasmid_sequences_for_training/IncN/fastas/
-#      plasmid_sequences_for_training/IncX1/fastas/
-
-# 4. Run the complete pipeline
-bash run_all.sh
+# 2. Launch the web app
+streamlit run plin_app.py
 ```
 
-### Windows
+Then open your browser to `http://localhost:8501`, upload FASTA files, and click **Run Analysis**.
 
-```cmd
-REM 1. Download and extract the repository
-REM 2. Open Command Prompt in the extracted folder
+The GUI provides:
+- **Overview** — pLIN system description, threshold table, analysis parameters
+- **Results** — Interactive table with pLIN codes, Inc group, mobility, AMR data
+- **Cladogram** — 4 visualization types (rectangular, circular, heatmap, AMR-annotated)
+- **AMR Analysis** — Gene prevalence, drug class breakdown, critical gene alerts
+- **Epidemiology** — Mobility prediction, outbreak detection, dissemination risk
+- **Export** — Download TSV, PNG, PDF, ZIP bundle
 
-REM 3. Setup
-setup.bat
-
-REM 4. Add your FASTA files to the directories created
-
-REM 5. Run the pipeline
-run_all.bat
-
-REM NOTE: AMRFinderPlus requires WSL on Windows.
-REM Run in WSL: bash run_amrfinder_all.sh
-```
-
-### Individual Steps
+### Command-Line Pipeline
 
 ```bash
-source .venv/bin/activate          # Activate environment
+# Setup
+bash setup.sh                      # Creates venv, installs deps
 
-python assign_pLIN.py              # Step 1: Assign pLIN codes
-bash run_amrfinder_all.sh          # Step 2: Run AMRFinderPlus
-python integrate_pLIN_AMR.py       # Step 3: Integrate pLIN + AMR
-python generate_figures.py         # Step 4: Generate figures
+# Add FASTA files to plasmid_sequences_for_training/{IncFII,IncN,IncX1}/fastas/
+
+# Run full pipeline
+bash run_all.sh
+
+# Or individual steps:
+source .venv/bin/activate
+python assign_pLIN.py              # Assign pLIN codes
+bash run_amrfinder_all.sh          # Run AMRFinderPlus
+python integrate_pLIN_AMR.py       # Integrate pLIN + AMR
+python generate_figures.py         # Generate figures
 ```
 
 ### Requirements
 
 - Python >= 3.10
-- AMRFinderPlus (optional, for AMR gene detection) — install via conda:
+- AMRFinderPlus (optional, for AMR gene detection):
   ```bash
   conda install -c bioconda -c conda-forge ncbi-amrfinderplus
   amrfinder -u  # update database
   ```
 
-Python packages (installed automatically by setup script):
+Python packages (installed automatically):
 ```
-numpy, pandas, scipy, biopython, scikit-learn, xgboost, optuna, matplotlib, seaborn
+numpy, pandas, scipy, biopython, scikit-learn, matplotlib, seaborn, streamlit, plotly
 ```
 
 ## pLIN Code Format
@@ -150,6 +146,26 @@ Each plasmid receives a six-position code: `A.B.C.D.E.F`
 | F | Strain | d ≤ 0.001 | ~99.9% |
 
 Example: pLIN `1.1.1.7.30.567` = Family 1, Subfamily 1, Cluster 1, Subcluster 7, Clone 30, Strain 567
+
+## Advanced Features
+
+### Inc Group Auto-Detection
+A KNN classifier (k=5, cosine distance, distance-weighted) trained on 6,346 plasmids predicts Inc group membership from 4-mer composition with 96.1% cross-validation accuracy. No replicon gene BLAST required.
+
+### Adaptive Thresholds
+Calibrates pLIN distance thresholds per Inc group using quantile-based analysis of within-group distance distributions. Addresses the limitation that fixed thresholds may not optimally separate lineages across diverse Inc groups.
+
+### Mobility Prediction
+Scans AMRFinderPlus output for conjugation (tra/trb) and mobilization (mob) gene markers to classify each plasmid as:
+- **Conjugative** — has transfer genes, can self-transfer (highest risk)
+- **Mobilizable** — has mob genes, needs helper plasmid
+- **Non-mobilizable** — no detectable transfer machinery
+
+### Outbreak Detection
+Automatically flags groups of plasmids sharing identical pLIN strain codes (F-level) AND the same AMR resistance profile, indicating potential clonal spread. Risk levels: HIGH (3+ shared AMR genes) / MODERATE (1-2).
+
+### Multi-Linkage Clustering
+Supports single (default), complete, average, and weighted linkage methods. Complete linkage produces tighter clusters and reduces the chaining artifact inherent to single linkage.
 
 ## Plasmid Sequences
 
