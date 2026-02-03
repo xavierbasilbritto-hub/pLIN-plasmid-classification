@@ -39,14 +39,18 @@ A hierarchical, permanent, reference-free classification system for bacterial pl
 
 ```
 pLIN/
-├── pLIN.ipynb                  # Main analytical notebook
-├── pLIN_executed.ipynb         # Executed notebook with outputs
+├── setup.sh / setup.bat        # One-command setup (Mac/Linux / Windows)
+├── run_all.sh / run_all.bat    # Run complete pipeline
 ├── assign_pLIN.py              # pLIN assignment pipeline
-├── run_amrfinder_all.sh        # AMRFinderPlus batch runner
+├── run_amrfinder_all.sh        # AMRFinderPlus batch runner (auto-detects binary)
 ├── integrate_pLIN_AMR.py       # pLIN + AMR integration script
 ├── generate_figures.py         # Publication figure generation
-├── manuscript_complete.md      # Complete manuscript (Introduction, Methods, Results, Discussion)
+├── requirements.txt            # Python dependencies
+├── pLIN.ipynb                  # Main analytical notebook
+├── pLIN_executed.ipynb         # Executed notebook with outputs
+├── manuscript_complete.md      # Complete manuscript
 ├── manuscript_results.md       # Results section (standalone)
+├── LICENSE                     # MIT License
 ├── Data/
 │   └── IncX_PLIN_thresholds_v0_python.yaml  # Threshold calibration data
 ├── output/
@@ -67,57 +71,69 @@ pLIN/
 └── README.md
 ```
 
-## Quick Start
+## Quick Start (All Platforms)
+
+### macOS / Linux
+
+```bash
+# 1. Clone or download
+git clone https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification.git
+cd pLIN-plasmid-classification
+
+# 2. Setup (creates venv, installs dependencies, creates directories)
+bash setup.sh
+
+# 3. Add your FASTA files
+#    Place .fasta files in:
+#      plasmid_sequences_for_training/IncFII/fastas/
+#      plasmid_sequences_for_training/IncN/fastas/
+#      plasmid_sequences_for_training/IncX1/fastas/
+
+# 4. Run the complete pipeline
+bash run_all.sh
+```
+
+### Windows
+
+```cmd
+REM 1. Download and extract the repository
+REM 2. Open Command Prompt in the extracted folder
+
+REM 3. Setup
+setup.bat
+
+REM 4. Add your FASTA files to the directories created
+
+REM 5. Run the pipeline
+run_all.bat
+
+REM NOTE: AMRFinderPlus requires WSL on Windows.
+REM Run in WSL: bash run_amrfinder_all.sh
+```
+
+### Individual Steps
+
+```bash
+source .venv/bin/activate          # Activate environment
+
+python assign_pLIN.py              # Step 1: Assign pLIN codes
+bash run_amrfinder_all.sh          # Step 2: Run AMRFinderPlus
+python integrate_pLIN_AMR.py       # Step 3: Integrate pLIN + AMR
+python generate_figures.py         # Step 4: Generate figures
+```
 
 ### Requirements
 
+- Python >= 3.10
+- AMRFinderPlus (optional, for AMR gene detection) — install via conda:
+  ```bash
+  conda install -c bioconda -c conda-forge ncbi-amrfinderplus
+  amrfinder -u  # update database
+  ```
+
+Python packages (installed automatically by setup script):
 ```
-Python >= 3.10
-numpy
-pandas
-scipy
-biopython
-scikit-learn
-xgboost
-optuna
-matplotlib
-seaborn
-```
-
-### Install Dependencies
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install numpy pandas scipy biopython scikit-learn xgboost optuna matplotlib seaborn
-```
-
-### Assign pLIN Codes
-
-Place your FASTA files in `plasmid_sequences_for_training/<IncType>/fastas/` and run:
-
-```bash
-python assign_pLIN.py
-```
-
-Output: `output/pLIN_assignments.tsv`
-
-### Run AMRFinderPlus Integration
-
-Requires [AMRFinderPlus](https://github.com/ncbi/amr) installed:
-
-```bash
-# Run AMRFinderPlus on all plasmids
-bash run_amrfinder_all.sh
-
-# Integrate with pLIN codes
-python integrate_pLIN_AMR.py
-```
-
-### Generate Figures
-
-```bash
-python generate_figures.py
+numpy, pandas, scipy, biopython, scikit-learn, xgboost, optuna, matplotlib, seaborn
 ```
 
 ## pLIN Code Format
