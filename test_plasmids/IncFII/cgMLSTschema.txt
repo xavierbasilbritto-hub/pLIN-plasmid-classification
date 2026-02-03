@@ -1,0 +1,13 @@
+IncFII-Yp-protein81.fasta
+IncFII-Yp-protein82.fasta
+SP25-P2-protein335.fasta
+SP32-P2-protein158.fasta
+SP32-P2-protein159.fasta
+SP32-P2-protein170.fasta
+SP32-P2-protein171.fasta
+SP32-P2-protein173.fasta
+SP32-P2-protein175.fasta
+SP32-P2-protein180.fasta
+SP32-P2-protein190.fasta
+SP32-P2-protein196.fasta
+SP32-P2-protein197.fasta
