@@ -3,6 +3,17 @@
 pLIN Classifier — Streamlit GUI Application
 Plasmid Life Identification Number system with AMRFinderPlus integration.
 Run: streamlit run plin_app.py
+
+Copyright (C) 2025 Basil Xavier Britto
+Licensed under GPL-3.0 with mandatory citation clause.
+See LICENSE and CITATION.cff for details.
+
+CITATION REQUIRED: Any use of this software in publications or derivative
+works must cite:
+    Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System
+    for Hierarchical, Permanent Classification of Bacterial Plasmids
+    Integrated with Antimicrobial Resistance Gene Surveillance.
+    https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
 """
 
 import os

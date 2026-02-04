@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 Train an Inc-group classifier from training data using k-mer profiles.
 

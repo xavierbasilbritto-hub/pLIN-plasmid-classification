@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 pLIN Assignment Script
 Assigns plasmid Life Identification Numbers to all sequences in the training folders.
