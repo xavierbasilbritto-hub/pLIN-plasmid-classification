@@ -60,7 +60,8 @@ pLIN/
 ├── requirements.txt            # Python dependencies
 ├── pLIN.ipynb                  # Main analytical notebook
 ├── manuscript_complete.md      # Complete manuscript
-├── LICENSE                     # MIT License
+├── LICENSE                     # GPL-3.0 + Citation clause
+├── CITATION.cff               # GitHub citation metadata
 ├── Data/
 │   ├── inc_classifier.npz      # KNN classifier model (4.3 MB)
 │   ├── inc_centroids.npz       # Inc group centroid profiles
@@ -171,12 +172,46 @@ Supports single (default), complete, average, and weighted linkage methods. Comp
 
 FASTA sequences (695 MB total) are not included in this repository due to size. All plasmid sequences were obtained from NCBI RefSeq and can be downloaded using the accession numbers listed in `output/pLIN_assignments.tsv`.
 
-## Citation
+## Citation (MANDATORY)
 
-If you use pLIN in your research, please cite:
+**Any use of this software, its algorithms, outputs, or derivative works in publications, presentations, reports, theses, or other academic/commercial work REQUIRES citation.** This is a binding condition of the license.
 
-> Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance.
+> Xavier, B. (2025). **pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance.** GitHub: https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
+
+### BibTeX
+
+```bibtex
+@software{xavier2025plin,
+  author       = {Britto, Basil Xavier},
+  title        = {{pLIN: A Plasmid Life Identification Number System for
+                   Hierarchical, Permanent Classification of Bacterial
+                   Plasmids Integrated with Antimicrobial Resistance Gene
+                   Surveillance}},
+  year         = {2025},
+  url          = {https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification},
+  version      = {1.0.0},
+}
+```
+
+### Citation Requirements
+
+1. **Publications**: Any journal article, conference paper, preprint, thesis, dissertation, poster, or presentation that uses pLIN MUST include the citation above.
+2. **Derivative works**: Any software, tool, or pipeline incorporating pLIN code or algorithms MUST include attribution: *"Based on pLIN by Basil Xavier Britto (2025)"* with a link to this repository.
+3. **Generated data**: Any publicly distributed dataset or results produced using pLIN MUST acknowledge the tool and cite the reference.
+4. **No exception**: Failure to cite constitutes a violation of the license terms.
+
+## Copyright
+
+Copyright (C) 2025 Basil Xavier Britto. All rights reserved.
 
 ## License
 
-MIT License
+This project is licensed under the **GNU General Public License v3.0** with an **additional mandatory citation clause** under Section 7 of the GPL.
+
+This means:
+- You **may** use, modify, and redistribute this software
+- You **must** cite the original work in any publication or derivative work
+- Any modified version **must** also be open-source under GPL-3.0
+- The citation requirement and copyright notices **must not** be removed
+
+See [LICENSE](LICENSE) for full terms.
