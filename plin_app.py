@@ -113,6 +113,27 @@ _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 CLASSIFIER_PATH = os.path.join(_APP_DIR, "data", "inc_classifier.npz")
 CENTROID_PATH = os.path.join(_APP_DIR, "data", "inc_centroids.npz")
 
+# ── Nucleotide Transformer (optional LLM) ────────────────────────────────────
+
+NT_AVAILABLE = False
+try:
+    import torch as _torch
+    from transformers import AutoTokenizer as _AT, AutoModelForMaskedLM as _AM
+    NT_AVAILABLE = True
+except ImportError:
+    pass
+
+NT_MODELS = {
+    "NT-v2-50M (Fast)": "InstaDeepAI/nucleotide-transformer-v2-50m-multi-species",
+    "NT-v2-100M": "InstaDeepAI/nucleotide-transformer-v2-100m-multi-species",
+    "NT-v2-250M": "InstaDeepAI/nucleotide-transformer-v2-250m-multi-species",
+    "NT-v2-500M (Best)": "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species",
+}
+NT_INC_PROBE_PATH = os.path.join(_APP_DIR, "data", "nt_inc_probe.pkl")
+NT_AMR_PROBE_PATH = os.path.join(_APP_DIR, "data", "nt_amr_probe.pkl")
+NT_CHUNK_SIZE = 5000
+NT_STRIDE = 2500
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  INC GROUP CLASSIFICATION
@@ -363,6 +384,116 @@ def detect_outbreak_clusters(plin_df, integrated_df):
     # Sort by risk
     clusters.sort(key=lambda c: (-c["n_amr_genes"], -c["n_plasmids"]))
     return clusters
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  NUCLEOTIDE TRANSFORMER (OPTIONAL LLM)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@st.cache_resource(show_spinner="Loading Nucleotide Transformer model...")
+def load_nt_model(model_name, device_name="cpu"):
+    """Load pre-trained Nucleotide Transformer model and tokenizer."""
+    import torch
+    from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForMaskedLM.from_pretrained(model_name)
+    model.eval()
+    device = torch.device(device_name)
+    model.to(device)
+    return tokenizer, model, device
+
+
+def extract_nt_embedding(sequence, tokenizer, model, device,
+                         chunk_size=NT_CHUNK_SIZE, stride=NT_STRIDE):
+    """Extract mean-pooled NT embedding for a single plasmid sequence.
+
+    Long sequences are split into overlapping chunks, embedded independently,
+    and chunk embeddings are averaged to produce a single vector.
+    """
+    import torch
+
+    seq = sequence.upper()
+    chunks = []
+    for start in range(0, len(seq), stride):
+        chunk = seq[start:start + chunk_size]
+        if len(chunk) < 100:
+            continue
+        chunks.append(chunk)
+    if not chunks:
+        chunks = [seq[:chunk_size] if len(seq) >= 100 else seq]
+
+    embeddings = []
+    for chunk in chunks:
+        tokens = tokenizer(chunk, return_tensors="pt", padding=True,
+                           truncation=True, max_length=1000)
+        tokens = {k: v.to(device) for k, v in tokens.items()}
+        with torch.no_grad():
+            outputs = model(**tokens, output_hidden_states=True)
+        hidden = outputs.hidden_states[-1]
+        mask = tokens["attention_mask"].unsqueeze(-1).float()
+        mean_emb = (hidden * mask).sum(dim=1) / mask.sum(dim=1)
+        embeddings.append(mean_emb.squeeze().cpu().numpy())
+
+    return np.mean(embeddings, axis=0).astype(np.float32)
+
+
+def run_nt_predictions(sequences, tokenizer, model, device, progress_cb=None):
+    """Extract NT embeddings and run probe predictions for all sequences.
+
+    Returns dict with embeddings, inc predictions, and amr predictions.
+    """
+    import joblib
+
+    # Extract embeddings
+    embeddings = []
+    for i, seq in enumerate(sequences):
+        emb = extract_nt_embedding(seq, tokenizer, model, device)
+        embeddings.append(emb)
+        if progress_cb:
+            progress_cb((i + 1) / len(sequences))
+    X = np.array(embeddings, dtype=np.float32)
+
+    results = {"embeddings": X}
+
+    # Inc group probe
+    if os.path.exists(NT_INC_PROBE_PATH):
+        probe_data = joblib.load(NT_INC_PROBE_PATH)
+        pipeline = probe_data["pipeline"]
+        group_names = probe_data["group_names"]
+        inc_preds = pipeline.predict(X)
+        inc_proba = pipeline.predict_proba(X)
+        results["inc_preds"] = [group_names[p] for p in inc_preds]
+        results["inc_proba"] = inc_proba
+        results["inc_groups"] = group_names
+        results["inc_cv_accuracy"] = probe_data.get("cv_accuracy", None)
+    else:
+        results["inc_preds"] = None
+
+    # AMR class probe
+    if os.path.exists(NT_AMR_PROBE_PATH):
+        amr_data = joblib.load(NT_AMR_PROBE_PATH)
+        amr_pipeline = amr_data["pipeline"]
+        amr_classes = amr_data["amr_classes"]
+        amr_preds = amr_pipeline.predict(X)
+        results["amr_preds"] = amr_preds
+        results["amr_classes"] = amr_classes
+    else:
+        results["amr_preds"] = None
+
+    return results
+
+
+def detect_nt_device():
+    """Auto-detect best available compute device for NT inference."""
+    if not NT_AVAILABLE:
+        return "cpu"
+    import torch
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -886,7 +1017,7 @@ def plot_cladogram_amr(Z, labels, plin_codes, strain_clusters, amr_df, records):
 for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
             "plin_codes", "strain_clusters", "cluster_assignments", "analysis_done",
             "mobility_results", "outbreak_clusters", "active_thresholds",
-            "linkage_method_used"]:
+            "linkage_method_used", "nt_results"]:
     if key not in st.session_state:
         st.session_state[key] = None
 if "analysis_done" not in st.session_state:
@@ -936,6 +1067,30 @@ if not st.session_state.analysis_done:
             st.warning("AMRFinderPlus not found", icon="⚠️")
             run_amr = False
 
+        # Nucleotide Transformer (optional LLM)
+        if NT_AVAILABLE:
+            use_nt = st.checkbox(
+                "Use Nucleotide Transformer (LLM)",
+                value=False,
+                help="Use a genomic language model for enhanced Inc group and AMR class prediction. Requires trained probes (run train_nt_classifier.py first).",
+            )
+            if use_nt:
+                nt_model_choice = st.selectbox(
+                    "NT Model",
+                    list(NT_MODELS.keys()), index=0,
+                    help="Smaller models are faster; larger models may be more accurate.",
+                )
+                nt_device = detect_nt_device()
+                st.caption(f"Device: {nt_device.upper()}")
+            else:
+                nt_model_choice = list(NT_MODELS.keys())[0]
+                nt_device = "cpu"
+        else:
+            use_nt = False
+            nt_model_choice = None
+            nt_device = "cpu"
+            st.info("Nucleotide Transformer not available. Install: `pip install transformers torch`", icon="🤖")
+
     if uploaded_files:
         st.info(f"📂 {len(uploaded_files)} file(s) uploaded — click **Run Analysis** below.")
         bcol1, bcol2, _ = st.columns([1, 1, 3])
@@ -957,6 +1112,9 @@ else:
     inc_type = st.session_state.get("_inc_type", INC_GROUPS[0])
     linkage_method = st.session_state.get("_linkage_method", "single")
     use_adaptive = st.session_state.get("_use_adaptive", False)
+    use_nt = st.session_state.get("_use_nt", False)
+    nt_model_choice = st.session_state.get("_nt_model_choice", None)
+    nt_device = st.session_state.get("_nt_device", "cpu")
     run_amr = amr_binary is not None
     run_btn = False
 
@@ -988,6 +1146,9 @@ with st.sidebar:
             outbreak = st.session_state.get("outbreak_clusters", [])
             if outbreak:
                 st.markdown(f"**Outbreak clusters:** {len(outbreak)}")
+            nt_res = st.session_state.get("nt_results")
+            if nt_res and nt_res.get("inc_preds") is not None:
+                st.markdown("**NT LLM:** enabled")
         st.divider()
 
     if st.button("🔄 Clear & Reset", use_container_width=True, key="sidebar_reset"):
@@ -1013,6 +1174,9 @@ if run_btn and uploaded_files:
     st.session_state._inc_type = inc_type
     st.session_state._linkage_method = linkage_method
     st.session_state._use_adaptive = use_adaptive
+    st.session_state._use_nt = use_nt
+    st.session_state._nt_model_choice = nt_model_choice
+    st.session_state._nt_device = nt_device
     progress = st.progress(0, text="Starting analysis...")
 
     # Step 1: Parse sequences (+ Inc group auto-detection)
@@ -1068,6 +1232,34 @@ if run_btn and uploaded_files:
     st.session_state.plin_codes = plin_codes
     st.session_state.strain_clusters = strain_clusters
     st.session_state.cluster_assignments = cluster_assignments
+
+    # Step 4b: Nucleotide Transformer predictions (optional)
+    if use_nt and NT_AVAILABLE:
+        progress.progress(56, text="Loading Nucleotide Transformer model...")
+        try:
+            nt_model_id = NT_MODELS.get(nt_model_choice, list(NT_MODELS.values())[0])
+            tokenizer, nt_model, nt_dev = load_nt_model(nt_model_id, nt_device)
+
+            has_inc_probe = os.path.exists(NT_INC_PROBE_PATH)
+            has_amr_probe = os.path.exists(NT_AMR_PROBE_PATH)
+
+            if not has_inc_probe and not has_amr_probe:
+                st.warning(
+                    "NT probes not found. Run `python train_nt_classifier.py` first to train "
+                    "the classifier probes from your training data.",
+                    icon="🤖",
+                )
+                st.session_state.nt_results = None
+            else:
+                def nt_cb(pct):
+                    progress.progress(int(56 + pct * 4),
+                                      text=f"NT embeddings: {int(pct * 100)}%")
+
+                nt_results = run_nt_predictions(sequences, tokenizer, nt_model, nt_dev, nt_cb)
+                st.session_state.nt_results = nt_results
+        except Exception as e:
+            st.warning(f"Nucleotide Transformer failed: {e}. Continuing with KNN only.", icon="⚠️")
+            st.session_state.nt_results = None
 
     # Step 5: AMRFinderPlus (optional)
     amr_df = pd.DataFrame()
@@ -1210,6 +1402,49 @@ with tab_overview:
                     "For within-group comparisons, upload files from a single Inc group."
                 )
 
+        # NT prediction comparison (if available)
+        nt_res = st.session_state.get("nt_results")
+        if nt_res and nt_res.get("inc_preds") is not None:
+            st.subheader("Nucleotide Transformer LLM Predictions")
+            nt_inc_preds = nt_res["inc_preds"]
+            knn_preds = df["inc_type"].tolist()
+
+            # Agreement rate
+            agree = sum(1 for k, n in zip(knn_preds, nt_inc_preds) if k == n)
+            total = len(knn_preds)
+            agreement_pct = agree / total * 100 if total > 0 else 0
+
+            nc1, nc2, nc3 = st.columns(3)
+            nc1.metric("KNN vs NT Agreement", f"{agreement_pct:.1f}%")
+            if nt_res.get("inc_cv_accuracy"):
+                nc2.metric("NT Probe CV Accuracy", f"{nt_res['inc_cv_accuracy']:.1%}")
+            nc3.metric("NT Embedding Dim", nt_res["embeddings"].shape[1])
+
+            # Show disagreements
+            disagreements = []
+            for i, (k, n) in enumerate(zip(knn_preds, nt_inc_preds)):
+                if k != n:
+                    pid = df["plasmid_id"].iloc[i] if i < len(df) else f"seq_{i}"
+                    disagreements.append({"Plasmid": pid, "KNN": k, "NT": n})
+            if disagreements:
+                with st.expander(f"KNN vs NT Disagreements ({len(disagreements)})"):
+                    st.dataframe(pd.DataFrame(disagreements),
+                                 use_container_width=True, hide_index=True)
+            else:
+                st.success("KNN and Nucleotide Transformer predictions agree on all plasmids.")
+
+            # NT AMR predictions
+            if nt_res.get("amr_preds") is not None:
+                amr_classes = nt_res["amr_classes"]
+                amr_preds = nt_res["amr_preds"]
+                pos_counts = amr_preds.sum(axis=0)
+                detected = [(c, int(n)) for c, n in zip(amr_classes, pos_counts) if n > 0]
+                if detected:
+                    st.markdown("**NT-predicted AMR drug classes:**")
+                    amr_pred_df = pd.DataFrame(detected, columns=["Drug Class", "Plasmids"])
+                    amr_pred_df = amr_pred_df.sort_values("Plasmids", ascending=False)
+                    st.dataframe(amr_pred_df, use_container_width=True, hide_index=True)
+
 
 # ── TAB 2: Results ───────────────────────────────────────────────────────────
 
@@ -1228,8 +1463,17 @@ with tab_results:
             if "mobility" not in df.columns:
                 df = df.merge(mob_df[["plasmid_id", "mobility", "mobility_genes"]], on="plasmid_id", how="left")
 
+        # Merge NT predictions if available
+        nt_res = st.session_state.get("nt_results")
+        if nt_res and nt_res.get("inc_preds") is not None and "nt_inc_type" not in df.columns:
+            nt_inc_preds = nt_res["inc_preds"]
+            if len(nt_inc_preds) == len(df):
+                df["nt_inc_type"] = nt_inc_preds
+
         if df is not None and "AMR_genes" in df.columns:
             display_cols = ["plasmid_id", "inc_type"]
+            if "nt_inc_type" in df.columns:
+                display_cols.append("nt_inc_type")
             if has_inc_conf:
                 display_cols.append("inc_confidence")
             display_cols += ["source_file", "length_bp", "pLIN"]
@@ -1250,6 +1494,8 @@ with tab_results:
             if mob_df is not None and len(mob_df) > 0 and "mobility" not in df.columns:
                 df = df.merge(mob_df[["plasmid_id", "mobility", "mobility_genes"]], on="plasmid_id", how="left")
             display_cols = ["plasmid_id", "inc_type"]
+            if "nt_inc_type" in df.columns:
+                display_cols.append("nt_inc_type")
             if has_inc_conf:
                 display_cols.append("inc_confidence")
             display_cols += ["source_file", "length_bp", "pLIN"]
@@ -1608,6 +1854,16 @@ with tab_export:
                         import json
                         zf.writestr("outbreak_clusters.json",
                                     json.dumps(outbreak, indent=2))
+                    # NT predictions
+                    nt_res = st.session_state.get("nt_results")
+                    if nt_res and nt_res.get("inc_preds") is not None:
+                        nt_df = pd.DataFrame({
+                            "plasmid_id": st.session_state.plin_df["plasmid_id"],
+                            "knn_inc_type": st.session_state.plin_df["inc_type"],
+                            "nt_inc_type": nt_res["inc_preds"],
+                        })
+                        zf.writestr("nt_predictions.tsv",
+                                    nt_df.to_csv(sep="\t", index=False))
                     for name, func, args in [
                         ("cladogram_rectangular", plot_rectangular_cladogram,
                          (Z, labels, plin_codes, strain_clusters)),
