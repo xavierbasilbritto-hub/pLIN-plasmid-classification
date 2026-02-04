@@ -54,6 +54,7 @@ pLIN/
 ├── test_pLIN.py                # Test pLIN on 22 plasmids
 ├── test_cladogram.py           # Test cladogram generation
 ├── test_integrate_and_cladogram.py  # Test AMR + cladogram
+├── train_nt_classifier.py      # Train Nucleotide Transformer probes
 ├── launch_pLIN.bat             # Windows one-click launcher
 ├── launch_pLIN.command         # macOS one-click launcher
 ├── launch_pLIN.sh              # Linux one-click launcher
@@ -188,6 +189,26 @@ Automatically flags groups of plasmids sharing identical pLIN strain codes (F-le
 
 ### Multi-Linkage Clustering
 Supports single (default), complete, average, and weighted linkage methods. Complete linkage produces tighter clusters and reduces the chaining artifact inherent to single linkage.
+
+### Nucleotide Transformer LLM (Optional)
+Optional integration with [InstaDeep's Nucleotide Transformer](https://github.com/instadeepai/nucleotide-transformer), a genomic foundation model pre-trained on DNA sequences. When enabled, the NT model provides an independent LLM-based prediction of Inc group and AMR drug classes alongside the traditional KNN classifier.
+
+**How it works:**
+1. Plasmid sequences are split into overlapping 5,000 bp chunks
+2. Each chunk is embedded by the NT model (6-mer tokenization, transformer encoding)
+3. Chunk embeddings are mean-pooled to produce a single vector per plasmid
+4. Linear probes (trained on your data) predict Inc group and AMR classes
+
+**Setup:**
+```bash
+# Install optional dependencies
+pip install transformers torch
+
+# Train probes from your labeled training data (one-time)
+python train_nt_classifier.py --model 50m
+```
+
+Then enable "Use Nucleotide Transformer (LLM)" in the GUI. Model variants: 50M (fast), 100M, 250M, 500M parameters. CPU and GPU (CUDA/MPS) supported.
 
 ## Plasmid Sequences
 
