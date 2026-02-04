@@ -772,7 +772,180 @@ add_multiline(slide, Inches(7.1), Inches(4.9), Inches(5.6), Inches(2.0), [
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 10: Novelty
+# SLIDE 10: Nucleotide Transformer LLM Integration
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Nucleotide Transformer LLM Integration",
+               "Optional genomic language model for enhanced Inc group and AMR prediction")
+
+# Architecture diagram area
+add_box(slide, Inches(0.4), Inches(1.5), Inches(12.5), Inches(2.8), LIGHT_GRAY,
+        border_color=MED_GRAY, border_width=Pt(1))
+add_text(slide, Inches(0.6), Inches(1.55), Inches(12), Inches(0.35),
+         "Dual Prediction Architecture", font_size=16, bold=True, color=DARK_BLUE)
+
+# Left pipeline: Traditional KNN
+add_box(slide, Inches(0.7), Inches(2.1), Inches(5.5), Inches(1.9), WHITE,
+        border_color=MED_BLUE, border_width=Pt(2))
+add_text(slide, Inches(0.9), Inches(2.15), Inches(5.1), Inches(0.35),
+         "Traditional Pipeline (KNN)", font_size=14, bold=True, color=MED_BLUE)
+add_multiline(slide, Inches(0.9), Inches(2.55), Inches(5.1), Inches(1.3), [
+    "FASTA \u2192 4-mer frequency vectors (256D)",
+    "KNN classifier (k=5, cosine distance)",
+    "96.1% cross-validation accuracy",
+    "Instant inference (\u003C100ms)",
+], font_size=11, color=DARK_GRAY)
+
+# Arrow between pipelines
+arrow = slide.shapes.add_shape(MSO_SHAPE.LEFT_RIGHT_ARROW,
+                                Inches(6.35), Inches(2.8), Inches(0.6), Inches(0.35))
+arrow.fill.solid()
+arrow.fill.fore_color.rgb = DARK_GRAY
+arrow.line.fill.background()
+
+# Right pipeline: NT LLM
+add_box(slide, Inches(7.1), Inches(2.1), Inches(5.5), Inches(1.9), WHITE,
+        border_color=PURPLE, border_width=Pt(2))
+add_text(slide, Inches(7.3), Inches(2.15), Inches(5.1), Inches(0.35),
+         "Nucleotide Transformer (LLM)", font_size=14, bold=True, color=PURPLE)
+add_multiline(slide, Inches(7.3), Inches(2.55), Inches(5.1), Inches(1.3), [
+    "FASTA \u2192 6-mer tokenization \u2192 Transformer",
+    "Chunked embedding (5kb chunks, mean-pooled)",
+    "Linear probe classifiers on frozen embeddings",
+    "Models: 50M / 100M / 250M / 500M params",
+], font_size=11, color=DARK_GRAY)
+
+# Bottom row: feature boxes
+features_nt = [
+    ("Sequence Understanding", "NT captures long-range sequence\ncontext and motif patterns\nbeyond simple k-mer counts", MED_BLUE),
+    ("Chunked Embedding", "Plasmids split into 5,000 bp\noverlapping chunks (stride 2,500)\nMean-pooled across chunks", GREEN),
+    ("Inc Group Prediction", "LogisticRegression probe on\nNT embeddings predicts Inc\ngroup with CV accuracy report", ORANGE),
+    ("AMR Class Prediction", "Multi-label probe predicts\nAMR drug classes from\nsequence composition alone", RED),
+    ("KNN vs NT Comparison", "Agreement rate shown in\nOverview tab. Disagreements\nflagged for manual review", PURPLE),
+    ("Graceful Degradation", "Fully optional \u2014 works without\ntransformers/torch installed.\nFallback to KNN if NT fails", TEAL),
+]
+
+for i, (title, desc, color) in enumerate(features_nt):
+    x = Inches(0.4 + i * 2.15)
+    y = Inches(4.6)
+    add_box(slide, x, y, Inches(2.0), Inches(0.4), color)
+    add_text(slide, x, y + Inches(0.05), Inches(2.0), Inches(0.3),
+             title, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_box(slide, x, y + Inches(0.4), Inches(2.0), Inches(1.4), WHITE,
+            border_color=color, border_width=Pt(1))
+    add_multiline(slide, x + Inches(0.05), y + Inches(0.5), Inches(1.9), Inches(1.2),
+                  desc.split("\n"), font_size=9, color=DARK_GRAY)
+
+# Training workflow at bottom
+add_box(slide, Inches(0.4), Inches(6.3), Inches(12.5), Inches(0.9), WHITE,
+        border_color=DARK_BLUE, border_width=Pt(1))
+add_text(slide, Inches(0.6), Inches(6.35), Inches(12), Inches(0.3),
+         "Training Workflow", font_size=13, bold=True, color=DARK_BLUE)
+add_text(slide, Inches(0.6), Inches(6.65), Inches(12), Inches(0.45),
+         "pip install transformers torch  \u2192  python train_nt_classifier.py --model 50m  "
+         "\u2192  Extracts embeddings from training data  \u2192  Trains Inc + AMR probes  "
+         "\u2192  Saves data/nt_inc_probe.pkl & data/nt_amr_probe.pkl",
+         font_size=10, color=MED_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 11: Deployment & Distribution
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Deployment & Distribution",
+               "Multiple deployment options for different user environments")
+
+# Row 1: Three deployment options
+deploy_options = [
+    ("One-Click Desktop Launch",
+     "Platform-specific launchers that\nauto-install dependencies and\nlaunch the Streamlit web app",
+     [
+         "Windows: launch_pLIN.bat (double-click)",
+         "macOS: launch_pLIN.command (double-click)",
+         "Linux: launch_pLIN.sh (chmod +x, run)",
+         "Auto-creates virtual environment",
+         "Installs all dependencies on first run",
+         "No command-line experience required",
+     ], MED_BLUE),
+    ("Docker Container",
+     "Containerized deployment for\nreproducible, isolated execution\non any cloud or server",
+     [
+         "docker build -t plin .",
+         "docker run -p 8501:8501 plin",
+         "Docker Compose support included",
+         "Health check endpoint built-in",
+         "Volumes for data persistence",
+         "Deploy to AWS, GCP, Azure, etc.",
+     ], GREEN),
+    ("Streamlit Community Cloud",
+     "Free public web app deployment\ndirectly from GitHub repository\n\u2014 zero infrastructure needed",
+     [
+         "Deploy at share.streamlit.io",
+         "Sign in with GitHub account",
+         "Select repo + plin_app.py",
+         "Public URL auto-generated",
+         "Auto-redeploys on git push",
+         "Free tier available",
+     ], PURPLE),
+]
+
+for i, (title, subtitle, items, color) in enumerate(deploy_options):
+    x = Inches(0.4 + i * 4.25)
+    # Title box
+    add_box(slide, x, Inches(1.5), Inches(3.95), Inches(0.5), color)
+    add_text(slide, x, Inches(1.55), Inches(3.95), Inches(0.4),
+             title, font_size=14, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    # Subtitle
+    add_box(slide, x, Inches(2.0), Inches(3.95), Inches(1.0), WHITE,
+            border_color=color, border_width=Pt(1))
+    add_multiline(slide, x + Inches(0.1), Inches(2.1), Inches(3.75), Inches(0.85),
+                  subtitle.split("\n"), font_size=10, color=MED_GRAY)
+    # Items
+    add_box(slide, x, Inches(3.0), Inches(3.95), Inches(2.3), WHITE,
+            border_color=color, border_width=Pt(1))
+    add_multiline(slide, x + Inches(0.1), Inches(3.1), Inches(3.75), Inches(2.1),
+                  items, font_size=10, color=DARK_GRAY)
+
+# Architecture flow at bottom
+add_box(slide, Inches(0.4), Inches(5.6), Inches(12.5), Inches(1.6), LIGHT_GRAY,
+        border_color=MED_GRAY, border_width=Pt(1))
+add_text(slide, Inches(0.6), Inches(5.65), Inches(12), Inches(0.35),
+         "Distribution Architecture", font_size=14, bold=True, color=DARK_BLUE)
+
+# Flow boxes
+flow_items = [
+    ("GitHub Repo", "Source code\nLICENSE\nCITATION.cff", DARK_BLUE),
+    ("pip install", "requirements.txt\nPython 3.10+\nvenv isolation", MED_BLUE),
+    ("Streamlit App", "plin_app.py\n6 analysis tabs\nInteractive GUI", GREEN),
+    ("Docker Image", "Dockerfile\nSelf-contained\nCloud-ready", ORANGE),
+    ("Public Cloud", "Streamlit Cloud\nPublic URL\nAuto-deploy", PURPLE),
+]
+
+for i, (title, desc, color) in enumerate(flow_items):
+    x = Inches(0.6 + i * 2.5)
+    add_box(slide, x, Inches(6.1), Inches(2.1), Inches(0.35), color)
+    add_text(slide, x, Inches(6.12), Inches(2.1), Inches(0.3),
+             title, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_box(slide, x, Inches(6.45), Inches(2.1), Inches(0.65), WHITE,
+            border_color=color, border_width=Pt(1))
+    add_multiline(slide, x + Inches(0.05), Inches(6.5), Inches(2.0), Inches(0.55),
+                  desc.split("\n"), font_size=8, color=DARK_GRAY)
+
+    # Arrow between flow items
+    if i < len(flow_items) - 1:
+        arr = slide.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW,
+                                      x + Inches(2.15), Inches(6.55), Inches(0.3), Inches(0.2))
+        arr.fill.solid()
+        arr.fill.fore_color.rgb = DARK_GRAY
+        arr.line.fill.background()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 12: Novelty
 # ══════════════════════════════════════════════════════════════════════════════
 
 slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -806,10 +979,15 @@ novelty_items = [
      "upload, classification, AMR screening, cladogram visualization, mobility prediction, outbreak detection, "
      "adaptive thresholds, and multi-linkage clustering — accessible to non-bioinformaticians.",
      PURPLE),
+    ("Genomic LLM Integration (Nucleotide Transformer)",
+     "First plasmid classification tool to integrate a genomic foundation model (InstaDeep Nucleotide Transformer). "
+     "Provides LLM-based Inc group and AMR class predictions alongside traditional KNN, enabling cross-method "
+     "validation. Chunked embedding strategy handles full-length plasmids (up to 300+ kb).",
+     TEAL),
 ]
 
 for i, (title, desc, color) in enumerate(novelty_items):
-    y = Inches(1.5 + i * 1.15)
+    y = Inches(1.5 + i * 0.95)
     # Colored left bar
     add_box(slide, Inches(0.4), y, Inches(0.12), Inches(0.95), color)
     add_text(slide, Inches(0.7), y + Inches(0.02), Inches(12.2), Inches(0.35),
@@ -829,7 +1007,7 @@ for j, (h, w) in enumerate(zip(comp_headers, col_widths)):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 11: Limitations & Future Directions
+# SLIDE 13: Limitations & Future Directions
 # ══════════════════════════════════════════════════════════════════════════════
 
 slide = prs.slides.add_slide(prs.slide_layouts[6])
