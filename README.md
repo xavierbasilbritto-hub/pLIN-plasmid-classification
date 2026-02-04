@@ -55,6 +55,8 @@ pLIN/
 ├── test_cladogram.py           # Test cladogram generation
 ├── test_integrate_and_cladogram.py  # Test AMR + cladogram
 ├── train_nt_classifier.py      # Train Nucleotide Transformer probes
+├── Dockerfile                  # Docker container build
+├── docker-compose.yml          # Docker Compose config
 ├── launch_pLIN.bat             # Windows one-click launcher
 ├── launch_pLIN.command         # macOS one-click launcher
 ├── launch_pLIN.sh              # Linux one-click launcher
@@ -121,6 +123,30 @@ The GUI provides:
 - **AMR Analysis** — Gene prevalence, drug class breakdown, critical gene alerts
 - **Epidemiology** — Mobility prediction, outbreak detection, dissemination risk
 - **Export** — Download TSV, PNG, PDF, ZIP bundle
+
+### Docker (Self-Hosted)
+
+```bash
+# Build and run with Docker
+docker build -t plin .
+docker run -p 8501:8501 plin
+
+# Or use Docker Compose
+docker compose up
+```
+
+Then open `http://localhost:8501` in your browser.
+
+### Streamlit Community Cloud (Public Web App)
+
+The app can be deployed directly from the GitHub repository to [Streamlit Community Cloud](https://share.streamlit.io) for free:
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Sign in with GitHub
+3. Click **New app** → select `pLIN-plasmid-classification` → set main file to `plin_app.py`
+4. Click **Deploy**
+
+The app will be available at a public URL (e.g., `https://plin-classifier.streamlit.app`).
 
 ### Command-Line Pipeline
 
