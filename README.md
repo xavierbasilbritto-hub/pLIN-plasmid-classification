@@ -54,6 +54,9 @@ pLIN/
 ├── test_pLIN.py                # Test pLIN on 22 plasmids
 ├── test_cladogram.py           # Test cladogram generation
 ├── test_integrate_and_cladogram.py  # Test AMR + cladogram
+├── launch_pLIN.bat             # Windows one-click launcher
+├── launch_pLIN.command         # macOS one-click launcher
+├── launch_pLIN.sh              # Linux one-click launcher
 ├── setup.sh / setup.bat        # One-command setup
 ├── run_all.sh / run_all.bat    # Run complete pipeline
 ├── run_amrfinder_all.sh        # AMRFinderPlus batch runner
@@ -78,7 +81,25 @@ pLIN/
 
 ## Quick Start
 
-### Interactive GUI (Recommended)
+### One-Click Launch (Recommended)
+
+Download the repository and double-click the launcher for your platform:
+
+| Platform | Launcher File | How to Run |
+|----------|--------------|------------|
+| **Windows** | `launch_pLIN.bat` | Double-click the file |
+| **macOS** | `launch_pLIN.command` | Double-click the file |
+| **Linux** | `launch_pLIN.sh` | Run `chmod +x launch_pLIN.sh && ./launch_pLIN.sh` |
+
+The launcher will automatically:
+1. Check for Python 3.10+
+2. Create a virtual environment
+3. Install all dependencies
+4. Launch the pLIN web app in your browser
+
+**No command-line experience required** — just download and double-click.
+
+### Manual Setup
 
 ```bash
 # 1. Clone and setup
