@@ -1111,6 +1111,234 @@ for i, (title, desc, color) in enumerate(futures):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 14: Bacterial Buddy — AI Chatbot
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Bacterial Buddy — AI Assistant",
+               "Local LLM-powered chatbot for plasmid biology Q&A")
+
+# Left side: Architecture diagram
+add_text(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(0.4),
+         "How It Works", font_size=18, bold=True, color=DARK_BLUE)
+
+# Chat flow boxes
+flow_items = [
+    ("User Question", "Natural language query about\nplasmids or analysis results", LIGHT_BLUE, DARK_BLUE),
+    ("Context Builder", "Extracts analysis data:\npLIN codes, Inc groups, AMR,\nmobility, outbreaks", RGBColor(0xE8, 0xF5, 0xE9), GREEN),
+    ("Ollama LLM", "Local model (llama3.2, mistral)\nNo API keys, data stays local", RGBColor(0xFF, 0xF3, 0xE0), ORANGE),
+    ("Streamed Response", "Real-time answer with\ncontext-aware explanations", RGBColor(0xE3, 0xF2, 0xFD), MED_BLUE),
+]
+
+for i, (title, desc, fill, border) in enumerate(flow_items):
+    y = Inches(2.1 + i * 1.2)
+    box = add_box(slide, Inches(0.5), y, Inches(5.5), Inches(1.0), fill, border_color=border, border_width=Pt(2))
+    add_text(slide, Inches(0.7), y + Inches(0.15), Inches(5.1), Inches(0.3),
+             title, font_size=14, bold=True, color=border)
+    add_text(slide, Inches(0.7), y + Inches(0.45), Inches(5.1), Inches(0.5),
+             desc, font_size=11, color=DARK_GRAY)
+    if i < len(flow_items) - 1:
+        add_arrow(slide, Inches(3.0), y + Inches(1.0), Inches(0.4), Inches(0.2), border)
+
+# Right side: Features
+add_text(slide, Inches(6.5), Inches(1.6), Inches(6.5), Inches(0.4),
+         "Key Features", font_size=18, bold=True, color=DARK_BLUE)
+
+features = [
+    ("Privacy-First", "Runs 100% locally via Ollama — no data leaves your machine", GREEN),
+    ("Context-Aware", "Understands your analysis: Inc groups, AMR genes, outbreaks", MED_BLUE),
+    ("Multiple Models", "Choose: llama3.2, mistral, mixtral, phi3, gemma2", ORANGE),
+    ("Streaming Chat", "Real-time response streaming for smooth UX", PURPLE),
+    ("Suggested Prompts", "Pre-written questions to get started quickly", TEAL),
+]
+
+for i, (title, desc, color) in enumerate(features):
+    y = Inches(2.1 + i * 0.95)
+    # Colored bullet
+    bullet = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(6.5), y + Inches(0.1), Inches(0.2), Inches(0.2))
+    bullet.fill.solid()
+    bullet.fill.fore_color.rgb = color
+    bullet.line.fill.background()
+    add_text(slide, Inches(6.85), y, Inches(5.8), Inches(0.3),
+             title, font_size=13, bold=True, color=color)
+    add_text(slide, Inches(6.85), y + Inches(0.35), Inches(5.8), Inches(0.5),
+             desc, font_size=11, color=DARK_GRAY)
+
+# Example questions box
+add_box(slide, Inches(6.5), Inches(6.0), Inches(6.3), Inches(1.2), RGBColor(0xF3, 0xE5, 0xF5),
+        border_color=PURPLE, border_width=Pt(1))
+add_text(slide, Inches(6.7), Inches(6.1), Inches(6), Inches(0.3),
+         "Example Questions:", font_size=12, bold=True, color=PURPLE)
+examples = '"Summarize my results" • "Which plasmids are high-risk?" • "Explain the AMR genes found"'
+add_text(slide, Inches(6.7), Inches(6.4), Inches(5.9), Inches(0.7),
+         examples, font_size=10, color=DARK_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 15: Unknown/Novel Inc Type Detection
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Unknown/Novel Inc Type Detection",
+               "Confidence-based flagging prevents misclassification")
+
+# Problem statement
+add_box(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(1.4), RGBColor(0xFF, 0xEB, 0xEE),
+        border_color=RED, border_width=Pt(2))
+add_text(slide, Inches(0.7), Inches(1.7), Inches(5.6), Inches(0.3),
+         "The Problem", font_size=14, bold=True, color=RED)
+add_text(slide, Inches(0.7), Inches(2.05), Inches(5.6), Inches(0.9),
+         "KNN always assigns to the nearest class, even if the match is poor.\n"
+         "Plasmids with Inc types not in training data (IncL, IncU, novel)\n"
+         "get misclassified with no warning.",
+         font_size=11, color=DARK_GRAY)
+
+# Solution
+add_box(slide, Inches(0.5), Inches(3.2), Inches(6), Inches(1.4), RGBColor(0xE8, 0xF5, 0xE9),
+        border_color=GREEN, border_width=Pt(2))
+add_text(slide, Inches(0.7), Inches(3.3), Inches(5.6), Inches(0.3),
+         "The Solution", font_size=14, bold=True, color=GREEN)
+add_text(slide, Inches(0.7), Inches(3.65), Inches(5.6), Inches(0.9),
+         "Confidence threshold (40%): predictions below this are flagged\n"
+         'as "Unknown/Novel" instead of being forced into a wrong class.\n'
+         "Top 5 nearest candidates shown for manual verification.",
+         font_size=11, color=DARK_GRAY)
+
+# Flow diagram
+add_text(slide, Inches(0.5), Inches(4.9), Inches(6), Inches(0.3),
+         "Classification Flow", font_size=14, bold=True, color=DARK_BLUE)
+
+flow_boxes = [
+    ("Query Sequence", LIGHT_BLUE),
+    ("KNN Classifier", MED_BLUE),
+    ("Confidence Check", ORANGE),
+]
+for i, (label, color) in enumerate(flow_boxes):
+    x = Inches(0.5 + i * 2.0)
+    box = add_box(slide, x, Inches(5.3), Inches(1.8), Inches(0.6), color)
+    add_text(slide, x, Inches(5.45), Inches(1.8), Inches(0.3),
+             label, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    if i < len(flow_boxes) - 1:
+        add_right_arrow(slide, x + Inches(1.8), Inches(5.45), Inches(0.2), Inches(0.3), color)
+
+# Branch arrows and outcomes
+add_text(slide, Inches(5.3), Inches(5.15), Inches(1.5), Inches(0.3),
+         "≥40%", font_size=11, bold=True, color=GREEN)
+add_box(slide, Inches(5.3), Inches(5.45), Inches(1.5), Inches(0.5), GREEN)
+add_text(slide, Inches(5.3), Inches(5.55), Inches(1.5), Inches(0.3),
+         "Assigned Inc", font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+
+add_text(slide, Inches(5.3), Inches(6.05), Inches(1.5), Inches(0.3),
+         "<40%", font_size=11, bold=True, color=RED)
+add_box(slide, Inches(5.3), Inches(6.35), Inches(1.5), Inches(0.5), RED)
+add_text(slide, Inches(5.3), Inches(6.45), Inches(1.5), Inches(0.3),
+         "Unknown/Novel", font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+
+# Right side: Output example
+add_text(slide, Inches(7.0), Inches(1.6), Inches(6), Inches(0.4),
+         "Output Example", font_size=18, bold=True, color=DARK_BLUE)
+
+# Example table
+add_box(slide, Inches(7.0), Inches(2.1), Inches(6), Inches(2.8), LIGHT_GRAY,
+        border_color=DARK_GRAY, border_width=Pt(1))
+
+# Table header
+add_box(slide, Inches(7.0), Inches(2.1), Inches(6), Inches(0.4), DARK_BLUE)
+headers = ["Plasmid", "Inc Type", "Conf.", "Top 5 Candidates"]
+widths = [1.2, 1.2, 0.7, 2.9]
+x = Inches(7.1)
+for h, w in zip(headers, widths):
+    add_text(slide, x, Inches(2.15), Inches(w), Inches(0.3),
+             h, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    x += Inches(w)
+
+# Table rows
+rows = [
+    ("pBR322", "IncFII", "92%", "IncFII (92%), IncN (5%), IncX1 (2%)...", GREEN),
+    ("pXYZ_novel", "Unknown", "35%", "IncFII (35%), IncN (28%), IncX1 (18%)...", RED),
+    ("pABC_low", "Unknown", "41%", "IncN (41%), IncFII (30%), IncX (15%)...", ORANGE),
+]
+for i, (pid, inc, conf, top5, color) in enumerate(rows):
+    y = Inches(2.55 + i * 0.5)
+    row_color = RGBColor(0xFF, 0xEB, 0xEE) if "Unknown" in inc else WHITE
+    add_box(slide, Inches(7.0), y, Inches(6), Inches(0.45), row_color)
+    x = Inches(7.1)
+    for val, w in zip([pid, inc, conf, top5], widths):
+        c = RED if "Unknown" in inc and val == inc else (color if val == conf else DARK_GRAY)
+        add_text(slide, x, y + Inches(0.1), Inches(w), Inches(0.25),
+                 val, font_size=9, color=c, alignment=PP_ALIGN.CENTER)
+        x += Inches(w)
+
+# Benefits
+add_text(slide, Inches(7.0), Inches(5.0), Inches(6), Inches(0.4),
+         "Benefits", font_size=14, bold=True, color=DARK_BLUE)
+
+benefits = [
+    ("Honest uncertainty", "Tool admits when it doesn't know"),
+    ("Prevents misclassification", "No more wrong Inc assignments"),
+    ("Top 5 candidates", "Guides manual verification"),
+    ("Actionable warnings", "Suggests PlasmidFinder for verification"),
+]
+for i, (title, desc) in enumerate(benefits):
+    y = Inches(5.4 + i * 0.45)
+    add_text(slide, Inches(7.2), y, Inches(2.5), Inches(0.25),
+             f"✓ {title}", font_size=10, bold=True, color=GREEN)
+    add_text(slide, Inches(9.7), y, Inches(3.2), Inches(0.25),
+             desc, font_size=10, color=DARK_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 16: Complete Feature Summary
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Complete Feature Summary",
+               "All capabilities of the pLIN classification system")
+
+# Feature grid - 4 columns x 4 rows
+features_grid = [
+    # Row 1: Core
+    [("pLIN Classification", "6-level hierarchical codes\n(Family→Strain)", DARK_BLUE),
+     ("Inc Auto-Detection", "KNN classifier, 96.1%\naccuracy, 3 Inc groups", MED_BLUE),
+     ("AMRFinderPlus", "AMR/stress/virulence\ngene detection", RED),
+     ("Prodigal Annotation", "Full ORF prediction,\ncoding density stats", GREEN)],
+    # Row 2: Analysis
+    [("Mobility Prediction", "Conjugative/mobilizable\nfrom tra/mob genes", ORANGE),
+     ("Outbreak Detection", "Strain + AMR profile\ncluster identification", PURPLE),
+     ("Adaptive Thresholds", "Per-Inc calibrated\ndistance thresholds", TEAL),
+     ("Multi-Linkage", "Single/complete/average\nclustering methods", MED_GRAY)],
+    # Row 3: AI/ML
+    [("Nucleotide Transformer", "LLM-based Inc/AMR\nprediction (optional)", RGBColor(0x6A, 0x1B, 0x9A)),
+     ("Bacterial Buddy", "AI chatbot for Q&A\nvia local Ollama", RGBColor(0x00, 0x69, 0x5C)),
+     ("Unknown Detection", "Low-confidence flagging\n+ top 5 candidates", RGBColor(0xBF, 0x36, 0x0C)),
+     ("Context-Aware AI", "Analysis results feed\ninto LLM responses", RGBColor(0x1A, 0x23, 0x7E))],
+    # Row 4: Deployment
+    [("Streamlit GUI", "7-tab web interface\nno CLI required", RGBColor(0xFF, 0x4B, 0x4B)),
+     ("Docker Support", "Containerized deployment\nfor servers", RGBColor(0x00, 0x97, 0xA7)),
+     ("One-Click Launch", "Windows/macOS/Linux\nauto-setup launchers", RGBColor(0x7B, 0x1F, 0xA2)),
+     ("Export Options", "TSV, PNG, PDF, ZIP\nbundle downloads", RGBColor(0x2E, 0x7D, 0x32))],
+]
+
+for row_idx, row in enumerate(features_grid):
+    for col_idx, (title, desc, color) in enumerate(row):
+        x = Inches(0.4 + col_idx * 3.2)
+        y = Inches(1.6 + row_idx * 1.4)
+        box = add_box(slide, x, y, Inches(3.0), Inches(1.25), color)
+        add_text(slide, x, y + Inches(0.15), Inches(3.0), Inches(0.35),
+                 title, font_size=12, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+        add_text(slide, x, y + Inches(0.55), Inches(3.0), Inches(0.6),
+                 desc, font_size=10, color=RGBColor(0xE0, 0xE0, 0xE0), alignment=PP_ALIGN.CENTER)
+
+# Footer
+add_text(slide, Inches(0.5), Inches(7.0), Inches(12.3), Inches(0.3),
+         "pLIN v2.0 — Plasmid Life Identification Number System • GPL-3.0 + Citation Clause • github.com/xavierbasilbritto-hub/pLIN-plasmid-classification",
+         font_size=10, color=MED_GRAY, alignment=PP_ALIGN.CENTER)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Save
 # ══════════════════════════════════════════════════════════════════════════════
 
