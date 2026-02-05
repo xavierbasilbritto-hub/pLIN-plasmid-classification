@@ -175,6 +175,10 @@ python generate_figures.py         # Generate figures
   conda install -c bioconda -c conda-forge ncbi-amrfinderplus
   amrfinder -u  # update database
   ```
+- Prodigal (optional, for full gene annotation):
+  ```bash
+  conda install -c bioconda prodigal
+  ```
 
 Python packages (installed automatically):
 ```
@@ -235,6 +239,29 @@ python train_nt_classifier.py --model 50m
 ```
 
 Then enable "Use Nucleotide Transformer (LLM)" in the GUI. Model variants: 50M (fast), 100M, 250M, 500M parameters. CPU and GPU (CUDA/MPS) supported.
+
+### Prodigal Gene Annotation (Optional)
+Full ORF prediction using [Prodigal](https://github.com/hyattpd/Prodigal) in metagenomic mode. While AMRFinderPlus focuses on clinically relevant genes (AMR, stress, virulence), Prodigal annotates **all** open reading frames on the plasmid.
+
+**Output includes:**
+- **Total gene count** per plasmid
+- **Coding density** (percentage of sequence in coding regions)
+- **Average gene length** (amino acids)
+- **Complete vs partial genes** (genes truncated at contig edges)
+- **Full gene table** with coordinates, strand, and length
+
+**Why use Prodigal?**
+- Get a complete picture of plasmid gene content (not just AMR genes)
+- Identify replication, partitioning, and other backbone genes
+- Calculate coding density as a quality metric
+- Compare gene counts across plasmid families
+
+**Setup:**
+```bash
+conda install -c bioconda prodigal
+```
+
+Then enable "Run Prodigal annotation" in the GUI.
 
 ## Plasmid Sequences
 
