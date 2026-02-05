@@ -1690,8 +1690,8 @@ if run_btn and uploaded_files:
     # Step 4: Build results
     progress.progress(55, text="Building results table...")
     plin_df = build_results_df(records, plin_codes, cluster_assignments)
-    labels = [r["source_file"].replace(".fasta", "").replace(".fa", "").replace(".fna", "")
-              for r in records]
+    # Use plasmid_id for labels (unique per sequence) instead of source_file
+    labels = [r["plasmid_id"] for r in records]
 
     st.session_state.plin_df = plin_df
     st.session_state.Z = Z
