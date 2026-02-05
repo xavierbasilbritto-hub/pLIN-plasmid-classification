@@ -755,6 +755,186 @@ def integrate_plin_amr(plin_df, amr_df):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  PRODIGAL GENE ANNOTATION FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_prodigal():
+    """Auto-detect Prodigal binary."""
+    binary = None
+
+    # 1. Check PATH
+    try:
+        result = subprocess.run(["which", "prodigal"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+
+    # 2. Check conda envs
+    if not binary:
+        home = os.path.expanduser("~")
+        search_dirs = [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]
+        for base in search_dirs:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "prodigal")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+
+    return binary
+
+
+def parse_prodigal_gff(gff_path):
+    """Parse Prodigal GFF output to extract gene information."""
+    genes = []
+    with open(gff_path, "r") as f:
+        for line in f:
+            if line.startswith("#") or not line.strip():
+                continue
+            parts = line.strip().split("\t")
+            if len(parts) < 9:
+                continue
+            if parts[2] != "CDS":
+                continue
+
+            seqid = parts[0]
+            start = int(parts[3])
+            end = int(parts[4])
+            strand = parts[6]
+            attributes = parts[8]
+
+            # Parse attributes
+            attr_dict = {}
+            for attr in attributes.split(";"):
+                if "=" in attr:
+                    key, val = attr.split("=", 1)
+                    attr_dict[key] = val
+
+            gene_id = attr_dict.get("ID", f"{seqid}_{start}_{end}")
+            partial = attr_dict.get("partial", "00")
+
+            genes.append({
+                "gene_id": gene_id,
+                "seqid": seqid,
+                "start": start,
+                "end": end,
+                "strand": strand,
+                "length_bp": end - start + 1,
+                "length_aa": (end - start + 1) // 3,
+                "partial": partial,
+                "is_complete": partial == "00",
+            })
+
+    return genes
+
+
+def run_prodigal_on_files(uploaded_files, binary, progress_callback=None):
+    """Run Prodigal on uploaded FASTA files.
+
+    Returns:
+        - genes_df: DataFrame with all predicted genes
+        - summary_df: DataFrame with per-plasmid summary stats
+    """
+    all_genes = []
+    summaries = []
+    total = len(uploaded_files)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for idx, uf in enumerate(uploaded_files):
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+
+            gff_path = os.path.join(tmpdir, f"{uf.name}.gff")
+            proteins_path = os.path.join(tmpdir, f"{uf.name}.faa")
+
+            # Run Prodigal in metagenomic mode (better for plasmids with variable GC)
+            cmd = [
+                binary,
+                "-i", fasta_path,
+                "-o", gff_path,
+                "-a", proteins_path,
+                "-f", "gff",
+                "-p", "meta",  # Metagenomic mode - good for diverse plasmids
+                "-q",  # Quiet mode
+            ]
+
+            source_name = uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=300)
+                if os.path.isfile(gff_path):
+                    genes = parse_prodigal_gff(gff_path)
+
+                    # Get sequence length from FASTA
+                    seq_length = 0
+                    for rec in SeqIO.parse(fasta_path, "fasta"):
+                        seq_length += len(rec.seq)
+
+                    # Add source file to each gene
+                    for g in genes:
+                        g["source_file"] = source_name
+                    all_genes.extend(genes)
+
+                    # Calculate summary stats
+                    total_genes = len(genes)
+                    complete_genes = sum(1 for g in genes if g["is_complete"])
+                    total_coding_bp = sum(g["length_bp"] for g in genes)
+                    coding_density = (total_coding_bp / seq_length * 100) if seq_length > 0 else 0
+                    avg_gene_length = np.mean([g["length_aa"] for g in genes]) if genes else 0
+
+                    summaries.append({
+                        "source_file": source_name,
+                        "sequence_length": seq_length,
+                        "total_genes": total_genes,
+                        "complete_genes": complete_genes,
+                        "partial_genes": total_genes - complete_genes,
+                        "total_coding_bp": total_coding_bp,
+                        "coding_density_pct": round(coding_density, 1),
+                        "avg_gene_length_aa": round(avg_gene_length, 1),
+                    })
+                else:
+                    # No output - add empty summary
+                    summaries.append({
+                        "source_file": source_name,
+                        "sequence_length": 0,
+                        "total_genes": 0,
+                        "complete_genes": 0,
+                        "partial_genes": 0,
+                        "total_coding_bp": 0,
+                        "coding_density_pct": 0,
+                        "avg_gene_length_aa": 0,
+                    })
+            except Exception:
+                summaries.append({
+                    "source_file": source_name,
+                    "sequence_length": 0,
+                    "total_genes": 0,
+                    "complete_genes": 0,
+                    "partial_genes": 0,
+                    "total_coding_bp": 0,
+                    "coding_density_pct": 0,
+                    "avg_gene_length_aa": 0,
+                })
+
+            if progress_callback:
+                progress_callback((idx + 1) / total)
+
+    genes_df = pd.DataFrame(all_genes) if all_genes else pd.DataFrame()
+    summary_df = pd.DataFrame(summaries) if summaries else pd.DataFrame()
+
+    return genes_df, summary_df
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  VISUALIZATION FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1067,7 +1247,7 @@ def plot_cladogram_amr(Z, labels, plin_codes, strain_clusters, amr_df, records):
 for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
             "plin_codes", "strain_clusters", "cluster_assignments", "analysis_done",
             "mobility_results", "outbreak_clusters", "active_thresholds",
-            "linkage_method_used", "nt_results"]:
+            "linkage_method_used", "nt_results", "prodigal_genes_df", "prodigal_summary_df"]:
     if key not in st.session_state:
         st.session_state[key] = None
 if "analysis_done" not in st.session_state:
@@ -1083,6 +1263,9 @@ st.caption("Plasmid Life Identification Number System — Upload FASTA files to 
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
 amr_binary, amr_db = detect_amrfinder()
+
+# Prodigal detection
+prodigal_binary = detect_prodigal()
 
 if not st.session_state.analysis_done:
     st.divider()
@@ -1112,10 +1295,22 @@ if not st.session_state.analysis_done:
             help="Calibrate pLIN thresholds per Inc group from training data distance distributions instead of fixed thresholds",
         )
         if amr_binary:
-            run_amr = st.checkbox("Run AMRFinderPlus", value=True)
+            run_amr = st.checkbox("Run AMRFinderPlus", value=True,
+                                  help="Detect AMR, stress, and virulence genes using NCBI's AMRFinderPlus")
         else:
             st.warning("AMRFinderPlus not found", icon="⚠️")
             run_amr = False
+
+        # Prodigal gene annotation (optional)
+        if prodigal_binary:
+            run_prodigal = st.checkbox(
+                "Run Prodigal annotation",
+                value=False,
+                help="Annotate all genes using Prodigal (metagenomic mode). Shows gene count, coding density, and full gene table.",
+            )
+        else:
+            run_prodigal = False
+            st.info("Prodigal not found. Install: `conda install -c bioconda prodigal`", icon="🧬")
 
         # Nucleotide Transformer (optional LLM)
         if NT_AVAILABLE:
@@ -1166,6 +1361,7 @@ else:
     nt_model_choice = st.session_state.get("_nt_model_choice", None)
     nt_device = st.session_state.get("_nt_device", "cpu")
     run_amr = amr_binary is not None
+    run_prodigal = st.session_state.get("_run_prodigal", False)
     run_btn = False
 
 
@@ -1207,6 +1403,10 @@ with st.sidebar:
             nt_res = st.session_state.get("nt_results")
             if nt_res and nt_res.get("inc_preds") is not None:
                 st.markdown("**NT LLM:** enabled")
+            prodigal_sum = st.session_state.get("prodigal_summary_df")
+            if prodigal_sum is not None and len(prodigal_sum) > 0:
+                total_genes = prodigal_sum["total_genes"].sum()
+                st.markdown(f"**Prodigal:** {total_genes:,} genes")
         st.divider()
 
     if st.button("🔄 Clear & Reset", use_container_width=True, key="sidebar_reset"):
@@ -1235,6 +1435,7 @@ if run_btn and uploaded_files:
     st.session_state._use_nt = use_nt
     st.session_state._nt_model_choice = nt_model_choice
     st.session_state._nt_device = nt_device
+    st.session_state._run_prodigal = run_prodigal
     progress = st.progress(0, text="Starting analysis...")
 
     # Step 1: Parse sequences (+ Inc group auto-detection)
@@ -1330,6 +1531,22 @@ if run_btn and uploaded_files:
         amr_df = run_amrfinder_on_files(uploaded_files, amr_binary, amr_db, amr_cb)
 
     st.session_state.amr_df = amr_df
+
+    # Step 5b: Prodigal gene annotation (optional)
+    prodigal_genes_df = pd.DataFrame()
+    prodigal_summary_df = pd.DataFrame()
+    if run_prodigal and prodigal_binary:
+        progress.progress(75, text="Running Prodigal gene annotation...")
+
+        def prodigal_cb(pct):
+            progress.progress(int(75 + pct * 10), text=f"Prodigal: {int(pct * 100)}%")
+
+        prodigal_genes_df, prodigal_summary_df = run_prodigal_on_files(
+            uploaded_files, prodigal_binary, prodigal_cb
+        )
+
+    st.session_state.prodigal_genes_df = prodigal_genes_df
+    st.session_state.prodigal_summary_df = prodigal_summary_df
 
     # Step 6: Integration
     progress.progress(90, text="Integrating results...")
@@ -1535,6 +1752,52 @@ with tab_overview:
                     amr_pred_df = pd.DataFrame(detected, columns=["Drug Class", "Plasmids"])
                     amr_pred_df = amr_pred_df.sort_values("Plasmids", ascending=False)
                     st.dataframe(amr_pred_df, use_container_width=True, hide_index=True)
+
+        # Prodigal gene annotation results (if available)
+        prodigal_summary = st.session_state.get("prodigal_summary_df")
+        prodigal_genes = st.session_state.get("prodigal_genes_df")
+        if prodigal_summary is not None and len(prodigal_summary) > 0:
+            st.subheader("Prodigal Gene Annotation")
+
+            # Summary metrics
+            total_genes = prodigal_summary["total_genes"].sum()
+            avg_coding_density = prodigal_summary["coding_density_pct"].mean()
+            avg_gene_length = prodigal_summary["avg_gene_length_aa"].mean()
+
+            pc1, pc2, pc3, pc4 = st.columns(4)
+            pc1.metric("Total Genes", f"{total_genes:,}")
+            pc2.metric("Avg Coding Density", f"{avg_coding_density:.1f}%")
+            pc3.metric("Avg Gene Length", f"{avg_gene_length:.0f} aa")
+            pc4.metric("Plasmids Annotated", len(prodigal_summary))
+
+            # Per-plasmid summary table
+            st.markdown("**Per-Plasmid Gene Statistics**")
+            display_summary = prodigal_summary.rename(columns={
+                "source_file": "Plasmid",
+                "sequence_length": "Length (bp)",
+                "total_genes": "Total Genes",
+                "complete_genes": "Complete",
+                "partial_genes": "Partial",
+                "coding_density_pct": "Coding %",
+                "avg_gene_length_aa": "Avg Gene (aa)",
+            })
+            st.dataframe(display_summary, use_container_width=True, hide_index=True)
+
+            # Expandable full gene table
+            if prodigal_genes is not None and len(prodigal_genes) > 0:
+                with st.expander(f"View All Predicted Genes ({len(prodigal_genes)})"):
+                    gene_display = prodigal_genes[["source_file", "gene_id", "start", "end",
+                                                   "strand", "length_aa", "is_complete"]].copy()
+                    gene_display = gene_display.rename(columns={
+                        "source_file": "Plasmid",
+                        "gene_id": "Gene ID",
+                        "start": "Start",
+                        "end": "End",
+                        "strand": "Strand",
+                        "length_aa": "Length (aa)",
+                        "is_complete": "Complete",
+                    })
+                    st.dataframe(gene_display, use_container_width=True, hide_index=True)
 
 
 # ── TAB 2: Results ───────────────────────────────────────────────────────────
@@ -1929,6 +2192,18 @@ with tab_export:
                 st.download_button("📥 Mobility Predictions (TSV)", mob_csv,
                                    "mobility_predictions.tsv", "text/tab-separated-values")
 
+            # Prodigal results
+            prodigal_summary = st.session_state.get("prodigal_summary_df")
+            prodigal_genes = st.session_state.get("prodigal_genes_df")
+            if prodigal_summary is not None and len(prodigal_summary) > 0:
+                prodigal_sum_csv = prodigal_summary.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Prodigal Summary (TSV)", prodigal_sum_csv,
+                                   "prodigal_summary.tsv", "text/tab-separated-values")
+            if prodigal_genes is not None and len(prodigal_genes) > 0:
+                prodigal_genes_csv = prodigal_genes.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Prodigal Genes (TSV)", prodigal_genes_csv,
+                                   "prodigal_genes.tsv", "text/tab-separated-values")
+
         with col2:
             st.subheader("Figures")
             Z = st.session_state.Z
@@ -1990,6 +2265,15 @@ with tab_export:
                         })
                         zf.writestr("nt_predictions.tsv",
                                     nt_df.to_csv(sep="\t", index=False))
+                    # Prodigal results
+                    prodigal_summary = st.session_state.get("prodigal_summary_df")
+                    prodigal_genes = st.session_state.get("prodigal_genes_df")
+                    if prodigal_summary is not None and len(prodigal_summary) > 0:
+                        zf.writestr("prodigal_summary.tsv",
+                                    prodigal_summary.to_csv(sep="\t", index=False))
+                    if prodigal_genes is not None and len(prodigal_genes) > 0:
+                        zf.writestr("prodigal_genes.tsv",
+                                    prodigal_genes.to_csv(sep="\t", index=False))
                     for name, func, args in [
                         ("cladogram_rectangular", plot_rectangular_cladogram,
                          (Z, labels, plin_codes, strain_clusters)),
