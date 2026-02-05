@@ -263,6 +263,38 @@ conda install -c bioconda prodigal
 
 Then enable "Run Prodigal annotation" in the GUI.
 
+### Bacterial Buddy — AI Assistant (Optional)
+An integrated AI chatbot powered by [Ollama](https://ollama.ai) that can answer questions about your analysis results and plasmid biology in general. Runs completely locally — no API keys needed, no data leaves your machine.
+
+**Features:**
+- **Context-aware responses** — understands your analysis results and can answer specific questions
+- **Streaming chat** — real-time responses for a smooth experience
+- **Multiple models** — choose from llama3.2, mistral, mixtral, and more
+- **Suggested questions** — get started quickly with pre-written prompts
+- **Privacy-focused** — everything runs locally via Ollama
+
+**Example questions:**
+- "Summarize my analysis results"
+- "Which plasmids should I be most concerned about?"
+- "Explain the Inc groups detected in my samples"
+- "What is the clinical significance of conjugative plasmids?"
+- "How does pLIN classification work?"
+
+**Setup:**
+```bash
+# 1. Install Ollama (https://ollama.ai)
+# macOS/Linux:
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 2. Pull a model (llama3.2 recommended for speed)
+ollama pull llama3.2
+
+# 3. Start Ollama server (if not auto-started)
+ollama serve
+```
+
+Then open the "🦠 Bacterial Buddy" tab in the GUI.
+
 ## Plasmid Sequences
 
 FASTA sequences (695 MB total) are not included in this repository due to size. All plasmid sequences were obtained from NCBI RefSeq and can be downloaded using the accession numbers listed in `output/pLIN_assignments.tsv`.

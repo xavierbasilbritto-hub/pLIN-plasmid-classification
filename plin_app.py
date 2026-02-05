@@ -23,6 +23,8 @@ import hashlib
 import tempfile
 import subprocess
 import zipfile
+import json
+import requests
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -935,6 +937,203 @@ def run_prodigal_on_files(uploaded_files, binary, progress_callback=None):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  BACTERIAL BUDDY — OLLAMA LLM CHATBOT
+# ══════════════════════════════════════════════════════════════════════════════
+
+OLLAMA_DEFAULT_URL = "http://localhost:11434"
+OLLAMA_MODELS = ["llama3.2", "llama3.1", "llama3", "mistral", "mixtral", "gemma2", "phi3"]
+
+BACTERIAL_BUDDY_SYSTEM_PROMPT = """You are Bacterial Buddy, a friendly and knowledgeable AI assistant specialized in plasmid biology and antimicrobial resistance. You help researchers understand their plasmid analysis results from the pLIN (Plasmid Life Identification Number) classification tool.
+
+Your personality:
+- Friendly, approachable, and enthusiastic about microbiology
+- Use occasional bacteria-themed humor when appropriate
+- Explain complex concepts in accessible terms
+- Always be scientifically accurate
+
+Your expertise includes:
+- Plasmid biology, replication, and evolution
+- Incompatibility (Inc) groups and their significance
+- Antimicrobial resistance genes and mechanisms
+- Plasmid mobility and horizontal gene transfer
+- Epidemiological implications of plasmid spread
+- Interpreting pLIN codes and clustering results
+
+When answering questions:
+1. Use the analysis context provided to give specific, relevant answers
+2. If asked about specific plasmids or genes, refer to the data
+3. Explain the clinical/epidemiological significance when relevant
+4. Suggest next steps or further analyses when appropriate
+
+Keep responses concise but informative. Use bullet points for lists."""
+
+
+def detect_ollama():
+    """Check if Ollama is running and return available models."""
+    try:
+        response = requests.get(f"{OLLAMA_DEFAULT_URL}/api/tags", timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            models = [m["name"].split(":")[0] for m in data.get("models", [])]
+            return True, list(set(models))
+    except Exception:
+        pass
+    return False, []
+
+
+def build_analysis_context(session_state):
+    """Build a context string from the current analysis results."""
+    context_parts = []
+
+    # Basic analysis info
+    plin_df = session_state.get("plin_df")
+    if plin_df is not None and len(plin_df) > 0:
+        context_parts.append(f"**Analysis Summary:**")
+        context_parts.append(f"- Total plasmids analyzed: {len(plin_df)}")
+        context_parts.append(f"- Unique pLIN codes: {plin_df['pLIN'].nunique()}")
+
+        # Inc groups
+        if "inc_type" in plin_df.columns:
+            inc_counts = plin_df["inc_type"].value_counts().to_dict()
+            inc_str = ", ".join([f"{k}: {v}" for k, v in inc_counts.items()])
+            context_parts.append(f"- Inc groups detected: {inc_str}")
+
+        # Low confidence warnings
+        if "inc_is_low_confidence" in plin_df.columns:
+            low_conf = plin_df["inc_is_low_confidence"].sum()
+            if low_conf > 0:
+                context_parts.append(f"- Low-confidence Inc predictions (Unknown/Novel): {low_conf}")
+
+    # AMR data
+    amr_df = session_state.get("amr_df")
+    if amr_df is not None and len(amr_df) > 0:
+        context_parts.append(f"\n**AMR Analysis:**")
+        context_parts.append(f"- Total AMR/stress/virulence hits: {len(amr_df)}")
+
+        if "Type" in amr_df.columns:
+            type_counts = amr_df["Type"].value_counts().to_dict()
+            context_parts.append(f"- AMR genes: {type_counts.get('AMR', 0)}")
+            context_parts.append(f"- Stress genes: {type_counts.get('STRESS', 0)}")
+            context_parts.append(f"- Virulence genes: {type_counts.get('VIRULENCE', 0)}")
+
+        if "Class" in amr_df.columns:
+            top_classes = amr_df["Class"].value_counts().head(5).to_dict()
+            classes_str = ", ".join([f"{k}: {v}" for k, v in top_classes.items()])
+            context_parts.append(f"- Top AMR drug classes: {classes_str}")
+
+        if "Element symbol" in amr_df.columns:
+            top_genes = amr_df["Element symbol"].value_counts().head(10).to_dict()
+            genes_str = ", ".join([f"{k} ({v})" for k, v in top_genes.items()])
+            context_parts.append(f"- Most common genes: {genes_str}")
+
+    # Mobility
+    mob_df = session_state.get("mobility_results")
+    if mob_df is not None and len(mob_df) > 0:
+        context_parts.append(f"\n**Mobility Prediction:**")
+        mob_counts = mob_df["mobility"].value_counts().to_dict()
+        context_parts.append(f"- Conjugative: {mob_counts.get('Conjugative', 0)}")
+        context_parts.append(f"- Mobilizable: {mob_counts.get('Mobilizable', 0)}")
+        context_parts.append(f"- Non-mobilizable: {mob_counts.get('Non-mobilizable', 0)}")
+
+    # Outbreak clusters
+    outbreak = session_state.get("outbreak_clusters", [])
+    if outbreak:
+        context_parts.append(f"\n**Outbreak Detection:**")
+        context_parts.append(f"- Potential outbreak clusters detected: {len(outbreak)}")
+        for i, cluster in enumerate(outbreak[:3]):  # Show top 3
+            context_parts.append(f"  - Cluster {i+1}: {cluster.get('count', '?')} plasmids, "
+                               f"risk: {cluster.get('risk_level', '?')}")
+
+    # Prodigal
+    prodigal_sum = session_state.get("prodigal_summary_df")
+    if prodigal_sum is not None and len(prodigal_sum) > 0:
+        context_parts.append(f"\n**Gene Annotation (Prodigal):**")
+        total_genes = prodigal_sum["total_genes"].sum()
+        avg_density = prodigal_sum["coding_density_pct"].mean()
+        context_parts.append(f"- Total predicted genes: {total_genes}")
+        context_parts.append(f"- Average coding density: {avg_density:.1f}%")
+
+    # Plasmid list
+    if plin_df is not None and len(plin_df) > 0 and len(plin_df) <= 20:
+        context_parts.append(f"\n**Plasmid Details:**")
+        for _, row in plin_df.iterrows():
+            detail = f"- {row['plasmid_id']}: pLIN {row['pLIN']}"
+            if "inc_type" in row:
+                detail += f", Inc: {row['inc_type']}"
+            context_parts.append(detail)
+
+    return "\n".join(context_parts) if context_parts else "No analysis has been run yet."
+
+
+def chat_with_ollama(messages, model, context=""):
+    """Send messages to Ollama and get a response."""
+    # Build the system message with context
+    system_msg = BACTERIAL_BUDDY_SYSTEM_PROMPT
+    if context:
+        system_msg += f"\n\n**Current Analysis Context:**\n{context}"
+
+    # Prepare messages for Ollama
+    ollama_messages = [{"role": "system", "content": system_msg}]
+    for msg in messages:
+        ollama_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    try:
+        response = requests.post(
+            f"{OLLAMA_DEFAULT_URL}/api/chat",
+            json={
+                "model": model,
+                "messages": ollama_messages,
+                "stream": False,
+            },
+            timeout=60,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("message", {}).get("content", "I couldn't generate a response.")
+        else:
+            return f"Error: Ollama returned status {response.status_code}"
+    except requests.exceptions.Timeout:
+        return "The response took too long. Try a simpler question or a smaller model."
+    except Exception as e:
+        return f"Error connecting to Ollama: {str(e)}"
+
+
+def stream_chat_with_ollama(messages, model, context=""):
+    """Stream responses from Ollama for a better UX."""
+    system_msg = BACTERIAL_BUDDY_SYSTEM_PROMPT
+    if context:
+        system_msg += f"\n\n**Current Analysis Context:**\n{context}"
+
+    ollama_messages = [{"role": "system", "content": system_msg}]
+    for msg in messages:
+        ollama_messages.append({"role": msg["role"], "content": msg["content"]})
+
+    try:
+        response = requests.post(
+            f"{OLLAMA_DEFAULT_URL}/api/chat",
+            json={
+                "model": model,
+                "messages": ollama_messages,
+                "stream": True,
+            },
+            stream=True,
+            timeout=120,
+        )
+        if response.status_code == 200:
+            for line in response.iter_lines():
+                if line:
+                    data = json.loads(line)
+                    if "message" in data and "content" in data["message"]:
+                        yield data["message"]["content"]
+                    if data.get("done", False):
+                        break
+        else:
+            yield f"Error: Ollama returned status {response.status_code}"
+    except Exception as e:
+        yield f"Error: {str(e)}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  VISUALIZATION FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1253,6 +1452,12 @@ for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
 if "analysis_done" not in st.session_state:
     st.session_state.analysis_done = False
 
+# Bacterial Buddy chat state
+if "buddy_messages" not in st.session_state:
+    st.session_state.buddy_messages = []
+if "buddy_model" not in st.session_state:
+    st.session_state.buddy_model = None
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  MAIN HEADER & UPLOAD
@@ -1266,6 +1471,9 @@ amr_binary, amr_db = detect_amrfinder()
 
 # Prodigal detection
 prodigal_binary = detect_prodigal()
+
+# Ollama detection for Bacterial Buddy
+ollama_available, ollama_models = detect_ollama()
 
 if not st.session_state.analysis_done:
     st.divider()
@@ -1580,9 +1788,9 @@ if run_btn and uploaded_files:
 #  TABS
 # ══════════════════════════════════════════════════════════════════════════════
 
-tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_export = st.tabs(
+tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_buddy, tab_export = st.tabs(
     ["📋 Overview", "📊 Results", "🌳 Cladogram", "💊 AMR Analysis",
-     "🔬 Epidemiology", "📥 Export"]
+     "🔬 Epidemiology", "🦠 Bacterial Buddy", "📥 Export"]
 )
 
 # ── TAB 1: Overview ──────────────────────────────────────────────────────────
@@ -2156,7 +2364,134 @@ with tab_epi:
                              use_container_width=True, hide_index=True)
 
 
-# ── TAB 6: Export ────────────────────────────────────────────────────────────
+# ── TAB 6: Bacterial Buddy ───────────────────────────────────────────────────
+
+with tab_buddy:
+    st.header("🦠 Bacterial Buddy")
+    st.caption("Your AI assistant for plasmid biology and AMR analysis")
+
+    if not ollama_available:
+        st.warning(
+            "**Ollama not detected.** Bacterial Buddy requires Ollama running locally.\n\n"
+            "**Setup instructions:**\n"
+            "1. Install Ollama: https://ollama.ai\n"
+            "2. Start Ollama: `ollama serve`\n"
+            "3. Pull a model: `ollama pull llama3.2`\n"
+            "4. Refresh this page",
+            icon="🤖"
+        )
+        st.info(
+            "**Why Ollama?** It runs LLMs locally on your machine — no API keys, no data leaves your computer, "
+            "and it's completely free. Perfect for sensitive research data!",
+            icon="💡"
+        )
+    else:
+        # Model selection
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            # Filter to models that are actually installed
+            available_models = [m for m in OLLAMA_MODELS if m in ollama_models] or ollama_models[:5]
+            if available_models:
+                selected_model = st.selectbox(
+                    "Select AI Model",
+                    available_models,
+                    index=0,
+                    help="Smaller models (llama3.2, phi3) are faster. Larger models (mixtral) may give better answers.",
+                )
+                st.session_state.buddy_model = selected_model
+            else:
+                st.warning("No models found. Run `ollama pull llama3.2` to download a model.")
+                selected_model = None
+
+        with col2:
+            if st.button("🗑️ Clear Chat", use_container_width=True):
+                st.session_state.buddy_messages = []
+                st.rerun()
+
+        # Show analysis status
+        if st.session_state.analysis_done:
+            st.success("Analysis data loaded. Bacterial Buddy can answer questions about your results!", icon="✅")
+        else:
+            st.info("Run an analysis first for context-aware answers, or ask general plasmid biology questions.", icon="💡")
+
+        st.divider()
+
+        # Chat container
+        chat_container = st.container()
+
+        # Display chat history
+        with chat_container:
+            for message in st.session_state.buddy_messages:
+                if message["role"] == "user":
+                    with st.chat_message("user", avatar="👤"):
+                        st.markdown(message["content"])
+                else:
+                    with st.chat_message("assistant", avatar="🦠"):
+                        st.markdown(message["content"])
+
+        # Chat input
+        if selected_model:
+            if prompt := st.chat_input("Ask Bacterial Buddy about your plasmids..."):
+                # Add user message
+                st.session_state.buddy_messages.append({"role": "user", "content": prompt})
+
+                # Display user message
+                with chat_container:
+                    with st.chat_message("user", avatar="👤"):
+                        st.markdown(prompt)
+
+                # Build context from analysis
+                context = build_analysis_context(st.session_state)
+
+                # Get and display assistant response
+                with chat_container:
+                    with st.chat_message("assistant", avatar="🦠"):
+                        response_placeholder = st.empty()
+                        full_response = ""
+
+                        # Stream the response
+                        for chunk in stream_chat_with_ollama(
+                            st.session_state.buddy_messages,
+                            selected_model,
+                            context
+                        ):
+                            full_response += chunk
+                            response_placeholder.markdown(full_response + "▌")
+
+                        response_placeholder.markdown(full_response)
+
+                # Save assistant message
+                st.session_state.buddy_messages.append({"role": "assistant", "content": full_response})
+
+        # Suggested questions
+        st.divider()
+        st.markdown("**💡 Try asking:**")
+        suggestions = [
+            "What Inc groups are in my data and what do they mean?",
+            "Which plasmids are most likely to spread resistance?",
+            "Explain the AMR genes found in my analysis",
+            "What is the clinical significance of conjugative plasmids?",
+            "How does pLIN classification work?",
+        ]
+        if st.session_state.analysis_done:
+            suggestions = [
+                "Summarize my analysis results",
+                "Which plasmids should I be most concerned about?",
+                "Are there any potential outbreak clusters?",
+                "Explain the Inc groups detected in my samples",
+                "What AMR genes are most prevalent and why does it matter?",
+            ]
+
+        cols = st.columns(2)
+        for i, suggestion in enumerate(suggestions):
+            with cols[i % 2]:
+                if st.button(f"💬 {suggestion}", key=f"suggest_{i}", use_container_width=True):
+                    # Trigger the question
+                    st.session_state.buddy_messages.append({"role": "user", "content": suggestion})
+                    st.rerun()
+
+
+# ── TAB 7: Export ────────────────────────────────────────────────────────────
 
 with tab_export:
     if not st.session_state.analysis_done:
