@@ -84,6 +84,10 @@ INC_GROUPS = ["Auto-detect", "IncFII", "IncN", "IncX1", "IncX", "IncH", "Other"]
 
 LINKAGE_METHODS = ["single", "complete", "average", "weighted"]
 
+# Confidence threshold for Inc group classification
+# Below this threshold, plasmids are flagged as "Unknown/Novel" Inc type
+INC_CONFIDENCE_THRESHOLD = 0.40  # 40% confidence minimum
+
 # Mobility/conjugation marker genes detectable from AMRFinderPlus output
 MOBILITY_GENES = {
     "conjugative": {
@@ -176,7 +180,13 @@ def _kmer_vector_single(sequence):
 
 def classify_inc_group(sequence, group_names, classifier):
     """Classify a plasmid to its Inc group using KNN or centroid distance.
-    Returns (predicted_group, confidence, per_group_probabilities).
+
+    Returns dict with:
+        - predicted_group: str (best Inc type or "Unknown/Novel" if low confidence)
+        - confidence: float (0-1)
+        - is_low_confidence: bool
+        - top5_candidates: list of (inc_type, confidence) tuples
+        - all_probabilities: dict {inc_type: probability}
     """
     vec = _kmer_vector_single(sequence).reshape(1, -1).astype(np.float32)
 
@@ -186,7 +196,21 @@ def classify_inc_group(sequence, group_names, classifier):
         best_group = group_names[pred_idx]
         confidence = float(proba[pred_idx])
         proba_dict = {group_names[j]: round(float(proba[j]), 4) for j in range(len(group_names))}
-        return best_group, confidence, proba_dict
+
+        # Get top 5 candidates sorted by confidence
+        sorted_candidates = sorted(proba_dict.items(), key=lambda x: x[1], reverse=True)[:5]
+
+        # Check if confidence is below threshold
+        is_low_confidence = confidence < INC_CONFIDENCE_THRESHOLD
+
+        return {
+            "predicted_group": "Unknown/Novel" if is_low_confidence else best_group,
+            "best_match": best_group,  # Always store the best match even if flagged as Unknown
+            "confidence": confidence,
+            "is_low_confidence": is_low_confidence,
+            "top5_candidates": sorted_candidates,
+            "all_probabilities": proba_dict,
+        }
     else:
         # Centroid fallback — use cosine similarity as confidence
         centroids = classifier
@@ -198,7 +222,22 @@ def classify_inc_group(sequence, group_names, classifier):
             sim = np.dot(v, c) / (norm_a * norm_b) if norm_a > 0 and norm_b > 0 else 0.0
             similarities[name] = round(sim, 4)
         best_group = max(similarities, key=similarities.get)
-        return best_group, similarities[best_group], similarities
+        confidence = similarities[best_group]
+
+        # Get top 5 candidates sorted by similarity
+        sorted_candidates = sorted(similarities.items(), key=lambda x: x[1], reverse=True)[:5]
+
+        # Check if confidence is below threshold
+        is_low_confidence = confidence < INC_CONFIDENCE_THRESHOLD
+
+        return {
+            "predicted_group": "Unknown/Novel" if is_low_confidence else best_group,
+            "best_match": best_group,
+            "confidence": confidence,
+            "is_low_confidence": is_low_confidence,
+            "top5_candidates": sorted_candidates,
+            "all_probabilities": similarities,
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -525,10 +564,13 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
                     "source_file": uf.name,
                 }
                 if auto_detect:
-                    detected_inc, confidence, proba = classify_inc_group(seq, group_names, classifier)
-                    rec_dict["inc_type"] = detected_inc
-                    rec_dict["inc_confidence"] = round(confidence, 4)
-                    rec_dict["inc_probabilities"] = proba
+                    result = classify_inc_group(seq, group_names, classifier)
+                    rec_dict["inc_type"] = result["predicted_group"]
+                    rec_dict["inc_best_match"] = result["best_match"]
+                    rec_dict["inc_confidence"] = round(result["confidence"], 4)
+                    rec_dict["inc_is_low_confidence"] = result["is_low_confidence"]
+                    rec_dict["inc_top5_candidates"] = result["top5_candidates"]
+                    rec_dict["inc_probabilities"] = result["all_probabilities"]
                 else:
                     rec_dict["inc_type"] = inc_type
 
@@ -590,6 +632,14 @@ def build_results_df(records, plin_codes, cluster_assignments):
         }
         if "inc_confidence" in rec:
             row["inc_confidence"] = rec["inc_confidence"]
+        if "inc_is_low_confidence" in rec:
+            row["inc_is_low_confidence"] = rec["inc_is_low_confidence"]
+        if "inc_best_match" in rec:
+            row["inc_best_match"] = rec["inc_best_match"]
+        if "inc_top5_candidates" in rec:
+            # Format top 5 as string for display: "IncFII (45%), IncN (30%), ..."
+            top5_str = ", ".join([f"{inc} ({conf*100:.1f}%)" for inc, conf in rec["inc_top5_candidates"]])
+            row["inc_top5_candidates"] = top5_str
         for b in PLIN_THRESHOLDS:
             row[f"bin_{b}"] = int(cluster_assignments[b][i])
         rows.append(row)
@@ -1136,7 +1186,15 @@ with st.sidebar:
                 inc_counts = df["inc_type"].value_counts()
                 st.markdown("**Detected Inc Groups:**")
                 for inc, cnt in inc_counts.items():
-                    st.markdown(f"- {inc}: {cnt}")
+                    if inc == "Unknown/Novel":
+                        st.markdown(f"- ⚠️ {inc}: {cnt}")
+                    else:
+                        st.markdown(f"- {inc}: {cnt}")
+                # Show low-confidence warning in sidebar
+                if "inc_is_low_confidence" in df.columns:
+                    low_conf_count = df["inc_is_low_confidence"].sum()
+                    if low_conf_count > 0:
+                        st.warning(f"{low_conf_count} low-confidence")
             mob_df = st.session_state.get("mobility_results")
             if mob_df is not None and len(mob_df) > 0:
                 mob_counts = mob_df["mobility"].value_counts().to_dict()
@@ -1379,6 +1437,37 @@ with tab_overview:
         # Inc group auto-detection summary
         if "inc_confidence" in df.columns:
             st.subheader("Inc Group Auto-Detection")
+
+            # Check for low-confidence predictions (Unknown/Novel)
+            has_low_conf = "inc_is_low_confidence" in df.columns
+            if has_low_conf:
+                low_conf_df = df[df["inc_is_low_confidence"] == True]
+                low_conf_count = len(low_conf_df)
+                if low_conf_count > 0:
+                    st.error(
+                        f"**{low_conf_count} plasmid(s) classified as Unknown/Novel Inc type** — "
+                        f"confidence below {INC_CONFIDENCE_THRESHOLD*100:.0f}% threshold. "
+                        f"These plasmids may represent novel Inc types not in the training data."
+                    )
+                    # Show low-confidence plasmids with their top 5 candidates
+                    with st.expander(f"View Unknown/Novel plasmids ({low_conf_count})"):
+                        low_conf_cols = ["plasmid_id", "inc_best_match", "inc_confidence"]
+                        if "inc_top5_candidates" in df.columns:
+                            low_conf_cols.append("inc_top5_candidates")
+                        low_conf_display = low_conf_df[low_conf_cols].copy()
+                        low_conf_display = low_conf_display.rename(columns={
+                            "inc_best_match": "Best Match (Low Conf.)",
+                            "inc_confidence": "Confidence",
+                            "inc_top5_candidates": "Top 5 Candidates",
+                        })
+                        low_conf_display = low_conf_display.sort_values("Confidence", ascending=True)
+                        st.dataframe(low_conf_display, use_container_width=True, hide_index=True)
+                        st.caption(
+                            "**Tip:** These plasmids did not match any known Inc group with sufficient confidence. "
+                            "Consider: (1) manually verifying Inc type via replicon typing tools like PlasmidFinder, "
+                            "(2) the plasmid may be a novel/rare Inc type, or (3) it may be a mosaic/hybrid plasmid."
+                        )
+
             inc_summary = df.groupby("inc_type").agg(
                 count=("plasmid_id", "count"),
                 avg_confidence=("inc_confidence", "mean"),
@@ -1395,9 +1484,11 @@ with tab_overview:
 
             # Warn about mixed Inc groups
             n_inc_groups = df["inc_type"].nunique()
-            if n_inc_groups > 1:
+            # Don't count Unknown/Novel as a real Inc group for the warning
+            real_inc_groups = [g for g in df["inc_type"].unique() if g != "Unknown/Novel"]
+            if len(real_inc_groups) > 1:
                 st.info(
-                    f"**{n_inc_groups} Inc groups detected** in your upload. "
+                    f"**{len(real_inc_groups)} Inc groups detected** in your upload. "
                     "pLIN clustering is computed across all plasmids together. "
                     "For within-group comparisons, upload files from a single Inc group."
                 )
@@ -1531,8 +1622,43 @@ with tab_results:
 
             if has_inc_conf:
                 st.write("**Per-Plasmid Inc Group Classification**")
-                inc_detail = st.session_state.plin_df[["plasmid_id", "inc_type", "inc_confidence"]].copy()
+
+                # Check for low-confidence predictions
+                plin_df = st.session_state.plin_df
+                has_low_conf = "inc_is_low_confidence" in plin_df.columns
+                has_top5 = "inc_top5_candidates" in plin_df.columns
+
+                # Build display columns
+                inc_cols = ["plasmid_id", "inc_type", "inc_confidence"]
+                if has_low_conf:
+                    inc_cols.append("inc_is_low_confidence")
+                if "inc_best_match" in plin_df.columns:
+                    inc_cols.append("inc_best_match")
+                if has_top5:
+                    inc_cols.append("inc_top5_candidates")
+
+                inc_detail = plin_df[inc_cols].copy()
                 inc_detail = inc_detail.sort_values("inc_confidence", ascending=True)
+
+                # Count and warn about low-confidence predictions
+                if has_low_conf:
+                    low_conf_count = inc_detail["inc_is_low_confidence"].sum()
+                    if low_conf_count > 0:
+                        st.warning(
+                            f"**{low_conf_count} plasmid(s) have low-confidence Inc type predictions** "
+                            f"(below {INC_CONFIDENCE_THRESHOLD*100:.0f}% threshold). "
+                            f"These are labeled as 'Unknown/Novel' and may represent novel Inc types "
+                            f"not present in the training data. See 'Top 5 Candidates' for the nearest matches."
+                        )
+
+                # Rename columns for better display
+                rename_map = {
+                    "inc_is_low_confidence": "Low Confidence?",
+                    "inc_best_match": "Best Match",
+                    "inc_top5_candidates": "Top 5 Candidates",
+                }
+                inc_detail = inc_detail.rename(columns=rename_map)
+
                 st.dataframe(inc_detail, use_container_width=True, hide_index=True)
 
 
