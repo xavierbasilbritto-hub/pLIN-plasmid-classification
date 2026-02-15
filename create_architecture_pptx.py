@@ -133,11 +133,11 @@ add_text(slide, Inches(0.8), Inches(2.6), Inches(11.5), Inches(0.8),
 
 # Feature boxes
 features = [
-    ("6,998", "Training\nPlasmids"),
+    ("78,902", "Total Plasmids\nClassified"),
     ("20", "Inc Groups\n(20 families)"),
-    ("2,232", "Unique pLIN\nCodes"),
+    ("33,143", "Unique pLIN\nCodes"),
     ("92.2%", "Inc Detection\nAccuracy"),
-    ("27,465", "AMR Gene\nDetections"),
+    ("64,891", "AMR Gene\nDetections"),
 ]
 for i, (num, label) in enumerate(features):
     x = Inches(0.8 + i * 2.5)
@@ -1750,6 +1750,100 @@ add_multiline(slide, Inches(7.2), Inches(6.3), Inches(5.4), Inches(0.8), [
     "Phase 1 features require no additional software",
     "Total: 19 slides, 28+ features, full GUI integration",
 ], font_size=11, color=DARK_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE: Reference Database — 78,902 Sequences pLIN Summary
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Reference Database — Full pLIN Assignment",
+               "78,902 plasmid sequences (6,998 training + 71,904 reference) classified and assigned pLIN codes")
+
+# ── Row 1: Key metrics (5 boxes) ──
+metrics = [
+    ("78,902", "Total\nSequences"),
+    ("76,549", "Classified\n(97.0%)"),
+    ("33,143", "Unique pLIN\nCodes"),
+    ("20", "Inc Groups\nDetected"),
+    ("2,353", "Unknown/\nNovel (3.0%)"),
+]
+for i, (num, label) in enumerate(metrics):
+    x = Inches(0.4 + i * 2.5)
+    y = Inches(1.4)
+    box = add_box(slide, x, y, Inches(2.2), Inches(1.5), DARK_BLUE,
+                  border_color=MED_BLUE, border_width=Pt(2))
+    add_text(slide, x, y + Inches(0.15), Inches(2.2), Inches(0.6),
+             num, font_size=32, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_text(slide, x, y + Inches(0.8), Inches(2.2), Inches(0.6),
+             label, font_size=13, color=LIGHT_BLUE, alignment=PP_ALIGN.CENTER)
+
+# ── Row 2: Hierarchical resolution (6 bins) ──
+add_text(slide, Inches(0.4), Inches(3.1), Inches(12), Inches(0.4),
+         "Hierarchical Clustering Resolution", font_size=14, bold=True, color=DARK_BLUE)
+
+bin_data = [
+    ("L1 (Family)", "33", "d \u2264 0.150"),
+    ("L2 (Subfamily)", "86", "d \u2264 0.100"),
+    ("L3 (Cluster)", "447", "d \u2264 0.050"),
+    ("L4 (Subcluster)", "2,772", "d \u2264 0.020"),
+    ("L5 (Clone)", "5,540", "d \u2264 0.010"),
+    ("L6 (Strain)", "33,143", "d \u2264 0.001"),
+]
+level_colors = [RED, ORANGE, RGBColor(0xFD, 0xD8, 0x35), GREEN, MED_BLUE, PURPLE]
+for i, ((level, count, thresh), lcolor) in enumerate(zip(bin_data, level_colors)):
+    x = Inches(0.4 + i * 2.1)
+    y = Inches(3.5)
+    box = add_box(slide, x, y, Inches(1.9), Inches(1.3), lcolor,
+                  border_color=lcolor, border_width=Pt(2))
+    add_text(slide, x, y + Inches(0.05), Inches(1.9), Inches(0.35),
+             level, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_text(slide, x, y + Inches(0.35), Inches(1.9), Inches(0.5),
+             count, font_size=22, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_text(slide, x, y + Inches(0.9), Inches(1.9), Inches(0.3),
+             thresh, font_size=9, color=WHITE, alignment=PP_ALIGN.CENTER)
+
+# ── Row 3: Top Inc groups table ──
+add_text(slide, Inches(0.4), Inches(5.0), Inches(12), Inches(0.35),
+         "Inc Group Distribution (Top 10)", font_size=13, bold=True, color=DARK_BLUE)
+
+inc_table_data = [
+    ("IncFII", "34,036", "14,403", "43.1%"),
+    ("IncX1", "26,154", "14,060", "33.1%"),
+    ("IncN", "5,303", "1,912", "6.7%"),
+    ("ColRNAI", "1,927", "618", "2.4%"),
+    ("IncX3", "1,459", "323", "1.8%"),
+    ("IncFIB", "1,119", "279", "1.4%"),
+    ("IncI1", "947", "82", "1.2%"),
+    ("IncI2", "876", "229", "1.1%"),
+    ("IncHI1", "713", "115", "0.9%"),
+    ("IncAC2", "707", "262", "0.9%"),
+]
+
+# Table headers
+headers = ["Inc Type", "Sequences", "pLIN Codes", "% of Total"]
+header_xs = [Inches(0.5), Inches(2.8), Inches(5.3), Inches(7.8)]
+for hdr, hx in zip(headers, header_xs):
+    add_text(slide, hx, Inches(5.35), Inches(2.0), Inches(0.3),
+             hdr, font_size=10, bold=True, color=MED_BLUE)
+
+# Table rows (compact, 2 columns of 5 rows each)
+for i, (inc, seqs, plins, pct) in enumerate(inc_table_data):
+    col = i // 5
+    row = i % 5
+    x_offset = Inches(col * 6.0)
+    y_row = Inches(5.65 + row * 0.3)
+    vals = [inc, seqs, plins, pct]
+    for v, hx in zip(vals, header_xs):
+        add_text(slide, hx + x_offset, y_row, Inches(2.0), Inches(0.25),
+                 v, font_size=9, color=DARK_GRAY)
+
+# Footer note
+add_text(slide, Inches(0.4), Inches(7.0), Inches(12), Inches(0.35),
+         "78.4% singletons (25,988 unique) | Largest cluster: 3,035 sequences | "
+         "Mean plasmid size: 101 kb | Mean Inc confidence: 83.0%",
+         font_size=10, color=MED_GRAY)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
