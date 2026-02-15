@@ -23,7 +23,7 @@ os.makedirs(FIG_DIR, exist_ok=True)
 
 plt.rcParams.update({
     "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+    "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
     "font.size": 10,
     "axes.titlesize": 12,
     "axes.labelsize": 11,
@@ -452,14 +452,28 @@ print("Generating Figure 12: Inc Group Training & Performance ...")
 
 fig12, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-# Panel A: Training data distribution (horizontal bar chart)
-inc_groups = [
-    ("IncFII", 4629), ("IncN", 1064), ("IncX1", 701), ("IncF", 148),
-    ("IncI1", 72), ("IncFIB", 68), ("IncX3", 56), ("IncC", 42),
-    ("IncHI2", 36), ("IncR", 28), ("IncX4", 24), ("IncAC2", 22),
-    ("ColRNAI", 20), ("IncA", 18), ("IncFIC", 16), ("IncI", 14),
-    ("IncI2", 14), ("IncHI1", 12), ("ColE", 12), ("IncFIBK", 11),
-]
+# Panel A: Training data distribution — read dynamically from pLIN assignments
+import pandas as pd
+PLIN_FILE = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")
+try:
+    plin_df = pd.read_csv(PLIN_FILE, sep="\t")
+    inc_group_counts = plin_df["inc_type"].value_counts()
+    inc_groups = [(name, count) for name, count in inc_group_counts.items()]
+    total_plasmids = len(plin_df)
+    n_unique_plin = plin_df["pLIN"].nunique()
+    n_inc_groups = len(inc_groups)
+except Exception:
+    # Fallback to hardcoded values if file not found
+    inc_groups = [
+        ("IncFII", 4629), ("IncN", 1097), ("IncX1", 705), ("IncFIB", 97),
+        ("ColRNAI", 91), ("IncF", 75), ("IncX3", 56), ("IncHI2", 36),
+        ("IncI1", 27), ("IncI2", 25), ("IncX4", 24), ("IncR", 21),
+        ("ColE", 19), ("IncC", 16), ("IncHI1", 16), ("IncFIC", 14),
+        ("IncAC2", 14), ("IncA", 14), ("IncI", 11), ("IncFIBK", 11),
+    ]
+    total_plasmids = 6998
+    n_unique_plin = 2454
+    n_inc_groups = 20
 
 names = [g[0] for g in inc_groups][::-1]
 counts = [g[1] for g in inc_groups][::-1]
@@ -469,13 +483,13 @@ ax1.barh(range(len(names)), counts, color=colors_bar, edgecolor="white", linewid
 ax1.set_yticks(range(len(names)))
 ax1.set_yticklabels(names, fontsize=8)
 ax1.set_xlabel("Number of Training Sequences", fontsize=10)
-ax1.set_title("A. Training Dataset Distribution (20 Inc Groups)", fontsize=12,
+ax1.set_title(f"A. Training Dataset Distribution ({n_inc_groups} Inc Groups)", fontsize=12,
               fontweight="bold", color=DARK_BLUE)
 
 for i, (n, c) in enumerate(zip(names, counts)):
-    ax1.text(c + 20, i, str(c), va="center", fontsize=7, color="#333333")
+    ax1.text(c + max(counts) * 0.005, i, str(c), va="center", fontsize=7, color="#333333")
 
-ax1.text(3000, 3, f"Total: {sum(counts):,}\nsequences", fontsize=10,
+ax1.text(max(counts) * 0.65, 3, f"Total: {total_plasmids:,}\nsequences", fontsize=10,
          fontweight="bold", color=DARK_BLUE, ha="center",
          bbox=dict(boxstyle="round,pad=0.5", facecolor=LIGHT_BLUE, edgecolor=BLUE, alpha=0.8))
 
@@ -495,8 +509,8 @@ metrics = [
     ("Simpson's Diversity (D)", "0.979", "Strain-level discriminatory power", GREEN),
     ("XGBoost F1 Score", "0.903", "ML validation (nested CV)", ORANGE),
     ("Inc Concordance", "99.5%", "Composition vs known Inc groups", PURPLE),
-    ("Unique pLIN Codes", "2,232", "Strain-level (L6) resolution", RED),
-    ("Training Plasmids", "6,998", "Across 20 Inc groups", TEAL),
+    ("Unique pLIN Codes", f"{n_unique_plin:,}", "Strain-level (L6) resolution", RED),
+    ("Training Plasmids", f"{total_plasmids:,}", f"Across {n_inc_groups} Inc groups", TEAL),
 ]
 
 for i, (name, value, desc, color) in enumerate(metrics):

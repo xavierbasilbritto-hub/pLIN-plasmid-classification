@@ -103,9 +103,11 @@ def analyse_plin_amr(merged):
     print(f"\n2. AMR PREVALENCE BY INC TYPE")
     print(f"   {'Inc Type':<10s} {'Total':>6s} {'AMR+':>6s} {'%AMR':>7s} {'VIR+':>6s} {'%VIR':>7s} {'Mean AMR genes':>15s}")
     print(f"   {'-'*60}")
-    for inc in ["IncFII", "IncN", "IncX1"]:
+    for inc in sorted(merged["inc_type_x"].dropna().unique()):
         sub = merged[merged["inc_type_x"] == inc]
         n = len(sub)
+        if n == 0:
+            continue
         n_amr = (sub["n_amr_genes"] > 0).sum()
         n_vir = (sub["n_vir_genes"] > 0).sum()
         mean_amr = sub["n_amr_genes"].mean()
@@ -191,8 +193,10 @@ def analyse_plin_amr(merged):
 
     # ── Virulence gene distribution ──
     print(f"\n8. VIRULENCE GENE PREVALENCE BY INC TYPE")
-    for inc in ["IncFII", "IncN", "IncX1"]:
+    for inc in sorted(merged["inc_type_x"].dropna().unique()):
         sub = merged[(merged["inc_type_x"] == inc) & (merged["n_vir_genes"] > 0)]
+        if len(sub) == 0:
+            continue
         vir_genes_all = []
         for g in sub["vir_genes"]:
             if g != "none":

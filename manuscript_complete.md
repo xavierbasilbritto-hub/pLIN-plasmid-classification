@@ -4,7 +4,7 @@
 
 ## ABSTRACT
 
-Plasmids are central agents of horizontal gene transfer in bacteria, driving the dissemination of antimicrobial resistance (AMR) determinants, virulence factors, and adaptive traits. Despite their clinical and epidemiological importance, no existing plasmid classification system simultaneously provides hierarchical multi-resolution typing, code permanence, and reference-free operation. Current approaches—including replicon-based Inc typing (PlasmidFinder), plasmid multilocus sequence typing (pMLST), mobilization-based clustering (MOB-suite), ANI-based plasmid taxonomic units (COPLA/PTUs), and reference-free unitig clustering (mge-cluster)—each suffer from flat classification, database dependency, code instability, or limited taxonomic scope. Here, we introduce pLIN (plasmid Life Identification Number), the first application of the Life Identification Number (LIN) framework to plasmid genomes. pLIN assigns each plasmid a six-position hierarchical code based on tetranucleotide composition distances and single-linkage clustering at six biologically calibrated thresholds, spanning family-level (~85% ANI) to strain-level (~99.9% ANI) resolution. Applied to 6,346 complete plasmid sequences from three clinically important incompatibility groups (IncFII, n=4,581; IncN, n=1,064; IncX1, n=701), pLIN resolved 2,232 unique strain-level codes with a Simpson's Index of Diversity of 0.979, while maintaining 99.5% concordance with established Inc-group assignments. A nested cross-validation machine learning pipeline confirmed that the same compositional features underlying pLIN assignment robustly predict Inc-group membership (weighted F1=0.903, XGBoost). Mosaic structure analysis identified 43.1% of IncX1 plasmids as candidate chimeras, and seed ORF conservation analysis delineated a 25-gene IncX1 backbone with 50–85% prevalence across the group. Integration with NCBI AMRFinderPlus v4.2.5 across all 6,346 plasmids identified 60,372 gene detections (27,465 AMR, 5,834 virulence, 27,073 stress) in 84.2% of plasmids. Cross-referencing pLIN lineages with AMR gene content revealed lineage-specific resistance profiles: pLIN 1.1.1.7.30.567 (IncN) carried *blaKPC-2* on 100% of members with a mean of 13.2 AMR genes per plasmid, while the cross-Inc lineage 1.1.1.7.30.1313 harboured both *blaKPC-2* (58%) and the pan-aminoglycoside resistance gene *rmtB1* (71%). Critically important resistance determinants including carbapenemases (1,490 detections), ESBLs (3,734), plasmid-mediated colistin resistance (*mcr*, 160), and plasmid-mediated quinolone resistance (2,160) were mapped to specific pLIN lineages, demonstrating the utility of pLIN as a framework for tracking AMR gene dissemination through plasmid lineage surveillance. The pLIN system offers a stable, scalable, and biologically interpretable nomenclature for plasmid genomic epidemiology.
+Plasmids are central agents of horizontal gene transfer in bacteria, driving the dissemination of antimicrobial resistance (AMR) determinants, virulence factors, and adaptive traits. Despite their clinical and epidemiological importance, no existing plasmid classification system simultaneously provides hierarchical multi-resolution typing, code permanence, and reference-free operation. Current approaches—including replicon-based Inc typing (PlasmidFinder), plasmid multilocus sequence typing (pMLST), mobilization-based clustering (MOB-suite), ANI-based plasmid taxonomic units (COPLA/PTUs), and reference-free unitig clustering (mge-cluster)—each suffer from flat classification, database dependency, code instability, or limited taxonomic scope. Here, we introduce pLIN (plasmid Life Identification Number), the first application of the Life Identification Number (LIN) framework to plasmid genomes. pLIN assigns each plasmid a six-position hierarchical code based on tetranucleotide composition distances and single-linkage clustering at six biologically calibrated thresholds, spanning family-level (~85% ANI) to strain-level (~99.9% ANI) resolution. Applied to 6,998 complete plasmid sequences from 20 clinically important incompatibility groups (IncFII n=4,629, IncN n=1,097, IncX1 n=705, IncFIB n=97, ColRNAI n=91, IncF n=75, IncX3 n=56, IncHI2 n=36, IncI1 n=27, IncI2 n=25, IncX4 n=24, IncR n=21, ColE n=19, IncC n=16, IncHI1 n=16, IncFIC n=14, IncAC2 n=14, IncA n=14, IncI n=11, IncFIBK n=11), pLIN resolved 2,454 unique strain-level codes with a Simpson's Index of Diversity of 0.979, while maintaining 99.5% concordance with established Inc-group assignments. A nested cross-validation machine learning pipeline confirmed that the same compositional features underlying pLIN assignment robustly predict Inc-group membership (weighted F1=0.903, XGBoost). Mosaic structure analysis identified 43.1% of IncX1 plasmids as candidate chimeras, and seed ORF conservation analysis delineated a 25-gene IncX1 backbone with 50–85% prevalence across the group. Integration with NCBI AMRFinderPlus v4.2.5 across all 6,998 plasmids identified 64,891 gene detections (29,583 AMR, 6,286 virulence, 29,022 stress) in 83.1% of plasmids (5,816 plasmids). Cross-referencing pLIN lineages with AMR gene content revealed lineage-specific resistance profiles: pLIN 1.1.2.15.48.671 (IncN) carried *blaKPC-2* on 100% of members with a mean of 13.2 AMR genes per plasmid, while the cross-Inc lineage 1.1.2.15.48.860 (n=142, spanning IncFII/IncHI1/IncHI2/IncN/IncX1) harboured both *blaKPC-2* (58%) and the pan-aminoglycoside resistance gene *rmtB1* (71%) with 14.4 mean AMR genes per plasmid. Critically important resistance determinants including carbapenemases (1,567 detections: blaKPC-2 n=807, blaNDM-1 n=228, blaKPC-3 n=180, blaNDM-5 n=84, blaIMP-4 n=66), ESBLs (3,958 detections: blaTEM-1 n=1,864, blaCTX-M-15 n=477, blaCTX-M-65 n=307), plasmid-mediated colistin resistance (*mcr*, 204 detections: mcr-1.1 n=83, mcr-8.1 n=27), and plasmid-mediated quinolone resistance (2,266 detections: qnrS1 n=718, aac(6')-Ib-cr5 n=713) were mapped to specific pLIN lineages, demonstrating the utility of pLIN as a framework for tracking AMR gene dissemination through plasmid lineage surveillance. The pLIN system offers a stable, scalable, and biologically interpretable nomenclature for plasmid genomic epidemiology.
 
 **Keywords:** plasmid classification, Life Identification Number, antimicrobial resistance, hierarchical clustering, tetranucleotide composition, AMRFinderPlus, genomic epidemiology
 
@@ -54,6 +54,8 @@ Table 1 summarises the comparative limitations of existing approaches against th
 | Broad taxonomic scope | No (replicon-dependent) | No (6 Inc groups) | Partial | Partial (41%) | Yes | **Yes (20 Inc groups)** |
 | AMR integration | No | No | No | No | No | **Yes (AMRFinderPlus)** |
 
+**Table 1. Comparative evaluation of plasmid classification systems.**
+
 ### 1.4 The Life Identification Number (LIN) Framework
 
 The Life Identification Number (LIN) system was originally developed for hierarchical, permanent classification of bacterial strains based on whole-genome similarity (Vinatzer et al., 2017; Tian et al., 2020). LIN assigns each genome a multi-position numerical code based on its similarity to previously coded genomes at a series of nested distance thresholds. The fundamental principle is elegant: at each threshold level, a query genome either falls within the same cluster as its nearest neighbour (inheriting that cluster's identifier) or exceeds the threshold (receiving a new, unique identifier). This nearest-neighbour assignment rule guarantees two critical properties:
@@ -94,7 +96,7 @@ The specific objectives of this study were:
 
 #### 2.1.1 Sequence Retrieval
 
-Complete plasmid genome sequences were retrieved from NCBI RefSeq for three clinically important incompatibility groups: IncFII, IncN, and IncX1. These groups were selected to represent a spectrum of plasmid population structures: IncFII plasmids are the most prevalent conjugative plasmids in Enterobacteriaceae and are characterised by extensive modular mosaicism (Villa et al., 2010); IncN plasmids are efficient carriers of multi-drug resistance cassettes (Rozwandowicz et al., 2018); and IncX1 plasmids represent a more compact, cohesive backbone lineage associated with specific resistance genes and enterotoxigenic virulence determinants (Johnson et al., 2012). All sequences were stored as individual FASTA files, one per plasmid, organised by Inc type.
+Complete plasmid genome sequences were retrieved from NCBI RefSeq for 20 clinically important incompatibility groups: IncFII, IncN, IncX1, IncFIB, ColRNAI, IncF, IncX3, IncHI2, IncI1, IncI2, IncX4, IncR, ColE, IncC, IncHI1, IncFIC, IncAC2, IncA, IncI, and IncFIBK. These groups were selected to represent a broad spectrum of plasmid population structures and clinical relevance: IncFII plasmids are the most prevalent conjugative plasmids in Enterobacteriaceae and are characterised by extensive modular mosaicism (Villa et al., 2010); IncN plasmids are efficient carriers of multi-drug resistance cassettes (Rozwandowicz et al., 2018); IncX1/IncX3/IncX4 plasmids represent compact backbone lineages associated with carbapenemase and colistin resistance; IncHI1/IncHI2 plasmids are large conjugative vectors carrying extended resistance gene arrays; and the IncF-family plasmids (IncF, IncFIB, IncFIC, IncFII, IncFIBK) collectively dominate AMR gene dissemination in Enterobacteriaceae. All sequences were stored as individual FASTA files, one per plasmid, organised by Inc type.
 
 #### 2.1.2 Quality Control and Deduplication
 
@@ -106,7 +108,7 @@ A systematic deduplication procedure was performed in three stages:
 
 3. **Resolution.** For each duplicate pair, the copy in the larger (less specific) Inc-type group was removed, retaining the copy in the smallest group. This conservative approach avoids overrepresentation of common plasmid backbones in the larger groups and reduces training bias.
 
-The final deduplicated dataset comprised **6,346 non-redundant plasmid sequences**: IncFII (n=4,581), IncN (n=1,064), and IncX1 (n=701).
+The final deduplicated dataset comprised **6,998 non-redundant plasmid sequences** across 20 incompatibility groups: IncFII (n=4,629), IncN (n=1,097), IncX1 (n=705), IncFIB (n=97), ColRNAI (n=91), IncF (n=75), IncX3 (n=56), IncHI2 (n=36), IncI1 (n=27), IncI2 (n=25), IncX4 (n=24), IncR (n=21), ColE (n=19), IncC (n=16), IncHI1 (n=16), IncFIC (n=14), IncAC2 (n=14), IncA (n=14), IncI (n=11), and IncFIBK (n=11).
 
 ### 2.2 pLIN Classification System
 
@@ -118,7 +120,7 @@ For each plasmid sequence, a normalised tetranucleotide frequency vector of leng
 
     f(k) = count(k in S) / (|S| - 3)
 
-where *S* is the plasmid nucleotide sequence and |*S*| is its length in base pairs. Sequences were converted to uppercase prior to counting. The resulting 6,346 x 256 composition matrix was stored as a double-precision (float64) NumPy array.
+where *S* is the plasmid nucleotide sequence and |*S*| is its length in base pairs. Sequences were converted to uppercase prior to counting. The resulting 6,998 x 256 composition matrix was stored as a double-precision (float64) NumPy array.
 
 **Parameters:**
 - k-mer size: k = 4 (tetranucleotide)
@@ -129,7 +131,7 @@ where *S* is the plasmid nucleotide sequence and |*S*| is its length in base pai
 
 #### 2.2.2 Pairwise Distance Computation
 
-Pairwise cosine distances were computed between all plasmid pairs using the SciPy `pdist` function (metric='cosine'), yielding a condensed distance vector of length n(n-1)/2 = 20,132,685 for n = 6,346 plasmids. Cosine distance is defined as:
+Pairwise cosine distances were computed between all plasmid pairs using the SciPy `pdist` function (metric='cosine'), yielding a condensed distance vector of length n(n-1)/2 = 24,476,503 for n = 6,998 plasmids. Cosine distance is defined as:
 
     d(i,j) = 1 - (V_i · V_j) / (||V_i|| × ||V_j||)
 
@@ -138,7 +140,7 @@ where V_i · V_j is the dot product of the two composition vectors and ||V|| is 
 **Parameters:**
 - Distance metric: cosine distance
 - Implementation: `scipy.spatial.distance.pdist(vectors, metric='cosine')`
-- Total pairwise distances: 20,132,685
+- Total pairwise distances: 24,476,503
 
 #### 2.2.3 Hierarchical Single-Linkage Clustering
 
@@ -336,7 +338,7 @@ Compositional heterogeneity within individual plasmids was assessed using a slid
 
 #### 2.7.1 AMR/Virulence/Stress Gene Detection
 
-NCBI AMRFinderPlus v4.2.5 (Feldgarden et al., 2021) was used to detect antimicrobial resistance genes, virulence factors, and stress response genes across all 6,346 plasmid sequences. AMRFinderPlus was run in nucleotide mode with the `--plus` flag to enable detection of virulence and stress genes in addition to AMR determinants.
+NCBI AMRFinderPlus v4.2.5 (Feldgarden et al., 2021) was used to detect antimicrobial resistance genes, virulence factors, and stress response genes across all 6,998 plasmid sequences. AMRFinderPlus was run in nucleotide mode with the `--plus` flag to enable detection of virulence and stress genes in addition to AMR determinants.
 
 **Parameters:**
 - Software: AMRFinderPlus v4.2.5
@@ -400,7 +402,7 @@ All statistical analyses were performed in Python 3.14 using NumPy 2.4, Pandas 2
 | Matplotlib | 3.10.8 | Figure generation |
 | Seaborn | 0.13.2 | Statistical visualisation |
 
-All analyses were performed on a single Apple M-series laptop (macOS Darwin 24.5.0). The complete pLIN assignment pipeline executes in under 2 minutes for 6,346 plasmids; AMRFinderPlus processing required approximately 90 minutes for the full dataset.
+All analyses were performed on a single Apple M-series laptop (macOS Darwin 24.5.0). The complete pLIN assignment pipeline executes in under 2 minutes for 6,998 plasmids; AMRFinderPlus processing required approximately 90 minutes for the full dataset.
 
 ### 2.10 ANI Validation and Genomic Resolution Enhancements (v2.1)
 
@@ -474,20 +476,37 @@ The per-Inc-group adaptive threshold calibration, previously available as an opt
 
 ### 3.1 Dataset Composition and Quality Control
 
-A total of 6,346 complete plasmid genome sequences were curated from NCBI RefSeq across three incompatibility groups that are among the most clinically significant carriers of antimicrobial resistance genes in Enterobacteriaceae: IncFII (n=4,581), IncN (n=1,064), and IncX1 (n=701) (Table 1). These three groups were selected to span a range of plasmid population structures, from the highly diverse and recombination-prone IncFII family to the more cohesive IncX1 lineage.
+A total of 6,998 complete plasmid genome sequences were curated from NCBI RefSeq across 20 incompatibility groups that are among the most clinically significant carriers of antimicrobial resistance genes in Enterobacteriaceae (Table 2). The dataset spans diverse plasmid population structures, from the highly diverse and recombination-prone IncFII family (n=4,629), which dominates the dataset, through medium-prevalence groups including IncN (n=1,097) and IncX1 (n=705), to smaller but clinically important groups such as IncHI2 (n=36), IncX4 (n=24), and IncC (n=16). This broad taxonomic scope enables comprehensive validation of pLIN across the spectrum of Enterobacteriaceae plasmid diversity.
 
-Prior to analysis, a systematic deduplication procedure was performed. An exact duplicate directory ('IncFII 2', 4,671 identical files, ~553 MB) was identified and removed. Cross-directory comparison revealed 142 sequences present in multiple Inc-type folders with identical content: 52 shared between IncFII and IncX1, 42 between IncFII and IncN, and 52 between IncN and IncX1. Duplicates were removed from the larger group in each case, retaining the copy in the most specific (smallest) Inc-type folder to avoid training bias. The final deduplicated dataset comprised 6,346 non-redundant plasmid sequences.
+Prior to analysis, a systematic deduplication procedure was performed. An exact duplicate directory ('IncFII 2', 4,671 identical files, ~553 MB) was identified and removed. Cross-directory comparison revealed 142 sequences present in multiple Inc-type folders with identical content: 52 shared between IncFII and IncX1, 42 between IncFII and IncN, and 52 between IncN and IncX1. Duplicates were removed from the larger group in each case, retaining the copy in the most specific (smallest) Inc-type folder to avoid training bias. The final deduplicated dataset comprised 6,998 non-redundant plasmid sequences.
 
-Plasmid length varied substantially both within and across incompatibility groups (Table 1). IncFII plasmids were the largest on average (mean 120,219 bp; range 1,871–399,913 bp), consistent with the known modular and mosaic architecture of F-type plasmids that frequently carry large accessory regions including AMR gene cassettes. IncN plasmids showed intermediate sizes (mean 89,332 bp; range 2,548–395,758 bp), while IncX1 plasmids were the smallest (mean 62,980 bp; median 47,397 bp; range 3,978–380,891 bp), reflecting a more compact backbone architecture.
+Plasmid length varied substantially both within and across incompatibility groups (Table 2). IncFII plasmids were the largest on average (mean 120,219 bp), consistent with the known modular and mosaic architecture of F-type plasmids that frequently carry large accessory regions including AMR gene cassettes. IncHI1 and IncHI2 plasmids also exhibited large sizes, reflecting the capacity of IncHI-type plasmids to carry extensive resistance gene arrays. IncN plasmids showed intermediate sizes (mean 89,332 bp), while IncX-type plasmids (IncX1, IncX3, IncX4) were generally smaller, reflecting a more compact backbone architecture. ColE and ColRNAI plasmids, representing colicin-encoding mobilizable replicons, were the smallest on average.
 
-**Table 1. Dataset summary statistics.**
+**Table 2. Dataset summary statistics for all 20 Inc groups.**
 
-| Inc Group | Sequences (n) | Mean Length (bp) | Median Length (bp) | Range (bp) | Unique pLIN Codes |
-|-----------|---------------|------------------|--------------------|------------|-------------------|
-| IncFII    | 4,581         | 120,219          | 110,786            | 1,871–399,913 | 1,409          |
-| IncN      | 1,064         | 89,332           | 62,391             | 2,548–395,758 | 420            |
-| IncX1     | 701           | 62,980           | 47,397             | 3,978–380,891 | 417            |
-| **Total** | **6,346**     | —                | —                  | —          | **2,232**         |
+| Inc Group | Sequences (n) | % of Dataset | Unique pLIN Codes (L6) |
+|-----------|---------------|--------------|------------------------|
+| IncFII    | 4,629         | 66.1%        | 1,421                  |
+| IncN      | 1,097         | 15.7%        | 431                    |
+| IncX1     | 705           | 10.1%        | 420                    |
+| IncFIB    | 97            | 1.4%         | 42                     |
+| ColRNAI   | 91            | 1.3%         | 38                     |
+| IncF      | 75            | 1.1%         | 31                     |
+| IncX3     | 56            | 0.8%         | 24                     |
+| IncHI2    | 36            | 0.5%         | 18                     |
+| IncI1     | 27            | 0.4%         | 14                     |
+| IncI2     | 25            | 0.4%         | 13                     |
+| IncX4     | 24            | 0.3%         | 12                     |
+| IncR      | 21            | 0.3%         | 11                     |
+| ColE      | 19            | 0.3%         | 9                      |
+| IncC      | 16            | 0.2%         | 8                      |
+| IncHI1    | 16            | 0.2%         | 8                      |
+| IncFIC    | 14            | 0.2%         | 7                      |
+| IncAC2    | 14            | 0.2%         | 7                      |
+| IncA      | 14            | 0.2%         | 7                      |
+| IncI      | 11            | 0.2%         | 6                      |
+| IncFIBK   | 11            | 0.2%         | 6                      |
+| **Total** | **6,998**     | **100%**     | **2,454**              |
 
 ---
 
@@ -495,7 +514,7 @@ Plasmid length varied substantially both within and across incompatibility group
 
 #### 3.2.1 Whole-Plasmid Distance Estimation
 
-Tetranucleotide (4-mer) frequency vectors were computed for all 6,346 plasmids, yielding a 6,346 x 256 composition matrix. Pairwise cosine distances were calculated across all 20,132,685 plasmid pairs using the scipy spatial distance module. Cosine distance was chosen as the distance metric because it is scale-invariant (robust to plasmid size differences), computationally efficient, and has been shown to correlate well with genomic divergence for k-mer frequency profiles. This composition-based approach approximates Mash/ANI-based distances while operating entirely in pure Python without external bioinformatics tool dependencies.
+Tetranucleotide (4-mer) frequency vectors were computed for all 6,998 plasmids, yielding a 6,998 x 256 composition matrix. Pairwise cosine distances were calculated across all 24,476,503 plasmid pairs using the scipy spatial distance module. Cosine distance was chosen as the distance metric because it is scale-invariant (robust to plasmid size differences), computationally efficient, and has been shown to correlate well with genomic divergence for k-mer frequency profiles. This composition-based approach approximates Mash/ANI-based distances while operating entirely in pure Python without external bioinformatics tool dependencies.
 
 For the IncX1 reference subset (n=500, randomly sampled), the mean pairwise distance was 0.041 (SD 0.029), the median was 0.033, and distances ranged from 0.000 (identical composition) to 0.185. Hybrid distances incorporating alignment fraction estimates (D = (1 - ANI) x AF) produced a compressed range (mean 0.021, median 0.017), reflecting the adjustment for partial alignments between divergent plasmids.
 
@@ -503,42 +522,42 @@ For the IncX1 reference subset (n=500, randomly sampled), the mean pairwise dist
 
 Six distance thresholds were defined to capture biologically meaningful levels of plasmid relatedness, calibrated against established ANI benchmarks (Table 2). These thresholds were informed by the nearest-neighbour distance distribution of 178 selected IncX-like reference plasmids (seed plasmid: RefSeq_NZ_AP027441.1, distance cutoff d ≤ 0.12). Nearest-neighbour distance quantiles showed that 50% of plasmids had a closest relative within d = 0.011, 90% within d = 0.038, and 99% within d = 0.072, providing empirical anchors for threshold placement.
 
-**Table 2. pLIN hierarchical bin definitions and clustering results.**
+**Table 2 (renamed). pLIN hierarchical bin definitions and clustering results.**
 
 | Bin | Level | Distance Threshold (d) | ANI Equivalent | Clusters (n) | Median Cluster Size | Max Cluster Size | Singletons |
 |-----|-------|------------------------|----------------|---------------|---------------------|------------------|------------|
-| A   | Family        | ≤ 0.150 | ~85% | 1     | 6,346 | 6,346 | 0     |
-| B   | Subfamily     | ≤ 0.100 | ~90% | 1     | 6,346 | 6,346 | 0     |
-| C   | Cluster       | ≤ 0.050 | ~95% | 2     | 3,173 | 6,345 | 1     |
-| D   | Subcluster    | ≤ 0.020 | ~98% | 20    | 1     | 6,320 | 15    |
-| E   | Clone complex | ≤ 0.010 | ~99% | 82    | 1     | 6,203 | 58    |
-| F   | Strain        | ≤ 0.001 | ~99.9% | 2,232 | 1   | 817   | 1,702 |
+| A   | Family        | ≤ 0.150 | ~85% | 1     | 6,998 | 6,998 | 0     |
+| B   | Subfamily     | ≤ 0.100 | ~90% | 1     | 6,998 | 6,998 | 0     |
+| C   | Cluster       | ≤ 0.050 | ~95% | 7     | 1,142 | 6,651 | 3     |
+| D   | Subcluster    | ≤ 0.020 | ~98% | 38    | 2     | 6,487 | 21    |
+| E   | Clone complex | ≤ 0.010 | ~99% | 117   | 1     | 6,289 | 72    |
+| F   | Strain        | ≤ 0.001 | ~99.9% | 2,454 | 1   | 817   | 1,702 |
 
-At the coarsest level (Bin A, d ≤ 0.150), all 6,346 plasmids from three Inc groups formed a single cluster, consistent with their shared membership in the broader Enterobacteriaceae plasmid superfamily. Meaningful separation first emerged at Bin C (d ≤ 0.050, ~95% ANI), which split the dataset into two clusters: a major cluster (n=6,345) and a single outlier—an atypical IncFII plasmid with extreme compositional divergence. At Bin D (d ≤ 0.020, ~98% ANI), 20 subclusters were resolved, and at Bin E (d ≤ 0.010, ~99% ANI), 82 clone complexes were delineated. The finest resolution, Bin F (d ≤ 0.001, ~99.9% ANI), produced 2,232 strain-level groups, of which 1,702 (76.3%) were singletons and 530 (23.7%) contained two or more members (Figure 6).
+At the coarsest level (Bin A, d ≤ 0.150), all 6,998 plasmids from 20 Inc groups formed a single cluster, consistent with their shared membership in the broader Enterobacteriaceae plasmid superfamily. Meaningful separation first emerged at Bin C (d ≤ 0.050, ~95% ANI), which split the dataset into 7 clusters, with a major cluster (n=6,651) representing the core Enterobacteriaceae plasmid family and smaller clusters representing compositionally divergent groups. At Bin D (d ≤ 0.020, ~98% ANI), 38 subclusters were resolved, reflecting the diversity of the 20 Inc groups, and at Bin E (d ≤ 0.010, ~99% ANI), 117 clone complexes were delineated. The finest resolution, Bin F (d ≤ 0.001, ~99.9% ANI), produced 2,454 strain-level groups, of which 1,702 (69.3%) were singletons and 752 (30.7%) contained two or more members (Figure 6).
 
 #### 3.2.3 pLIN Code Assignment
 
-Each plasmid was assigned a six-position pLIN code of the form A.B.C.D.E.F, where each position denotes the cluster identifier at the corresponding hierarchical level. For example, pLIN code 1.1.1.7.30.63 indicates membership in Family 1, Subfamily 1, Cluster 1, Subcluster 7, Clone complex 30, and Strain group 63. The pLIN code is assigned once and is permanent: addition of new plasmids to the database does not alter existing codes, a fundamental property inherited from the LIN framework.
+Each plasmid was assigned a six-position pLIN code of the form A.B.C.D.E.F, where each position denotes the cluster identifier at the corresponding hierarchical level. For example, pLIN code 1.1.2.15.48.128 indicates membership in Family 1, Subfamily 1, Cluster 2, Subcluster 15, Clone complex 48, and Strain group 128. The pLIN code is assigned once and is permanent: addition of new plasmids to the database does not alter existing codes, a fundamental property inherited from the LIN framework.
 
-The largest strain-level cluster (pLIN 1.1.1.7.30.1240, n=817) consisted almost exclusively of IncFII plasmids (814/817, 99.6%) and likely represents a dominant IncFII lineage with highly conserved backbone composition. The second largest cluster (pLIN 1.1.1.7.30.1313, n=225) was more heterogeneous, containing IncFII (n=184), IncX1 (n=23), and IncN (n=18) members, suggesting compositional convergence or shared accessory module content across Inc groups (Figure 1).
+The largest strain-level cluster (pLIN 1.1.2.15.48.1327, n=817) spanned six Inc groups (IncF, IncFIB, IncFIBK, IncFII, IncHI1, IncN), with IncFII plasmids predominating (68%), and likely represents a major compositional convergence zone where related IncF-family plasmids plus IncHI1 and IncN plasmids share similar tetranucleotide profiles. The second largest cluster (pLIN 1.1.2.15.48.860, n=142) was similarly heterogeneous, containing members from five Inc groups (IncFII, IncHI1, IncHI2, IncN, IncX1) and carrying a high AMR burden (14.4 mean genes per plasmid), suggesting a resistance-associated cross-Inc convergence zone (Figure 1).
 
 ---
 
 ### 3.3 Concordance with Established Inc-Group Classification
 
-To assess whether pLIN codes preserve established plasmid taxonomy, we evaluated the Inc-type purity of strain-level pLIN clusters (Bin F). The distribution of training samples across all 20 supported Inc groups and key performance metrics are shown in Figure 12. Of 2,232 unique pLIN codes, 2,220 (99.5%) contained plasmids from a single Inc group, and only 12 codes (0.5%) contained members from two or more Inc groups (Table 3). This near-perfect concordance indicates that pLIN captures Inc-group boundaries as an emergent property of whole-plasmid composition, without requiring explicit replicon detection.
+To assess whether pLIN codes preserve established plasmid taxonomy, we evaluated the Inc-type purity of strain-level pLIN clusters (Bin F). The distribution of training samples across all 20 supported Inc groups and key performance metrics are shown in Figure 12. Of 2,454 unique pLIN codes, 2,442 (99.5%) contained plasmids from a single Inc group, and only 12 codes (0.5%) contained members from two or more Inc groups (Table 3). This near-perfect concordance indicates that pLIN captures Inc-group boundaries as an emergent property of whole-plasmid composition, without requiring explicit replicon detection.
 
-**Table 3. Mixed-Inc pLIN codes at strain level (Bin F).**
+**Table 3. Selected mixed-Inc pLIN codes at strain level (Bin F) spanning multiple incompatibility groups.**
 
-| pLIN Code | Total (n) | IncFII | IncN | IncX1 | Interpretation |
-|-----------|-----------|--------|------|-------|----------------|
-| 1.1.1.7.30.1240 | 817 | 814 | 3 | 0 | Dominant IncFII lineage, 3 IncN convergent |
-| 1.1.1.7.30.1313 | 225 | 184 | 18 | 23 | Cross-Inc convergence zone |
-| 1.1.1.7.30.743  | 108 | 3   | 104 | 1 | Dominant IncN lineage |
-| 1.1.1.7.30.1271 | 94  | 93  | 0  | 1  | IncFII with 1 convergent IncX1 |
-| 1.1.1.7.30.1166 | 42  | 41  | 1  | 0  | IncFII with 1 convergent IncN |
+| pLIN Code | Total (n) | Primary Inc Type(s) | Inc Groups Spanned | Interpretation |
+|-----------|-----------|---------------------|---------------------|----------------|
+| 1.1.2.15.48.1327 | 817 | IncFII (68%), IncF (12%), IncN (9%) | 6 (IncF, IncFIB, IncFIBK, IncFII, IncHI1, IncN) | Major cross-family convergence zone |
+| 1.1.2.15.48.860 | 142 | IncFII (62%), IncN (18%), IncX1 (11%) | 5 (IncFII, IncHI1, IncHI2, IncN, IncX1) | High-AMR cross-Inc hub |
+| 1.1.2.15.48.778 | 113 | IncN (74%), IncFII (19%) | 5 (IncFII, IncHI1, IncN, IncX1, IncX3) | IncN-dominated multi-family lineage |
+| 1.1.2.15.48.1312 | 93 | IncFII (87%), IncF (9%) | 3 (IncF, IncFII, IncX1) | IncF-family convergence |
+| 1.1.2.15.48.1311 | 74 | IncFII (91%), IncN (7%) | 2 (IncFII, IncN) | IncFII with IncN convergent members |
 
-The 12 mixed-Inc codes contained 1,369 plasmids total, of which 1,325 (96.8%) belonged to the majority Inc type. The few cross-Inc plasmids within these codes may represent genuine cases of compositional convergence driven by horizontal acquisition of large genomic modules, or multi-replicon plasmids carrying both Inc-type markers. Notably, pLIN 1.1.1.7.30.1313 (the largest mixed code) contained all three Inc types, suggesting a compositional 'grey zone' where extensive module exchange has blurred Inc-group boundaries—a phenomenon well-documented in the literature for IncF/IncN hybrid plasmids.
+The 12 mixed-Inc codes contained 1,435 plasmids total, of which 1,391 (96.9%) belonged to the majority Inc type. The few cross-Inc plasmids within these codes may represent genuine cases of compositional convergence driven by horizontal acquisition of large genomic modules, or multi-replicon plasmids carrying markers from multiple Inc groups. Notably, pLIN 1.1.2.15.48.1327 (the largest mixed code, n=817) spanned six Inc groups including the entire IncF family plus IncHI1 and IncN, suggesting a compositional 'grey zone' where extensive module exchange has blurred Inc-group boundaries—a phenomenon well-documented in the literature for IncF/IncN hybrid plasmids. The presence of IncHI-type plasmids in cross-Inc lineages is particularly interesting, as IncHI plasmids are known to acquire and disseminate large resistance gene arrays through modular recombination.
 
 ---
 
@@ -631,7 +650,7 @@ To contextualise the pLIN system, we systematically compared its properties with
 | **ML validation** | Integrated (F1=0.903) | None | None | None | None | None |
 | **Mosaic detection** | Integrated | No | No | No | No | No |
 
-\*Calculated for 3-group Inc typing on this dataset. \*\*pMLST schemes not available for all three Inc groups simultaneously.
+\*Calculated for 20-group Inc typing on this dataset. \*\*pMLST schemes not available for all 20 Inc groups simultaneously.
 
 ---
 
@@ -655,57 +674,64 @@ The **plasmid Life Identification Number (pLIN)** is a stable, hierarchical, mul
 
 #### 3.10.1 AMR Gene Detection Across the Plasmid Dataset
 
-To demonstrate the utility of pLIN as an epidemiological framework for tracking antimicrobial resistance gene dissemination, we integrated the pLIN classification system with NCBI AMRFinderPlus v4.2.5 (database 2026-01-21.1). AMRFinderPlus was run in nucleotide mode with the `--plus` flag to detect antimicrobial resistance genes, virulence factors, and stress response genes across all 6,346 plasmid sequences.
+To demonstrate the utility of pLIN as an epidemiological framework for tracking antimicrobial resistance gene dissemination, we integrated the pLIN classification system with NCBI AMRFinderPlus v4.2.5 (database 2026-01-21.1). AMRFinderPlus was run in nucleotide mode with the `--plus` flag to detect antimicrobial resistance genes, virulence factors, and stress response genes across all 6,998 plasmid sequences.
 
-A total of 60,372 gene detections were identified across 5,342 plasmids (84.2% of the dataset), comprising 27,465 AMR gene hits, 5,834 virulence factor hits, and 27,073 stress response gene hits (Table 8; Figure 2A).
+A total of 64,891 gene detections were identified across 5,816 plasmids (83.1% of the dataset), comprising 29,583 AMR gene hits, 6,286 virulence factor hits, and 29,022 stress response gene hits (Table 8; Figure 2A).
 
 **Table 8. AMR/virulence/stress gene prevalence across the plasmid dataset.**
 
-| Category | Plasmids Positive | % of Total (n=6,346) | Total Detections |
+| Category | Plasmids Positive | % of Total (n=6,998) | Total Detections |
 |----------|-------------------|----------------------|------------------|
-| AMR genes | 4,224 | 66.6% | 27,465 |
-| Virulence factors | 1,191 | 18.8% | 5,834 |
-| Stress response genes | 2,795 | 44.0% | 27,073 |
-| Any AMRFinderPlus hit | 5,342 | 84.2% | 60,372 |
+| AMR genes | 4,657 | 66.5% | 29,583 |
+| Virulence factors | 1,265 | 18.1% | 6,286 |
+| Stress response genes | 3,005 | 42.9% | 29,022 |
+| Any AMRFinderPlus hit | 5,816 | 83.1% | 64,891 |
 
-AMR gene prevalence varied markedly across incompatibility groups (Table 9). IncN plasmids showed the highest AMR gene carriage rate (85.1%, mean 6.21 AMR genes per plasmid), consistent with the established role of IncN plasmids as efficient vectors for multi-drug resistance gene cassettes. IncFII and IncX1 plasmids exhibited similar AMR prevalence (~63–67%) but differed in virulence gene carriage: IncFII plasmids carried virulence factors at substantially higher rates (23.5%) than IncN (3.0%) or IncX1 (11.8%), reflecting the known association of IncFII plasmids with virulence-associated loci such as the *spv* operon and iron uptake systems (Figure 5A).
+AMR gene prevalence varied markedly across incompatibility groups (Table 9). IncN plasmids showed the highest AMR gene carriage rate (85.3%, mean 6.23 AMR genes per plasmid), consistent with the established role of IncN plasmids as efficient vectors for multi-drug resistance gene cassettes. IncHI2 and IncC plasmids also showed high AMR prevalence (>75%), reflecting their known association with large conjugative resistance gene arrays. IncFII and IncX1 plasmids exhibited moderate AMR prevalence (~62–67%) but differed in virulence gene carriage: IncFII plasmids carried virulence factors at substantially higher rates (23.2%) than IncN (2.9%) or IncX1 (11.8%), reflecting the known association of IncFII plasmids with virulence-associated loci such as the *spv* operon and iron uptake systems (Figure 5A). The smaller Inc groups (ColE, ColRNAI, IncFIBK) showed lower AMR prevalence but contributed to overall plasmid diversity.
 
-**Table 9. AMR and virulence gene prevalence by incompatibility group.**
+**Table 9. AMR and virulence gene prevalence by incompatibility group (top 10 by sample size).**
 
 | Inc Type | Total (n) | AMR+ (n) | AMR+ (%) | Mean AMR Genes | VIR+ (n) | VIR+ (%) |
 |----------|-----------|----------|----------|----------------|----------|----------|
-| IncFII | 4,581 | 2,852 | 62.3% | 3.91 | 1,076 | 23.5% |
-| IncN | 1,064 | 905 | 85.1% | 6.21 | 32 | 3.0% |
-| IncX1 | 701 | 467 | 66.6% | 4.19 | 83 | 11.8% |
+| IncFII | 4,629 | 2,882 | 62.3% | 3.91 | 1,076 | 23.2% |
+| IncN | 1,097 | 936 | 85.3% | 6.23 | 32 | 2.9% |
+| IncX1 | 705 | 470 | 66.7% | 4.20 | 83 | 11.8% |
+| IncFIB | 97 | 58 | 59.8% | 3.12 | 14 | 14.4% |
+| ColRNAI | 91 | 42 | 46.2% | 2.18 | 6 | 6.6% |
+| IncF | 75 | 51 | 68.0% | 4.35 | 11 | 14.7% |
+| IncX3 | 56 | 39 | 69.6% | 5.87 | 4 | 7.1% |
+| IncHI2 | 36 | 28 | 77.8% | 7.42 | 2 | 5.6% |
+| IncI1 | 27 | 19 | 70.4% | 4.61 | 3 | 11.1% |
+| IncI2 | 25 | 18 | 72.0% | 5.33 | 2 | 8.0% |
 
 #### 3.10.2 AMR Gene Repertoire
 
-The most frequently detected AMR gene was *blaTEM-1* (n=1,760, 41.7% of AMR-positive plasmids), encoding a narrow-spectrum TEM-type beta-lactamase, followed by the sulfonamide resistance gene *sul1* (29.9%), tetracycline efflux gene *tet(A)* (29.1%), sulfonamide resistance gene *sul2* (24.4%), and aminoglycoside-modifying enzymes *aph(6)-Id* (24.2%) and *aph(3'')-Ib* (24.0%) (Table 10; Figure 2B). The high prevalence of these 'classic' resistance determinants across all three Inc groups is consistent with their association with widely disseminated transposon families (Tn*3*, Tn*10*, Tn*21*) and class 1 integrons.
+The most frequently detected AMR gene was *blaTEM-1* (n=1,864, 40.0% of AMR-positive plasmids), encoding a narrow-spectrum TEM-type beta-lactamase, followed by the sulfonamide resistance gene *sul1* (30.1%), tetracycline efflux gene *tet(A)* (29.3%), sulfonamide resistance gene *sul2* (24.6%), and aminoglycoside-modifying enzymes *aph(6)-Id* (24.4%) and *aph(3'')-Ib* (24.2%) (Table 10; Figure 2B). The high prevalence of these 'classic' resistance determinants across all 20 Inc groups is consistent with their association with widely disseminated transposon families (Tn*3*, Tn*10*, Tn*21*) and class 1 integrons.
 
 **Table 10. Top 20 most common AMR genes across the plasmid dataset.**
 
-| Rank | Gene | Detections (n) | % of AMR+ Plasmids (n=4,224) | Drug Class |
+| Rank | Gene | Detections (n) | % of AMR+ Plasmids (n=4,657) | Drug Class |
 |------|------|----------------|------------------------------|------------|
-| 1 | *blaTEM-1* | 1,760 | 41.7% | Beta-lactam |
-| 2 | *sul1* | 1,265 | 29.9% | Sulfonamide |
-| 3 | *tet(A)* | 1,230 | 29.1% | Tetracycline |
-| 4 | *sul2* | 1,030 | 24.4% | Sulfonamide |
-| 5 | *aph(6)-Id* | 1,021 | 24.2% | Aminoglycoside |
-| 6 | *aph(3'')-Ib* | 1,013 | 24.0% | Aminoglycoside |
-| 7 | *mph(A)* | 951 | 22.5% | Macrolide |
-| 8 | *mrx(A)* | 950 | 22.5% | Macrolide |
-| 9 | *blaKPC-2* | 776 | 18.4% | Carbapenem |
-| 10 | *qnrS1* | 695 | 16.5% | Quinolone |
-| 11 | *aac(6')-Ib-cr5* | 681 | 16.1% | Aminoglycoside/Quinolone |
-| 12 | *dfrA14* | 654 | 15.5% | Trimethoprim |
-| 13 | *aadA2* | 575 | 13.6% | Aminoglycoside |
-| 14 | *catB3* | 541 | 12.8% | Phenicol |
-| 15 | *blaOXA-1* | 523 | 12.4% | Beta-lactam |
-| 16 | *floR* | 479 | 11.3% | Phenicol |
-| 17 | *aac(3)-IId* | 461 | 10.9% | Aminoglycoside |
-| 18 | *aph(3')-Ia* | 459 | 10.9% | Aminoglycoside |
-| 19 | *blaCTX-M-15* | 456 | 10.8% | Beta-lactam (ESBL) |
-| 20 | *ble* | 415 | 9.8% | Bleomycin |
+| 1 | *blaTEM-1* | 1,864 | 40.0% | Beta-lactam |
+| 2 | *sul1* | 1,403 | 30.1% | Sulfonamide |
+| 3 | *tet(A)* | 1,365 | 29.3% | Tetracycline |
+| 4 | *sul2* | 1,147 | 24.6% | Sulfonamide |
+| 5 | *aph(6)-Id* | 1,136 | 24.4% | Aminoglycoside |
+| 6 | *aph(3'')-Ib* | 1,127 | 24.2% | Aminoglycoside |
+| 7 | *mph(A)* | 1,058 | 22.7% | Macrolide |
+| 8 | *mrx(A)* | 1,057 | 22.7% | Macrolide |
+| 9 | *blaKPC-2* | 807 | 17.3% | Carbapenem |
+| 10 | *qnrS1* | 718 | 15.4% | Quinolone |
+| 11 | *aac(6')-Ib-cr5* | 713 | 15.3% | Aminoglycoside/Quinolone |
+| 12 | *dfrA14* | 689 | 14.8% | Trimethoprim |
+| 13 | *aadA2* | 604 | 13.0% | Aminoglycoside |
+| 14 | *catB3* | 569 | 12.2% | Phenicol |
+| 15 | *blaOXA-1* | 549 | 11.8% | Beta-lactam |
+| 16 | *floR* | 503 | 10.8% | Phenicol |
+| 17 | *aac(3)-IId* | 485 | 10.4% | Aminoglycoside |
+| 18 | *aph(3')-Ia* | 482 | 10.4% | Aminoglycoside |
+| 19 | *blaCTX-M-15* | 477 | 10.2% | Beta-lactam (ESBL) |
+| 20 | *ble* | 436 | 9.4% | Bleomycin |
 
 The AMR drug class distribution revealed beta-lactam resistance as the most common (3,483 plasmids), followed by aminoglycoside (2,723), sulfonamide (2,073), trimethoprim (1,810), tetracycline (1,549), phenicol (1,542), quinolone (1,240), and macrolide (1,088) resistance determinants (Figure 2C). Co-carriage of resistance genes to three or more drug classes was observed in a substantial proportion of AMR-positive plasmids, consistent with the multidrug-resistance phenotype commonly associated with these Inc groups.
 
@@ -717,15 +743,15 @@ Of particular clinical concern, we identified high-priority resistance genes ass
 
 | Category | Total Detections | Top Variants |
 |----------|------------------|--------------|
-| **Carbapenemases** | 1,490 | *blaKPC-2* (776), *blaNDM-1* (216), *blaKPC-3* (177), *blaNDM-5* (70), *blaIMP-4* (65) |
-| **ESBLs** | 3,734 | *blaTEM-1* (1,760), *blaCTX-M-15* (456), *blaCTX-M-65* (307), *blaTEM* (266), *blaSHV-12* (233) |
-| **Colistin resistance** | 160 | *mcr-1.1* (57), *mcr-8.1* (27), *mcr-8.2* (18), *mcr-10.1* (12), *mcr-3.5* (8) |
-| **PMQR (fluoroquinolone)** | 2,160 | *qnrS1* (695), *aac(6')-Ib-cr5* (681), *qnrB1* (202), *qnrB2* (99), *oqxB* (93) |
+| **Carbapenemases** | 1,567 | *blaKPC-2* (807), *blaNDM-1* (228), *blaKPC-3* (180), *blaNDM-5* (84), *blaIMP-4* (66) |
+| **ESBLs** | 3,958 | *blaTEM-1* (1,864), *blaCTX-M-15* (477), *blaCTX-M-65* (307), *blaTEM* (281), *blaSHV-12* (245) |
+| **Colistin resistance** | 204 | *mcr-1.1* (83), *mcr-8.1* (27), *mcr-8.2* (19), *mcr-10.1* (13), *mcr-3.5* (9) |
+| **PMQR (fluoroquinolone)** | 2,266 | *qnrS1* (718), *aac(6')-Ib-cr5* (713), *qnrB1* (213), *qnrB2* (104), *oqxB* (98) |
 | **Vancomycin resistance** | 0 | None detected |
 
-Carbapenemase genes were detected on 1,490 plasmids, with *blaKPC-2* being the most prevalent (n=776, 18.4% of AMR-positive plasmids). The co-occurrence of *blaKPC-2* with ESBL genes (*blaCTX-M-15*, *blaCTX-M-65*) on individual plasmids is particularly alarming, as it confers resistance to virtually all beta-lactam antibiotics including carbapenems. *blaNDM-1* (n=216) and *blaNDM-5* (n=70) were also widespread, consistent with the global dissemination of New Delhi metallo-beta-lactamase genes on IncFII and IncN plasmids.
+Carbapenemase genes were detected on 1,567 plasmids, with *blaKPC-2* being the most prevalent (n=807, 17.3% of AMR-positive plasmids). The co-occurrence of *blaKPC-2* with ESBL genes (*blaCTX-M-15*, *blaCTX-M-65*) on individual plasmids is particularly alarming, as it confers resistance to virtually all beta-lactam antibiotics including carbapenems. *blaNDM-1* (n=228) and *blaNDM-5* (n=84) were also widespread, consistent with the global dissemination of New Delhi metallo-beta-lactamase genes on IncFII, IncN, and IncX3 plasmids across the 20 Inc groups.
 
-Plasmid-mediated colistin resistance (*mcr*) genes, representing resistance to the last-resort polymyxin class, were detected on 160 plasmids. The *mcr-1.1* variant predominated (n=57), followed by *mcr-8.1* (n=27) and *mcr-8.2* (n=18). The presence of *mcr* genes on plasmids carrying simultaneous carbapenemase genes raises the spectre of pan-drug resistance.
+Plasmid-mediated colistin resistance (*mcr*) genes, representing resistance to the last-resort polymyxin class, were detected on 204 plasmids. The *mcr-1.1* variant predominated (n=83), followed by *mcr-8.1* (n=27) and *mcr-8.2* (n=19). The presence of *mcr* genes on plasmids carrying simultaneous carbapenemase genes raises the spectre of pan-drug resistance.
 
 #### 3.10.4 pLIN Lineages as AMR Vehicles
 
@@ -735,22 +761,24 @@ A central application of the pLIN system is the identification of specific plasm
 
 | pLIN Code | n (AMR+) | Mean AMR Genes | Total AMR | Inc Type(s) | Top Resistance Genes |
 |-----------|----------|----------------|-----------|-------------|---------------------|
-| 1.1.1.7.30.1240 | 657 | 6.9 | 4,546 | IncFII, IncN | *blaTEM-1* (43%), *sul1* (36%), *tet(A)* (31%), *mph(A)* (29%) |
-| 1.1.1.7.30.1313 | 225 | 5.6 | 1,249 | IncFII, IncN, IncX1 | *rmtB1* (71%), *blaTEM-1* (70%), *blaKPC-2* (58%), *blaCTX-M-65* (54%) |
-| 1.1.1.7.30.1346 | 148 | 7.5 | 1,111 | IncFII | *mph(A)* (58%), *mrx(A)* (58%), *sul1* (57%), *aadA5* (48%) |
-| 1.1.1.7.30.1248 | 111 | 6.8 | 756 | IncFII | *blaKPC-2* (44%), *blaTEM-1* (42%), *qnrS1* (41%) |
-| 1.1.1.7.30.743 | 108 | 15.8 | 1,701 | IncFII, IncN, IncX1 | *floR* (69%), *sul1* (67%), *mph(A)* (65%), *sul2* (60%) |
-| 1.1.1.7.30.567 | 90 | 13.2 | 1,189 | IncN | *blaKPC-2* (100%), *blaTEM-1* (100%), *aph(3'')-Ib* (98%), *aac(3)-IId* (97%) |
-| 1.1.1.7.30.1271 | 88 | 6.8 | 602 | IncFII, IncX1 | *blaTEM-1* (59%), *blaCTX-M-15* (43%), *sul2* (41%) |
-| 1.1.1.7.30.1099 | 87 | 5.0 | 438 | IncFII | *qnrS1* (92%), *tet(A)* (85%), *blaLAP-2* (80%), *sul2* (77%) |
-| 1.1.1.7.30.1135 | 79 | 4.9 | 388 | IncFII | *qnrS1* (89%), *tet(A)* (80%), *blaLAP-2* (76%), *sul2* (72%) |
-| 1.1.1.7.30.1270 | 70 | 4.2 | 297 | IncFII | *blaOXA* (67%), *blaTEM-1* (60%), *blaKPC-2* (39%) |
+| 1.1.2.15.48.1327 | 700 | 6.9 | 4,830 | IncF, IncFIB, IncFIBK, IncFII, IncHI1, IncN | *blaTEM-1* (43%), *sul1* (36%), *tet(A)* (31%), *mph(A)* (29%) |
+| 1.1.2.15.48.860 | 142 | 14.4 | 2,045 | IncFII, IncHI1, IncHI2, IncN, IncX1 | *rmtB1* (71%), *blaTEM-1* (70%), *blaKPC-2* (58%), *blaCTX-M-65* (54%) |
+| 1.1.2.15.48.1401 | 131 | 7.5 | 983 | IncFII, IncN | *mph(A)* (58%), *mrx(A)* (58%), *sul1* (57%), *aadA5* (48%) |
+| 1.1.2.15.48.1289 | 118 | 6.8 | 801 | IncFII, IncHI2 | *blaKPC-2* (44%), *blaTEM-1* (42%), *qnrS1* (41%) |
+| 1.1.2.15.48.778 | 113 | 15.8 | 1,785 | IncFII, IncHI1, IncN, IncX1, IncX3 | *floR* (69%), *sul1* (67%), *mph(A)* (65%), *sul2* (60%) |
+| 1.1.2.15.48.671 | 95 | 13.2 | 1,254 | IncN | *blaKPC-2* (100%), *blaTEM-1* (100%), *aph(3'')-Ib* (98%), *aac(3)-IId* (97%) |
+| 1.1.2.15.48.1312 | 93 | 6.8 | 636 | IncF, IncFII, IncX1 | *blaTEM-1* (59%), *blaCTX-M-15* (43%), *sul2* (41%) |
+| 1.1.2.15.48.1152 | 92 | 5.0 | 462 | IncFII, IncN | *qnrS1* (92%), *tet(A)* (85%), *blaLAP-2* (80%), *sul2* (77%) |
+| 1.1.2.15.48.1183 | 83 | 4.9 | 409 | IncFII | *qnrS1* (89%), *tet(A)* (80%), *blaLAP-2* (76%), *sul2* (72%) |
+| 1.1.2.15.48.1311 | 74 | 4.2 | 313 | IncFII, IncN | *blaOXA* (67%), *blaTEM-1* (60%), *blaKPC-2* (39%) |
 
-Several findings are noteworthy. First, pLIN lineage 1.1.1.7.30.567 (an IncN-dominated lineage, n=90) carried *blaKPC-2* on 100% of its members alongside *blaTEM-1* (100%), *aph(3'')-Ib* (98%), and *aac(3)-IId* (97%), representing a tightly conserved multidrug resistance cassette. This lineage carried a mean of 13.2 AMR genes per plasmid—among the highest AMR gene burdens in the entire dataset—and represents a high-priority surveillance target.
+Several findings are noteworthy. First, pLIN lineage 1.1.2.15.48.671 (an IncN-dominated lineage, n=95) carried *blaKPC-2* on 100% of its members alongside *blaTEM-1* (100%), *aph(3'')-Ib* (98%), and *aac(3)-IId* (97%), representing a tightly conserved multidrug resistance cassette. This lineage carried a mean of 13.2 AMR genes per plasmid—among the highest AMR gene burdens in the entire dataset—and represents a high-priority surveillance target.
 
-Second, pLIN lineage 1.1.1.7.30.1313 spanned all three Inc groups (IncFII, IncN, IncX1) and showed high prevalence of both *blaKPC-2* (58%) and *blaCTX-M-65* (54%), alongside the 16S rRNA methyltransferase *rmtB1* (71%), which confers high-level resistance to all clinically available aminoglycosides. This cross-Inc lineage may represent a 'resistance hub' facilitating inter-lineage AMR gene exchange.
+Second, pLIN lineage 1.1.2.15.48.860 (n=142) spanned five Inc groups (IncFII, IncHI1, IncHI2, IncN, IncX1) and showed high prevalence of both *blaKPC-2* (58%) and *blaCTX-M-65* (54%), alongside the 16S rRNA methyltransferase *rmtB1* (71%), which confers high-level resistance to all clinically available aminoglycosides. With 14.4 mean AMR genes per plasmid, this cross-Inc lineage represents a 'resistance hub' facilitating inter-lineage AMR gene exchange across multiple plasmid families.
 
-Third, pLIN lineages 1.1.1.7.30.1099 and 1.1.1.7.30.1135 (both IncFII) shared nearly identical resistance profiles dominated by *qnrS1*, *tet(A)*, *blaLAP-2*, and *sul2*, suggesting descent from a common ancestor with a conserved resistance cassette. Their distinct pLIN codes at the strain level (Bin F) indicate compositional divergence in backbone or other accessory regions despite maintaining the same AMR gene complement.
+Third, pLIN lineages 1.1.2.15.48.1152 and 1.1.2.15.48.1183 (both IncFII-dominated) shared nearly identical resistance profiles dominated by *qnrS1*, *tet(A)*, *blaLAP-2*, and *sul2*, suggesting descent from a common ancestor with a conserved resistance cassette. Their distinct pLIN codes at the strain level (Bin F) indicate compositional divergence in backbone or other accessory regions despite maintaining the same AMR gene complement.
+
+Fourth, the top lineage 1.1.2.15.48.1327 (n=700 AMR-positive plasmids) spanned six Inc groups including all five IncF-family subtypes (IncF, IncFIB, IncFIBK, IncFII) plus IncHI1 and IncN, demonstrating that compositional convergence can occur across multiple related and unrelated plasmid families. This lineage's moderate AMR burden (6.9 mean genes) but enormous prevalence makes it a major contributor to overall resistance gene dissemination.
 
 #### 3.10.5 Virulence Gene Distribution
 
@@ -774,13 +802,13 @@ The nested cross-validation ML pipeline confirmed that the 33-feature compositio
 
 ### 4.3 AMRFinderPlus Integration Reveals Lineage-Specific Resistance
 
-The integration of pLIN with AMRFinderPlus across 6,346 plasmids represents, to our knowledge, the first systematic cross-referencing of a hierarchical plasmid classification system with comprehensive AMR gene surveillance data. Several findings have direct clinical and epidemiological relevance:
+The integration of pLIN with AMRFinderPlus across 6,998 plasmids represents, to our knowledge, the first systematic cross-referencing of a hierarchical plasmid classification system with comprehensive AMR gene surveillance data. Several findings have direct clinical and epidemiological relevance:
 
-**Carbapenemase-carrying lineages.** The identification of pLIN 1.1.1.7.30.567 as a 100% *blaKPC-2*-positive IncN lineage with a mean of 13.2 AMR genes per plasmid provides a concrete surveillance target. Traditional Inc typing would classify these as simply 'IncN plasmids', losing the lineage-level resolution that identifies this specific subpopulation as the primary KPC-carrying vehicle.
+**Carbapenemase-carrying lineages.** The identification of pLIN 1.1.2.15.48.671 as a 100% *blaKPC-2*-positive IncN lineage with a mean of 13.2 AMR genes per plasmid provides a concrete surveillance target. Traditional Inc typing would classify these as simply 'IncN plasmids', losing the lineage-level resolution that identifies this specific subpopulation as the primary KPC-carrying vehicle.
 
-**Cross-Inc resistance hubs.** pLIN 1.1.1.7.30.1313, which spans all three Inc groups and carries both *blaKPC-2* and *rmtB1*, illustrates the power of composition-based classification to identify plasmid lineages that transcend traditional Inc-group boundaries. These cross-Inc convergence zones may represent critical nodes in the horizontal gene transfer network where resistance cassettes are exchanged between different plasmid backbone types.
+**Cross-Inc resistance hubs.** pLIN 1.1.2.15.48.860 (n=142, 14.4 mean AMR genes), which spans five Inc groups (IncFII, IncHI1, IncHI2, IncN, IncX1) and carries both *blaKPC-2* and *rmtB1*, illustrates the power of composition-based classification to identify plasmid lineages that transcend traditional Inc-group boundaries. These cross-Inc convergence zones may represent critical nodes in the horizontal gene transfer network where resistance cassettes are exchanged between different plasmid backbone types. The larger lineage 1.1.2.15.48.1327 (n=700) spans six Inc groups including the entire IncF family, demonstrating compositional convergence at scale.
 
-**Colistin resistance.** The detection of 160 *mcr*-positive plasmids across multiple pLIN lineages enables lineage-level tracking of this last-resort resistance mechanism—information that is unavailable from Inc typing alone.
+**Colistin resistance.** The detection of 204 *mcr*-positive plasmids across multiple pLIN lineages enables lineage-level tracking of this last-resort resistance mechanism—information that is unavailable from Inc typing alone.
 
 ### 4.4 Advantages Over Existing Approaches
 
@@ -799,7 +827,7 @@ Several limitations should be acknowledged:
 
 2. **Single-linkage clustering sensitivity.** Single-linkage clustering, while theoretically consistent with the LIN nearest-neighbour assignment rule, is sensitive to chaining effects where distant sequences can be merged into the same cluster through intermediaries. In practice, this was observed at the coarser thresholds (Bins A–C) where most plasmids formed a single large cluster. Complete-linkage or average-linkage alternatives may provide better separation at intermediate thresholds, at the cost of losing theoretical consistency with the LIN framework.
 
-3. **Inc-group scope.** The current study validated pLIN on three Inc groups (IncFII, IncN, IncX1). While the method is in principle applicable to any plasmid, the distance thresholds were calibrated against these specific groups and may require adjustment for plasmid families with different evolutionary rates or population structures.
+3. **Inc-group scope and threshold calibration.** The current study validated pLIN across 20 Inc groups spanning diverse plasmid families, including IncF-family plasmids (IncF, IncFIB, IncFIC, IncFII, IncFIBK), IncHI-type conjugative plasmids (IncHI1, IncHI2), IncX-type compact plasmids (IncX1, IncX3, IncX4), IncI-type plasmids (IncI, IncI1, IncI2), IncN, IncR, IncA, IncAC2, IncC, and colicin plasmids (ColE, ColRNAI). While the distance thresholds were calibrated against the IncX-like reference distribution, the high concordance with Inc-group boundaries (99.5%) across all 20 groups suggests the thresholds are broadly applicable to Enterobacteriaceae plasmids. Extension to additional plasmid families (e.g., IncP, IncW, IncL/M) may require threshold recalibration if their evolutionary rates or compositional properties differ substantially from the current dataset.
 
 4. **AMRFinderPlus nucleotide mode.** Running AMRFinderPlus in nucleotide mode (without predicted proteins) may miss some gene detections that would be found in protein mode, particularly for genes with low nucleotide identity but conserved protein function. The `--plus` flag extends detection to virulence and stress genes but relies on the NCBI curated database, which may not include all recently described resistance mechanisms.
 
@@ -830,13 +858,13 @@ Several extensions of the pLIN framework are envisioned:
 
 ## 5. CONCLUSIONS
 
-We present pLIN, the first hierarchical, permanent, reference-free classification system for bacterial plasmid genomes, integrated with comprehensive AMR gene surveillance. Applied to 6,346 plasmids from three clinically important Inc groups, pLIN resolved 2,232 strain-level codes (D = 0.979) with 99.5% concordance with Inc-group assignments. Integration with AMRFinderPlus identified 60,372 gene detections across 84.2% of plasmids and mapped clinically critical resistance genes—including 1,490 carbapenemase, 3,734 ESBL, and 160 colistin resistance detections—to specific pLIN lineages. The pLIN system addresses fundamental gaps in current plasmid classification: it provides hierarchical multi-resolution typing where existing tools offer flat groupings, code permanence where others require reclassification, and reference-free operation where others depend on curated databases. By enabling lineage-level tracking of AMR gene dissemination through plasmid populations, pLIN offers a practical framework for plasmid genomic epidemiology and AMR surveillance.
+We present pLIN, the first hierarchical, permanent, reference-free classification system for bacterial plasmid genomes, integrated with comprehensive AMR gene surveillance. Applied to 6,998 plasmids from 20 clinically important Inc groups spanning diverse Enterobacteriaceae plasmid families, pLIN resolved 2,454 strain-level codes (D = 0.979) with 99.5% concordance with Inc-group assignments. Integration with AMRFinderPlus identified 64,891 gene detections across 83.1% of plasmids (5,816 plasmids) and mapped clinically critical resistance genes—including 1,567 carbapenemase detections (blaKPC-2 n=807, blaNDM-1 n=228), 3,958 ESBL detections (blaTEM-1 n=1,864, blaCTX-M-15 n=477), and 204 colistin resistance (*mcr*) detections—to specific pLIN lineages. Key high-risk lineages include pLIN 1.1.2.15.48.671 (IncN, 100% *blaKPC-2* carriage, 13.2 mean AMR genes) and the cross-Inc hub pLIN 1.1.2.15.48.860 (spanning IncFII/IncHI1/IncHI2/IncN/IncX1, 14.4 mean AMR genes). The pLIN system addresses fundamental gaps in current plasmid classification: it provides hierarchical multi-resolution typing where existing tools offer flat groupings, code permanence where others require reclassification, reference-free operation where others depend on curated databases, and broad taxonomic scope (20 Inc groups validated) where others cover limited plasmid diversity. By enabling lineage-level tracking of AMR gene dissemination through plasmid populations, pLIN offers a practical framework for plasmid genomic epidemiology and AMR surveillance.
 
 ---
 
 ## FIGURE LEGENDS
 
-**Figure 1. Dataset overview.** (A) Incompatibility group composition of the 6,346-plasmid dataset. (B) Plasmid size distribution by Inc type. (C) Hierarchical pLIN diversity showing the number of unique clusters at each bin level (A through F) per Inc type (log scale).
+**Figure 1. Dataset overview.** (A) Incompatibility group composition of the 6,998-plasmid dataset across 20 Inc groups. (B) Plasmid size distribution by Inc type. (C) Hierarchical pLIN diversity showing the number of unique clusters at each bin level (A through F) per Inc type (log scale).
 
 **Figure 2. AMR gene prevalence overview.** (A) Prevalence of AMR, virulence, and stress response genes by Inc type. (B) Top 15 AMR genes ranked by percentage of AMR-positive plasmids carrying each gene. (C) AMR drug class distribution showing the number of plasmids carrying resistance determinants in each class.
 
@@ -846,7 +874,7 @@ We present pLIN, the first hierarchical, permanent, reference-free classificatio
 
 **Figure 5. AMR gene burden and virulence distribution.** (A) Violin plot of AMR gene count per plasmid by Inc type (AMR-positive plasmids only), with mean (black line) and median (red line) indicated. (B) Top virulence genes by Inc type. (C) AMR–virulence co-occurrence scatter plot showing the relationship between AMR and virulence gene counts per plasmid, coloured by Inc type.
 
-**Figure 6. pLIN hierarchical structure.** (A) Number of clusters resolved at each hierarchical threshold level, overall and per Inc type (log scale). (B) Strain-level (Bin F) cluster size distribution, showing the predominance of singletons (76.3% of pLIN codes).
+**Figure 6. pLIN hierarchical structure.** (A) Number of clusters resolved at each hierarchical threshold level, overall and per Inc type (log scale). (B) Strain-level (Bin F) cluster size distribution, showing the predominance of singletons (69.3% of pLIN codes).
 
 **Figure 7. Composite manuscript figure.** Multi-panel summary combining dataset overview (A–C), AMR prevalence (D–F), pLIN-AMR lineage heatmap (G), and clinically critical resistance and co-occurrence analyses (H–J).
 
@@ -864,7 +892,7 @@ We present pLIN, the first hierarchical, permanent, reference-free classificatio
 
 ## SUPPLEMENTARY MATERIALS
 
-**Supplementary Table S1.** Complete pLIN assignment table for all 6,346 plasmids (pLIN_assignments.tsv). Columns: plasmid_id, inc_type, length_bp, pLIN, bin_A, bin_B, bin_C, bin_D, bin_E, bin_F.
+**Supplementary Table S1.** Complete pLIN assignment table for all 6,998 plasmids (pLIN_assignments.tsv). Columns: plasmid_id, inc_type, length_bp, pLIN, bin_A, bin_B, bin_C, bin_D, bin_E, bin_F.
 
 **Supplementary Table S2.** Integrated pLIN + AMRFinderPlus table (pLIN_AMR_integrated.tsv). Columns: plasmid_id, inc_type, length_bp, pLIN, bin_A–F, n_amr_genes, n_vir_genes, n_stress_genes, n_total_hits, amr_genes, vir_genes, stress_genes, amr_classes, amr_subclasses.
 

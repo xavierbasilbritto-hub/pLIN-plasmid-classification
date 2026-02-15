@@ -4,6 +4,7 @@
 """
 Generate publication-quality figures for the pLIN + AMRFinderPlus manuscript.
 Produces 6 individual figures + 1 composite multi-panel figure.
+Supports all 20 Inc groups dynamically with non-overlapping labels.
 """
 
 import os
@@ -13,7 +14,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.patches import FancyBboxPatch
 from matplotlib.colors import LinearSegmentedColormap
 from collections import Counter
 import seaborn as sns
@@ -30,7 +30,7 @@ os.makedirs(FIG_DIR, exist_ok=True)
 sns.set_style("whitegrid")
 plt.rcParams.update({
     "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+    "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
     "font.size": 10,
     "axes.titlesize": 12,
     "axes.labelsize": 11,
@@ -40,20 +40,32 @@ plt.rcParams.update({
     "figure.dpi": 300,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.2,
+    "savefig.pad_inches": 0.3,
 })
 
-INC_COLORS = {"IncFII": "#2196F3", "IncN": "#FF9800", "IncX1": "#4CAF50"}
-INC_ORDER = ["IncFII", "IncN", "IncX1"]
-
-# ── Load data ─────────────────────────────────────────────────────────────────
+# ── Dynamic Inc group discovery ───────────────────────────────────────────────
 print("Loading data ...")
 merged = pd.read_csv(INTEGRATED, sep="\t")
 plin = pd.read_csv(PLIN_FILE, sep="\t")
 amr_raw = pd.read_csv(AMR_RAW, sep="\t")
 
+# Use inc_type from pLIN assignments (clean column name)
+# The integrated file may have inc_type_x from the merge
+INC_COL = "inc_type_x" if "inc_type_x" in merged.columns else "inc_type"
+
+# Discover all Inc groups, sorted by count (descending)
+inc_counts_series = plin["inc_type"].value_counts()
+INC_ORDER = inc_counts_series.index.tolist()
+N_GROUPS = len(INC_ORDER)
+
+# Generate a 20-color palette using tab20
+_tab20 = plt.cm.tab20(np.linspace(0, 1, 20))
+INC_COLORS = {inc: _tab20[i % 20] for i, inc in enumerate(INC_ORDER)}
+
 print(f"  Integrated: {len(merged)} plasmids")
+print(f"  pLIN assignments: {len(plin)} plasmids")
 print(f"  AMR raw: {len(amr_raw)} detections")
+print(f"  Inc groups: {N_GROUPS} — {INC_ORDER}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -61,63 +73,61 @@ print(f"  AMR raw: {len(amr_raw)} detections")
 # ══════════════════════════════════════════════════════════════════════════════
 print("\nGenerating Figure 1: Dataset Overview ...")
 
-fig1, axes1 = plt.subplots(1, 3, figsize=(14, 4.5))
+fig1, axes1 = plt.subplots(1, 3, figsize=(18, 6))
 
-# Panel A: Inc type composition (donut chart)
+# Panel A: Inc type composition (horizontal bar chart — works for 20 groups)
 ax = axes1[0]
-inc_counts = plin["inc_type"].value_counts().reindex(INC_ORDER)
-wedges, texts, autotexts = ax.pie(
-    inc_counts.values,
-    labels=None,
-    colors=[INC_COLORS[i] for i in INC_ORDER],
-    autopct=lambda p: f"{p:.1f}%\n(n={int(p*sum(inc_counts)/100):,})",
-    startangle=90,
-    pctdistance=0.75,
-    wedgeprops=dict(width=0.45, edgecolor="white", linewidth=2),
-)
-for at in autotexts:
-    at.set_fontsize(8)
-    at.set_fontweight("bold")
-ax.legend(INC_ORDER, loc="lower center", ncol=3, fontsize=9, frameon=False,
-          bbox_to_anchor=(0.5, -0.05))
-ax.set_title("A. Dataset Composition", fontweight="bold", pad=15)
+counts = inc_counts_series.reindex(INC_ORDER)
+colors = [INC_COLORS[inc] for inc in INC_ORDER]
+y_pos = np.arange(N_GROUPS)
+bars = ax.barh(y_pos, counts.values, color=colors, edgecolor="white", linewidth=0.5)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(INC_ORDER, fontsize=8)
+ax.set_xlabel("Number of Plasmids")
+ax.set_title("A. Dataset Composition", fontweight="bold")
+ax.invert_yaxis()
+for bar, val in zip(bars, counts.values):
+    ax.text(val + max(counts) * 0.01, bar.get_y() + bar.get_height() / 2,
+            f"n={val:,}", va="center", fontsize=7)
+ax.set_xlim(0, max(counts) * 1.2)
 
-# Panel B: Plasmid size distribution by Inc type
+# Panel B: Plasmid size distribution — top 5 Inc groups only for clarity
 ax = axes1[1]
-for inc in INC_ORDER:
+top5 = INC_ORDER[:5]
+for inc in top5:
     sub = plin[plin["inc_type"] == inc]
-    ax.hist(sub["length_bp"] / 1000, bins=50, alpha=0.6, color=INC_COLORS[inc],
-            label=f"{inc} (n={len(sub):,})", edgecolor="white", linewidth=0.5)
+    ax.hist(sub["length_bp"] / 1000, bins=50, alpha=0.5, color=INC_COLORS[inc],
+            label=f"{inc} (n={len(sub):,})", edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Plasmid Length (kb)")
 ax.set_ylabel("Count")
-ax.set_title("B. Size Distribution", fontweight="bold")
-ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=8)
+ax.set_title("B. Size Distribution (Top 5 Groups)", fontweight="bold")
+ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=7, loc="upper right")
 ax.set_xlim(0, 400)
 
-# Panel C: pLIN diversity per Inc type (unique codes at each bin level)
+# Panel C: pLIN diversity per Inc type — all 20 groups
 ax = axes1[2]
 bins = ["bin_A", "bin_B", "bin_C", "bin_D", "bin_E", "bin_F"]
-bin_labels_short = ["A\nFamily", "B\nSubfamily", "C\nCluster", "D\nSubcluster", "E\nClone", "F\nStrain"]
-x = np.arange(len(bins))
-width = 0.25
-for i, inc in enumerate(INC_ORDER):
+bin_labels_short = ["A\n(L1)", "B\n(L2)", "C\n(L3)", "D\n(L4)", "E\n(L5)", "F\n(L6)"]
+
+# Overall line + top 5 groups
+overall_clusters = [plin[b].nunique() for b in bins]
+ax.plot(range(len(bins)), overall_clusters, "ko-", linewidth=2.5, markersize=8,
+        label=f"All (n={len(plin):,})", zorder=5)
+for inc in top5:
     sub = plin[plin["inc_type"] == inc]
-    n_clusters = [sub[b].nunique() for b in bins]
-    bars = ax.bar(x + i * width, n_clusters, width, color=INC_COLORS[inc],
-                  label=inc, edgecolor="white", linewidth=0.5)
-    for bar, val in zip(bars, n_clusters):
-        if val > 5:
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 15,
-                    str(val), ha="center", va="bottom", fontsize=6.5, fontweight="bold")
-ax.set_xticks(x + width)
+    clusters = [sub[b].nunique() for b in bins]
+    ax.plot(range(len(bins)), clusters, "o-", color=INC_COLORS[inc],
+            linewidth=1.5, markersize=5, label=f"{inc} (n={len(sub):,})")
+
+ax.set_xticks(range(len(bins)))
 ax.set_xticklabels(bin_labels_short, fontsize=8)
 ax.set_ylabel("Unique Clusters")
 ax.set_title("C. Hierarchical pLIN Diversity", fontweight="bold")
-ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=8)
+ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=7, loc="upper left")
 ax.set_yscale("log")
-ax.set_ylim(0.8, 3000)
+ax.grid(True, alpha=0.3)
 
-fig1.tight_layout(w_pad=3)
+fig1.tight_layout(w_pad=4)
 fig1.savefig(os.path.join(FIG_DIR, "Figure1_dataset_overview.png"))
 fig1.savefig(os.path.join(FIG_DIR, "Figure1_dataset_overview.pdf"))
 plt.close(fig1)
@@ -129,36 +139,40 @@ print("  Figure 1 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 2: AMR Prevalence ...")
 
-fig2, axes2 = plt.subplots(1, 3, figsize=(15, 5))
+fig2, axes2 = plt.subplots(1, 3, figsize=(18, 6))
 
-# Panel A: Stacked bar — AMR/VIR/STRESS prevalence by Inc type
+# Panel A: AMR/VIR/STRESS prevalence by Inc type (all groups with data)
 ax = axes2[0]
 categories = ["AMR", "Virulence", "Stress"]
 cat_colors = ["#E53935", "#8E24AA", "#FF8F00"]
 bar_data = []
+inc_with_amr = []
 for inc in INC_ORDER:
-    sub = merged[merged["inc_type_x"] == inc]
+    sub = merged[merged[INC_COL] == inc]
     n = len(sub)
+    if n == 0:
+        continue
+    inc_with_amr.append(inc)
     bar_data.append([
         (sub["n_amr_genes"] > 0).sum() / n * 100,
         (sub["n_vir_genes"] > 0).sum() / n * 100,
         (sub["n_stress_genes"] > 0).sum() / n * 100,
     ])
-bar_data = np.array(bar_data)
-x = np.arange(len(INC_ORDER))
-width = 0.22
+bar_data = np.array(bar_data) if bar_data else np.zeros((0, 3))
+
+n_inc = len(inc_with_amr)
+x = np.arange(n_inc)
+width = 0.25
 for j, (cat, col) in enumerate(zip(categories, cat_colors)):
-    bars = ax.bar(x + j * width, bar_data[:, j], width, color=col, label=cat,
-                  edgecolor="white", linewidth=0.5)
-    for bar, val in zip(bars, bar_data[:, j]):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
-                f"{val:.0f}%", ha="center", va="bottom", fontsize=7, fontweight="bold")
+    if bar_data.shape[0] > 0:
+        ax.bar(x + j * width, bar_data[:, j], width, color=col, label=cat,
+               edgecolor="white", linewidth=0.5)
 ax.set_xticks(x + width)
-ax.set_xticklabels(INC_ORDER, fontsize=10)
+ax.set_xticklabels(inc_with_amr, fontsize=7, rotation=45, ha="right")
 ax.set_ylabel("Prevalence (%)")
-ax.set_ylim(0, 100)
+ax.set_ylim(0, 105)
 ax.set_title("A. Gene Prevalence by Inc Type", fontweight="bold")
-ax.legend(frameon=True, fancybox=True, shadow=False)
+ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=8)
 
 # Panel B: Top 15 AMR genes — horizontal bar chart
 ax = axes2[1]
@@ -172,20 +186,20 @@ top15 = gene_counts.most_common(15)
 genes_list = [g for g, _ in top15][::-1]
 counts_list = [c for _, c in top15][::-1]
 n_amr_pos = len(amr_pos)
-pcts = [c / n_amr_pos * 100 for c in counts_list]
+pcts = [c / max(n_amr_pos, 1) * 100 for c in counts_list]
 
-colors_bar = plt.cm.Reds(np.linspace(0.3, 0.85, len(genes_list)))
+colors_bar = plt.cm.Reds(np.linspace(0.3, 0.85, max(len(genes_list), 1)))
 bars = ax.barh(range(len(genes_list)), pcts, color=colors_bar, edgecolor="white", linewidth=0.5)
 ax.set_yticks(range(len(genes_list)))
 ax.set_yticklabels([f"$\\it{{{g}}}$" for g in genes_list], fontsize=8)
 ax.set_xlabel("% of AMR+ Plasmids")
 ax.set_title("B. Top 15 AMR Genes", fontweight="bold")
 for bar, pct, cnt in zip(bars, pcts, counts_list):
-    ax.text(pct + 0.5, bar.get_y() + bar.get_height()/2,
+    ax.text(pct + 0.5, bar.get_y() + bar.get_height() / 2,
             f"{pct:.1f}% (n={cnt:,})", va="center", fontsize=7)
-ax.set_xlim(0, max(pcts) * 1.35)
+ax.set_xlim(0, max(pcts + [1]) * 1.35)
 
-# Panel C: Drug class distribution — horizontal bar chart
+# Panel C: Drug class distribution
 ax = axes2[2]
 all_classes = []
 for c in merged["amr_classes"]:
@@ -196,18 +210,18 @@ top12 = class_counts.most_common(12)
 cls_list = [c for c, _ in top12][::-1]
 cls_counts = [c for _, c in top12][::-1]
 
-colors_cls = plt.cm.Blues(np.linspace(0.3, 0.85, len(cls_list)))
+colors_cls = plt.cm.Blues(np.linspace(0.3, 0.85, max(len(cls_list), 1)))
 bars = ax.barh(range(len(cls_list)), cls_counts, color=colors_cls, edgecolor="white", linewidth=0.5)
 ax.set_yticks(range(len(cls_list)))
 ax.set_yticklabels(cls_list, fontsize=8)
 ax.set_xlabel("Number of Plasmids")
 ax.set_title("C. AMR Drug Classes", fontweight="bold")
 for bar, cnt in zip(bars, cls_counts):
-    ax.text(cnt + 20, bar.get_y() + bar.get_height()/2,
+    ax.text(cnt + max(cls_counts + [1]) * 0.02, bar.get_y() + bar.get_height() / 2,
             f"n={cnt:,}", va="center", fontsize=7)
-ax.set_xlim(0, max(cls_counts) * 1.2)
+ax.set_xlim(0, max(cls_counts + [1]) * 1.2)
 
-fig2.tight_layout(w_pad=3)
+fig2.tight_layout(w_pad=4)
 fig2.savefig(os.path.join(FIG_DIR, "Figure2_AMR_prevalence.png"))
 fig2.savefig(os.path.join(FIG_DIR, "Figure2_AMR_prevalence.pdf"))
 plt.close(fig2)
@@ -219,9 +233,8 @@ print("  Figure 2 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 3: Critical Resistance Genes ...")
 
-fig3, axes3 = plt.subplots(2, 2, figsize=(12, 10))
+fig3, axes3 = plt.subplots(2, 2, figsize=(14, 10))
 
-# Collect all AMR genes flat
 all_genes_flat = []
 for g in merged["amr_genes"]:
     if g != "none":
@@ -272,7 +285,7 @@ for idx, (cat_name, cat_info) in enumerate(critical_data.items()):
     ax.set_xlabel("Detections")
     ax.set_title(f"{cat_name} (n={sum(g_counts):,} total)", fontweight="bold", fontsize=11)
     for bar, cnt in zip(bars, g_counts):
-        ax.text(cnt + max(g_counts)*0.02, bar.get_y() + bar.get_height()/2,
+        ax.text(cnt + max(g_counts) * 0.02, bar.get_y() + bar.get_height() / 2,
                 f"{cnt:,}", va="center", fontsize=8)
     ax.set_xlim(0, max(g_counts) * 1.18)
 
@@ -289,22 +302,19 @@ print("  Figure 3 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 4: pLIN Lineage AMR Heatmap ...")
 
-# Get top 10 pLIN lineages by AMR+ count
 amr_pos_merged = merged[merged["n_amr_genes"] > 0]
 plin_counts = amr_pos_merged["pLIN"].value_counts().head(10)
 top_plins = plin_counts.index.tolist()
 
-# Get top 15 AMR genes overall
 top15_genes = [g for g, _ in Counter(all_genes).most_common(15)]
 
-# Build heatmap matrix: prevalence of each gene in each lineage
 heatmap_data = np.zeros((len(top_plins), len(top15_genes)))
 lineage_info = []
 
 for i, pcode in enumerate(top_plins):
     sub = merged[(merged["pLIN"] == pcode) & (merged["n_amr_genes"] > 0)]
     n = len(sub)
-    inc_types = ", ".join(sorted(sub["inc_type_x"].unique()))
+    inc_types = ", ".join(sorted(sub[INC_COL].unique()))
     lineage_info.append(f"{pcode}\n({inc_types}, n={n})")
     genes_in_lineage = []
     for g in sub["amr_genes"]:
@@ -312,18 +322,17 @@ for i, pcode in enumerate(top_plins):
             genes_in_lineage.extend(g.split("; "))
     gene_counter = Counter(genes_in_lineage)
     for j, gene in enumerate(top15_genes):
-        heatmap_data[i, j] = gene_counter.get(gene, 0) / n * 100
+        heatmap_data[i, j] = gene_counter.get(gene, 0) / max(n, 1) * 100
 
-fig4, ax4 = plt.subplots(figsize=(14, 7))
+fig4, ax4 = plt.subplots(figsize=(16, 8))
 cmap = LinearSegmentedColormap.from_list("custom", ["#FFFFFF", "#FFCDD2", "#E53935", "#B71C1C"])
 im = ax4.imshow(heatmap_data, cmap=cmap, aspect="auto", vmin=0, vmax=100)
 
 ax4.set_xticks(range(len(top15_genes)))
 ax4.set_xticklabels([f"$\\it{{{g}}}$" for g in top15_genes], rotation=45, ha="right", fontsize=9)
 ax4.set_yticks(range(len(top_plins)))
-ax4.set_yticklabels(lineage_info, fontsize=8)
+ax4.set_yticklabels(lineage_info, fontsize=7.5)
 
-# Annotate cells
 for i in range(len(top_plins)):
     for j in range(len(top15_genes)):
         val = heatmap_data[i, j]
@@ -349,78 +358,71 @@ print("  Figure 4 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 5: AMR Burden & Virulence ...")
 
-fig5, axes5 = plt.subplots(1, 3, figsize=(15, 5))
+fig5, axes5 = plt.subplots(1, 3, figsize=(18, 6))
 
-# Panel A: Violin plot of AMR gene count per plasmid by Inc type
+# Panel A: Violin plot — top groups with enough AMR+ data
 ax = axes5[0]
-plot_data = []
+violin_groups = []
 for inc in INC_ORDER:
-    sub = merged[(merged["inc_type_x"] == inc) & (merged["n_amr_genes"] > 0)]
-    for val in sub["n_amr_genes"]:
-        plot_data.append({"Inc Type": inc, "AMR Genes": val})
-plot_df = pd.DataFrame(plot_data)
+    sub = merged[(merged[INC_COL] == inc) & (merged["n_amr_genes"] > 0)]
+    if len(sub) >= 10:
+        violin_groups.append(inc)
+violin_groups = violin_groups[:10]  # Max 10 for readability
 
-parts = ax.violinplot(
-    [plot_df[plot_df["Inc Type"] == inc]["AMR Genes"].values for inc in INC_ORDER],
-    positions=range(len(INC_ORDER)),
-    showmeans=True, showmedians=True, showextrema=False,
-)
-for i, pc in enumerate(parts["bodies"]):
-    pc.set_facecolor(INC_COLORS[INC_ORDER[i]])
-    pc.set_alpha(0.7)
-parts["cmeans"].set_color("black")
-parts["cmedians"].set_color("red")
+violin_data = [merged[(merged[INC_COL] == inc) & (merged["n_amr_genes"] > 0)]["n_amr_genes"].values
+               for inc in violin_groups]
+if violin_data:
+    parts = ax.violinplot(violin_data, positions=range(len(violin_groups)),
+                          showmeans=True, showmedians=True, showextrema=False)
+    for i, pc in enumerate(parts["bodies"]):
+        pc.set_facecolor(INC_COLORS[violin_groups[i]])
+        pc.set_alpha(0.7)
+    parts["cmeans"].set_color("black")
+    parts["cmedians"].set_color("red")
 
-ax.set_xticks(range(len(INC_ORDER)))
-ax.set_xticklabels(INC_ORDER)
-ax.set_ylabel("AMR Genes per Plasmid")
-ax.set_title("A. AMR Gene Burden\n(AMR+ plasmids only)", fontweight="bold")
+    ax.set_xticks(range(len(violin_groups)))
+    ax.set_xticklabels(violin_groups, fontsize=7.5, rotation=45, ha="right")
+    ax.set_ylabel("AMR Genes per Plasmid")
+    ax.set_title("A. AMR Gene Burden\n(AMR+ plasmids, top groups)", fontweight="bold")
 
-# Add mean labels
-for i, inc in enumerate(INC_ORDER):
-    sub = merged[(merged["inc_type_x"] == inc) & (merged["n_amr_genes"] > 0)]
-    mean_val = sub["n_amr_genes"].mean()
-    ax.text(i, mean_val + 1, f"μ={mean_val:.1f}", ha="center", fontsize=8, fontweight="bold")
+    for i, inc in enumerate(violin_groups):
+        sub = merged[(merged[INC_COL] == inc) & (merged["n_amr_genes"] > 0)]
+        mean_val = sub["n_amr_genes"].mean()
+        ax.text(i, mean_val + 1, f"\u03bc={mean_val:.1f}", ha="center", fontsize=7, fontweight="bold")
 
-# Panel B: Virulence gene top 10 per Inc type (grouped bar)
+# Panel B: Virulence gene top 8 overall
 ax = axes5[1]
-vir_by_inc = {}
-for inc in INC_ORDER:
-    sub = merged[(merged["inc_type_x"] == inc) & (merged["n_vir_genes"] > 0)]
-    vgenes = []
-    for g in sub["vir_genes"]:
-        if g != "none":
-            vgenes.extend(g.split("; "))
-    vir_by_inc[inc] = Counter(vgenes)
+all_vir = []
+for g in merged[merged["n_vir_genes"] > 0]["vir_genes"]:
+    if g != "none":
+        all_vir.extend(g.split("; "))
+vir_counter = Counter(all_vir)
+top8_vir = vir_counter.most_common(8)
+if top8_vir:
+    v_names = [g for g, _ in top8_vir][::-1]
+    v_counts = [c for _, c in top8_vir][::-1]
+    colors_v = plt.cm.Purples(np.linspace(0.3, 0.85, len(v_names)))
+    bars = ax.barh(range(len(v_names)), v_counts, color=colors_v, edgecolor="white", linewidth=0.5)
+    ax.set_yticks(range(len(v_names)))
+    ax.set_yticklabels([f"$\\it{{{g}}}$" for g in v_names], fontsize=8)
+    ax.set_xlabel("Detections")
+    ax.set_title("B. Top Virulence Genes", fontweight="bold")
+    for bar, cnt in zip(bars, v_counts):
+        ax.text(cnt + max(v_counts) * 0.02, bar.get_y() + bar.get_height() / 2,
+                f"n={cnt:,}", va="center", fontsize=7)
 
-# Get top 8 virulence genes overall
-all_vir = sum(vir_by_inc.values(), Counter())
-top8_vir = [g for g, _ in all_vir.most_common(8)]
-
-x = np.arange(len(top8_vir))
-width = 0.25
-for i, inc in enumerate(INC_ORDER):
-    counts = [vir_by_inc[inc].get(g, 0) for g in top8_vir]
-    ax.bar(x + i * width, counts, width, color=INC_COLORS[inc], label=inc,
-           edgecolor="white", linewidth=0.5)
-ax.set_xticks(x + width)
-ax.set_xticklabels([f"$\\it{{{g}}}$" for g in top8_vir], rotation=45, ha="right", fontsize=8)
-ax.set_ylabel("Detections")
-ax.set_title("B. Top Virulence Genes\nby Inc Type", fontweight="bold")
-ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=8)
-
-# Panel C: Co-occurrence — AMR vs Virulence scatter
+# Panel C: Co-occurrence scatter — top 5 groups
 ax = axes5[2]
-for inc in INC_ORDER:
-    sub = merged[(merged["inc_type_x"] == inc) & (merged["n_total_hits"] > 0)]
+for inc in INC_ORDER[:5]:
+    sub = merged[(merged[INC_COL] == inc) & (merged["n_total_hits"] > 0)]
     ax.scatter(sub["n_amr_genes"], sub["n_vir_genes"],
-               c=INC_COLORS[inc], alpha=0.3, s=15, label=inc, edgecolors="none")
+               c=[INC_COLORS[inc]], alpha=0.3, s=15, label=inc, edgecolors="none")
 ax.set_xlabel("AMR Genes per Plasmid")
 ax.set_ylabel("Virulence Genes per Plasmid")
-ax.set_title("C. AMR–Virulence\nCo-occurrence", fontweight="bold")
-ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=8, markerscale=2)
+ax.set_title("C. AMR\u2013Virulence\nCo-occurrence", fontweight="bold")
+ax.legend(frameon=True, fancybox=True, shadow=False, fontsize=7, markerscale=2)
 
-fig5.tight_layout(w_pad=3)
+fig5.tight_layout(w_pad=4)
 fig5.savefig(os.path.join(FIG_DIR, "Figure5_AMR_burden_virulence.png"))
 fig5.savefig(os.path.join(FIG_DIR, "Figure5_AMR_burden_virulence.pdf"))
 plt.close(fig5)
@@ -432,20 +434,18 @@ print("  Figure 5 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 6: pLIN Hierarchical Structure ...")
 
-fig6, axes6 = plt.subplots(1, 2, figsize=(14, 6))
+fig6, axes6 = plt.subplots(1, 2, figsize=(16, 7))
 
-# Panel A: Cluster count vs threshold (all Inc types combined + per type)
+# Panel A: Cluster count vs threshold (all groups + top 5)
 ax = axes6[0]
 bins_list = ["bin_A", "bin_B", "bin_C", "bin_D", "bin_E", "bin_F"]
-thresholds = [0.150, 0.100, 0.050, 0.020, 0.010, 0.001]
 thresh_labels = ["A\n(0.150)", "B\n(0.100)", "C\n(0.050)", "D\n(0.020)", "E\n(0.010)", "F\n(0.001)"]
 
-# Overall
 overall_clusters = [plin[b].nunique() for b in bins_list]
 ax.plot(range(len(bins_list)), overall_clusters, "ko-", linewidth=2.5, markersize=8,
         label=f"All (n={len(plin):,})", zorder=5)
 
-for inc in INC_ORDER:
+for inc in INC_ORDER[:5]:
     sub = plin[plin["inc_type"] == inc]
     clusters = [sub[b].nunique() for b in bins_list]
     ax.plot(range(len(bins_list)), clusters, "o-", color=INC_COLORS[inc],
@@ -468,16 +468,16 @@ ax.bar(size_dist.index[:30], size_dist.values[:30], color="#5C6BC0",
        edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Cluster Size (number of plasmids)")
 ax.set_ylabel("Number of pLIN Codes")
-ax.set_title("B. Strain-Level Cluster Size Distribution\n(Bin F, d ≤ 0.001)", fontweight="bold")
+ax.set_title("B. Strain-Level Cluster Size Distribution\n(L6, d \u2264 0.001)", fontweight="bold")
 
-# Annotate singletons
 n_sing = size_dist.get(1, 0)
-ax.annotate(f"Singletons\nn={n_sing:,} ({n_sing/len(cluster_sizes)*100:.1f}%)",
+total_codes = len(cluster_sizes)
+ax.annotate(f"Singletons\nn={n_sing:,} ({n_sing/max(total_codes,1)*100:.1f}%)",
             xy=(1, n_sing), xytext=(5, n_sing * 0.8),
             arrowprops=dict(arrowstyle="->", color="red"),
             fontsize=9, color="red", fontweight="bold")
 
-fig6.tight_layout(w_pad=3)
+fig6.tight_layout(w_pad=4)
 fig6.savefig(os.path.join(FIG_DIR, "Figure6_pLIN_hierarchy.png"))
 fig6.savefig(os.path.join(FIG_DIR, "Figure6_pLIN_hierarchy.pdf"))
 plt.close(fig6)
@@ -489,31 +489,32 @@ print("  Figure 6 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print("Generating Figure 7: Composite Manuscript Figure ...")
 
-fig7 = plt.figure(figsize=(18, 20))
-gs = gridspec.GridSpec(4, 3, figure=fig7, hspace=0.35, wspace=0.35,
+fig7 = plt.figure(figsize=(20, 22))
+gs = gridspec.GridSpec(4, 3, figure=fig7, hspace=0.4, wspace=0.4,
                        height_ratios=[1, 1, 1.2, 1])
 
 # ── Row 1: Dataset overview ──
-# A: Inc composition donut
+# A: Inc composition (horizontal bar)
 ax = fig7.add_subplot(gs[0, 0])
-wedges, texts, autotexts = ax.pie(
-    inc_counts.values, labels=None,
-    colors=[INC_COLORS[i] for i in INC_ORDER],
-    autopct=lambda p: f"{p:.1f}%",
-    startangle=90, pctdistance=0.75,
-    wedgeprops=dict(width=0.45, edgecolor="white", linewidth=2),
-)
-for at in autotexts:
-    at.set_fontsize(8)
-ax.legend(INC_ORDER, loc="lower center", ncol=3, fontsize=7, frameon=False,
-          bbox_to_anchor=(0.5, -0.08))
-ax.set_title("A. Dataset Composition\n(n=6,346)", fontweight="bold", fontsize=10)
+top10_inc = INC_ORDER[:10]
+counts_top10 = inc_counts_series.reindex(top10_inc)
+y_pos = np.arange(len(top10_inc))
+bars = ax.barh(y_pos, counts_top10.values,
+               color=[INC_COLORS[i] for i in top10_inc], edgecolor="white", linewidth=0.5)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(top10_inc, fontsize=7)
+ax.set_xlabel("Plasmids", fontsize=8)
+ax.set_title(f"A. Dataset Composition\n(n={len(plin):,}, {N_GROUPS} Inc groups)", fontweight="bold", fontsize=10)
+ax.invert_yaxis()
+for bar, val in zip(bars, counts_top10.values):
+    ax.text(val + max(counts_top10) * 0.01, bar.get_y() + bar.get_height() / 2,
+            f"{val:,}", va="center", fontsize=6)
 
 # B: Size distribution
 ax = fig7.add_subplot(gs[0, 1])
-for inc in INC_ORDER:
+for inc in INC_ORDER[:3]:
     sub = plin[plin["inc_type"] == inc]
-    ax.hist(sub["length_bp"] / 1000, bins=50, alpha=0.6, color=INC_COLORS[inc],
+    ax.hist(sub["length_bp"] / 1000, bins=50, alpha=0.5, color=INC_COLORS[inc],
             label=inc, edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Length (kb)", fontsize=9)
 ax.set_ylabel("Count", fontsize=9)
@@ -524,7 +525,7 @@ ax.set_xlim(0, 400)
 # C: Clustering resolution
 ax = fig7.add_subplot(gs[0, 2])
 ax.plot(range(len(bins_list)), overall_clusters, "ko-", linewidth=2, markersize=6, label="All", zorder=5)
-for inc in INC_ORDER:
+for inc in INC_ORDER[:3]:
     sub = plin[plin["inc_type"] == inc]
     clusters = [sub[b].nunique() for b in bins_list]
     ax.plot(range(len(bins_list)), clusters, "o-", color=INC_COLORS[inc],
@@ -537,72 +538,75 @@ ax.set_title("C. Hierarchical Resolution", fontweight="bold", fontsize=10)
 ax.legend(frameon=True, fontsize=7)
 
 # ── Row 2: AMR prevalence ──
-# D: AMR/VIR/STRESS prevalence
+# D: AMR/VIR/STRESS prevalence — top groups with data
 ax = fig7.add_subplot(gs[1, 0])
-categories_short = ["AMR", "VIR", "Stress"]
-x = np.arange(len(INC_ORDER))
-width = 0.22
-for j, (cat, col) in enumerate(zip(categories_short, cat_colors)):
-    vals = bar_data[:, j]
-    ax.bar(x + j * width, vals, width, color=col, label=cat, edgecolor="white", linewidth=0.3)
-    for xi, v in zip(x + j * width, vals):
-        ax.text(xi, v + 1.5, f"{v:.0f}%", ha="center", fontsize=6, fontweight="bold")
+top_amr_groups = inc_with_amr[:8]
+n_top = len(top_amr_groups)
+x = np.arange(n_top)
+width = 0.25
+for j, (cat, col) in enumerate(zip(["AMR", "VIR", "Stress"], cat_colors)):
+    vals = bar_data[:n_top, j] if bar_data.shape[0] >= n_top else bar_data[:, j]
+    ax.bar(x[:len(vals)] + j * width, vals, width, color=col, label=cat,
+           edgecolor="white", linewidth=0.3)
 ax.set_xticks(x + width)
-ax.set_xticklabels(INC_ORDER, fontsize=9)
+ax.set_xticklabels(top_amr_groups, fontsize=7, rotation=45, ha="right")
 ax.set_ylabel("Prevalence (%)", fontsize=9)
-ax.set_ylim(0, 100)
+ax.set_ylim(0, 105)
 ax.set_title("D. Gene Prevalence by Inc Type", fontweight="bold", fontsize=10)
 ax.legend(frameon=True, fontsize=7)
 
 # E: Top 10 AMR genes
 ax = fig7.add_subplot(gs[1, 1])
-top10_genes = gene_counts.most_common(10)
-g10_names = [g for g, _ in top10_genes][::-1]
-g10_counts = [c for _, c in top10_genes][::-1]
-g10_pcts = [c / n_amr_pos * 100 for c in g10_counts]
-colors10 = plt.cm.Reds(np.linspace(0.3, 0.85, len(g10_names)))
-bars = ax.barh(range(len(g10_names)), g10_pcts, color=colors10, edgecolor="white", linewidth=0.3)
-ax.set_yticks(range(len(g10_names)))
-ax.set_yticklabels([f"$\\it{{{g}}}$" for g in g10_names], fontsize=7)
-ax.set_xlabel("% of AMR+ plasmids", fontsize=9)
-ax.set_title("E. Top 10 AMR Genes", fontweight="bold", fontsize=10)
-for bar, pct in zip(bars, g10_pcts):
-    ax.text(pct + 0.3, bar.get_y() + bar.get_height()/2, f"{pct:.1f}%", va="center", fontsize=6)
+top10_genes = gene_counts.most_common(10) if gene_counts else []
+if top10_genes:
+    g10_names = [g for g, _ in top10_genes][::-1]
+    g10_counts = [c for _, c in top10_genes][::-1]
+    g10_pcts = [c / max(n_amr_pos, 1) * 100 for c in g10_counts]
+    colors10 = plt.cm.Reds(np.linspace(0.3, 0.85, len(g10_names)))
+    bars = ax.barh(range(len(g10_names)), g10_pcts, color=colors10, edgecolor="white", linewidth=0.3)
+    ax.set_yticks(range(len(g10_names)))
+    ax.set_yticklabels([f"$\\it{{{g}}}$" for g in g10_names], fontsize=7)
+    ax.set_xlabel("% of AMR+ plasmids", fontsize=9)
+    ax.set_title("E. Top 10 AMR Genes", fontweight="bold", fontsize=10)
+    for bar, pct in zip(bars, g10_pcts):
+        ax.text(pct + 0.3, bar.get_y() + bar.get_height() / 2, f"{pct:.1f}%", va="center", fontsize=6)
 
 # F: Drug classes
 ax = fig7.add_subplot(gs[1, 2])
-top8_cls = class_counts.most_common(8)
-c8_names = [c for c, _ in top8_cls][::-1]
-c8_counts = [c for _, c in top8_cls][::-1]
-colors8 = plt.cm.Blues(np.linspace(0.3, 0.85, len(c8_names)))
-bars = ax.barh(range(len(c8_names)), c8_counts, color=colors8, edgecolor="white", linewidth=0.3)
-ax.set_yticks(range(len(c8_names)))
-ax.set_yticklabels(c8_names, fontsize=7)
-ax.set_xlabel("Plasmids", fontsize=9)
-ax.set_title("F. AMR Drug Classes", fontweight="bold", fontsize=10)
+top8_cls = class_counts.most_common(8) if class_counts else []
+if top8_cls:
+    c8_names = [c for c, _ in top8_cls][::-1]
+    c8_counts = [c for _, c in top8_cls][::-1]
+    colors8 = plt.cm.Blues(np.linspace(0.3, 0.85, len(c8_names)))
+    bars = ax.barh(range(len(c8_names)), c8_counts, color=colors8, edgecolor="white", linewidth=0.3)
+    ax.set_yticks(range(len(c8_names)))
+    ax.set_yticklabels(c8_names, fontsize=7)
+    ax.set_xlabel("Plasmids", fontsize=9)
+    ax.set_title("F. AMR Drug Classes", fontweight="bold", fontsize=10)
 
 # ── Row 3: pLIN-AMR heatmap (spans full width) ──
 ax = fig7.add_subplot(gs[2, :])
-im = ax.imshow(heatmap_data, cmap=cmap, aspect="auto", vmin=0, vmax=100)
-ax.set_xticks(range(len(top15_genes)))
-ax.set_xticklabels([f"$\\it{{{g}}}$" for g in top15_genes], rotation=45, ha="right", fontsize=8)
-ax.set_yticks(range(len(top_plins)))
-short_labels = []
-for pcode in top_plins:
-    sub = merged[(merged["pLIN"] == pcode) & (merged["n_amr_genes"] > 0)]
-    incs = ",".join(sorted(sub["inc_type_x"].unique()))
-    short_labels.append(f"{pcode} ({incs}, n={len(sub)})")
-ax.set_yticklabels(short_labels, fontsize=7)
-for i in range(len(top_plins)):
-    for j in range(len(top15_genes)):
-        val = heatmap_data[i, j]
-        if val > 0:
-            color = "white" if val > 55 else "black"
-            ax.text(j, i, f"{val:.0f}", ha="center", va="center", fontsize=6.5,
-                    color=color, fontweight="bold" if val > 50 else "normal")
-cbar = plt.colorbar(im, ax=ax, shrink=0.6, label="Prevalence (%)", pad=0.02)
-cbar.ax.tick_params(labelsize=7)
-ax.set_title("G. AMR Gene Prevalence (%) in Top pLIN Lineages", fontweight="bold", fontsize=11)
+if heatmap_data.shape[0] > 0:
+    im = ax.imshow(heatmap_data, cmap=cmap, aspect="auto", vmin=0, vmax=100)
+    ax.set_xticks(range(len(top15_genes)))
+    ax.set_xticklabels([f"$\\it{{{g}}}$" for g in top15_genes], rotation=45, ha="right", fontsize=8)
+    ax.set_yticks(range(len(top_plins)))
+    short_labels = []
+    for pcode in top_plins:
+        sub = merged[(merged["pLIN"] == pcode) & (merged["n_amr_genes"] > 0)]
+        incs = ",".join(sorted(sub[INC_COL].unique()))
+        short_labels.append(f"{pcode} ({incs}, n={len(sub)})")
+    ax.set_yticklabels(short_labels, fontsize=6.5)
+    for i in range(len(top_plins)):
+        for j in range(len(top15_genes)):
+            val = heatmap_data[i, j]
+            if val > 0:
+                color = "white" if val > 55 else "black"
+                ax.text(j, i, f"{val:.0f}", ha="center", va="center", fontsize=6,
+                        color=color, fontweight="bold" if val > 50 else "normal")
+    cbar = plt.colorbar(im, ax=ax, shrink=0.6, label="Prevalence (%)", pad=0.02)
+    cbar.ax.tick_params(labelsize=7)
+    ax.set_title("G. AMR Gene Prevalence (%) in Top pLIN Lineages", fontweight="bold", fontsize=11)
 
 # ── Row 4: Critical genes + co-occurrence ──
 # H: Carbapenemases
@@ -619,10 +623,10 @@ if top8_carb:
     ax.set_yticklabels([f"$\\it{{{g}}}$" for g in cn], fontsize=7)
     ax.set_xlabel("Detections", fontsize=9)
     for bar, cnt in zip(bars, cv):
-        ax.text(cnt + 5, bar.get_y() + bar.get_height()/2, str(cnt), va="center", fontsize=7)
+        ax.text(cnt + max(cv) * 0.02, bar.get_y() + bar.get_height() / 2, str(cnt), va="center", fontsize=7)
 ax.set_title("H. Carbapenemases", fontweight="bold", fontsize=10)
 
-# I: Colistin + PMQR
+# I: Colistin
 ax = fig7.add_subplot(gs[3, 1])
 mcr_genes = [g for g in all_genes_flat if "mcr-" in g]
 mcr_counts = Counter(mcr_genes)
@@ -636,18 +640,18 @@ if top6_mcr:
     ax.set_yticklabels([f"$\\it{{{g}}}$" for g in mn], fontsize=7)
     ax.set_xlabel("Detections", fontsize=9)
     for bar, cnt in zip(bars, mv):
-        ax.text(cnt + 1, bar.get_y() + bar.get_height()/2, str(cnt), va="center", fontsize=7)
+        ax.text(cnt + max(mv) * 0.02, bar.get_y() + bar.get_height() / 2, str(cnt), va="center", fontsize=7)
 ax.set_title("I. Colistin Resistance (mcr)", fontweight="bold", fontsize=10)
 
-# J: AMR-Virulence co-occurrence scatter
+# J: Co-occurrence scatter
 ax = fig7.add_subplot(gs[3, 2])
-for inc in INC_ORDER:
-    sub = merged[(merged["inc_type_x"] == inc) & (merged["n_total_hits"] > 0)]
+for inc in INC_ORDER[:5]:
+    sub = merged[(merged[INC_COL] == inc) & (merged["n_total_hits"] > 0)]
     ax.scatter(sub["n_amr_genes"], sub["n_vir_genes"],
-               c=INC_COLORS[inc], alpha=0.25, s=10, label=inc, edgecolors="none")
+               c=[INC_COLORS[inc]], alpha=0.25, s=10, label=inc, edgecolors="none")
 ax.set_xlabel("AMR Genes", fontsize=9)
 ax.set_ylabel("Virulence Genes", fontsize=9)
-ax.set_title("J. AMR–Virulence Co-occurrence", fontweight="bold", fontsize=10)
+ax.set_title("J. AMR\u2013Virulence Co-occurrence", fontweight="bold", fontsize=10)
 ax.legend(frameon=True, fontsize=7, markerscale=2)
 
 fig7.savefig(os.path.join(FIG_DIR, "Figure7_composite_manuscript.png"))
@@ -659,9 +663,11 @@ print("  Figure 7 saved.")
 # ══════════════════════════════════════════════════════════════════════════════
 print(f"\n{'='*60}")
 print(f"All figures saved to: {FIG_DIR}")
+print(f"Dataset: {len(plin):,} plasmids | {N_GROUPS} Inc groups | {plin['pLIN'].nunique():,} unique pLIN codes")
 print(f"{'='*60}")
 for f in sorted(os.listdir(FIG_DIR)):
-    fpath = os.path.join(FIG_DIR, f)
-    size_kb = os.path.getsize(fpath) / 1024
-    print(f"  {f:<45s} {size_kb:>8.1f} KB")
+    if f.startswith("Figure") and (f.endswith(".png") or f.endswith(".pdf")):
+        fpath = os.path.join(FIG_DIR, f)
+        size_kb = os.path.getsize(fpath) / 1024
+        print(f"  {f:<50s} {size_kb:>8.1f} KB")
 print(f"{'='*60}")
