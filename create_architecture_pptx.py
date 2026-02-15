@@ -133,10 +133,10 @@ add_text(slide, Inches(0.8), Inches(2.6), Inches(11.5), Inches(0.8),
 
 # Feature boxes
 features = [
-    ("6,346", "Training\nPlasmids"),
-    ("3", "Inc Groups\n(FII, N, X1)"),
+    ("6,998", "Training\nPlasmids"),
+    ("20", "Inc Groups\n(20 families)"),
     ("2,232", "Unique pLIN\nCodes"),
-    ("96.1%", "Inc Detection\nAccuracy"),
+    ("92.2%", "Inc Detection\nAccuracy"),
     ("27,465", "AMR Gene\nDetections"),
 ]
 for i, (num, label) in enumerate(features):
@@ -180,7 +180,7 @@ add_text(slide, Inches(3.8), Inches(1.7), Inches(2.4), Inches(0.4),
 add_multiline(slide, Inches(3.8), Inches(2.1), Inches(2.4), Inches(0.8), [
     "KNN Classifier (k=5)",
     "Cosine distance on 4-mers",
-    "Trained on 6,346 plasmids",
+    "Trained on 6,998 plasmids",
 ], font_size=11, color=DARK_GRAY)
 
 # Arrow 2
@@ -282,12 +282,12 @@ add_header_bar(slide, "pLIN Classification System", "Six-level hierarchical codi
 
 # Threshold table
 levels = [
-    ("A", "Family", "0.150", "~85%", "#E53935"),
-    ("B", "Subfamily", "0.100", "~90%", "#FB8C00"),
-    ("C", "Cluster", "0.050", "~95%", "#FDD835"),
-    ("D", "Subcluster", "0.020", "~98%", "#43A047"),
-    ("E", "Clone", "0.010", "~99%", "#1E88E5"),
-    ("F", "Strain", "0.001", "~99.9%", "#8E24AA"),
+    ("A", "L1 (Family)", "0.150", "~85%", "#E53935"),
+    ("B", "L2 (Subfamily)", "0.100", "~90%", "#FB8C00"),
+    ("C", "L3 (Cluster)", "0.050", "~95%", "#FDD835"),
+    ("D", "L4 (Subcluster)", "0.020", "~98%", "#43A047"),
+    ("E", "L5 (Clone)", "0.010", "~99%", "#1E88E5"),
+    ("F", "L6 (Strain)", "0.001", "~99.9%", "#8E24AA"),
 ]
 
 # Table header
@@ -369,36 +369,38 @@ for i, (num, title, desc, color) in enumerate(steps):
 
 slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_bg(slide, WHITE)
-add_header_bar(slide, "Inc Group Auto-Detection", "KNN classifier trained on 6,346 RefSeq plasmids")
+add_header_bar(slide, "Inc Group Auto-Detection", "KNN classifier trained on 6,998 RefSeq plasmids across 20 Inc groups")
 
 # Training data
 add_text(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(0.5),
-         "Training Dataset", font_size=20, bold=True, color=DARK_BLUE)
+         "Training Dataset (Top 6 of 20 Inc Groups)", font_size=18, bold=True, color=DARK_BLUE)
 
 groups = [
-    ("IncFII", "4,581", "72.2%", RED),
-    ("IncN", "1,064", "16.8%", GREEN),
-    ("IncX1", "701", "11.0%", MED_BLUE),
+    ("IncFII", "4,629", "66.1%", RED),
+    ("IncN", "1,064", "15.2%", GREEN),
+    ("IncX1", "701", "10.0%", MED_BLUE),
+    ("IncF", "148", "2.1%", ORANGE),
+    ("IncI1", "72", "1.0%", PURPLE),
+    ("Others (14)", "384", "5.5%", MED_GRAY),
 ]
 
 for i, (name, count, pct, color) in enumerate(groups):
-    y = Inches(2.2 + i * 0.9)
-    bar_width = float(pct.replace("%", "")) / 100 * 5.5
-    add_box(slide, Inches(0.5), y, Inches(bar_width), Inches(0.6), color)
-    add_text(slide, Inches(0.7), y + Inches(0.1), Inches(3), Inches(0.4),
-             f"{name}  —  {count} plasmids ({pct})", font_size=14, bold=True, color=WHITE)
+    y = Inches(2.1 + i * 0.7)
+    bar_width = max(0.5, float(pct.replace("%", "")) / 100 * 5.5)
+    add_box(slide, Inches(0.5), y, Inches(bar_width), Inches(0.5), color)
+    add_text(slide, Inches(0.7), y + Inches(0.07), Inches(4), Inches(0.35),
+             f"{name}  —  {count} ({pct})", font_size=12, bold=True, color=WHITE)
 
 # Classifier details
-add_text(slide, Inches(0.5), Inches(5.0), Inches(6), Inches(0.5),
-         "Classifier Details", font_size=18, bold=True, color=DARK_BLUE)
+add_text(slide, Inches(0.5), Inches(6.4), Inches(6), Inches(0.5),
+         "Classifier Details", font_size=16, bold=True, color=DARK_BLUE)
 details = [
-    "Algorithm: K-Nearest Neighbors (k=5, distance-weighted)",
-    "Distance metric: Cosine distance on 4-mer frequency vectors",
-    "5-fold cross-validation accuracy: 96.1% \u00b1 0.6%",
-    "Hold-out test accuracy: 100% (200 samples per group)",
-    "Model file: data/inc_classifier.npz (4.3 MB)",
+    "Algorithm: K-Nearest Neighbors (k=5, cosine, distance-weighted)",
+    "5-fold stratified cross-validation accuracy: 92.2%",
+    "Dynamic k: adapts to smallest class size",
+    "Model file: data/inc_classifier.npz",
 ]
-add_multiline(slide, Inches(0.5), Inches(5.5), Inches(6), Inches(1.5), details, font_size=13, color=DARK_GRAY)
+add_multiline(slide, Inches(0.5), Inches(6.8), Inches(6), Inches(0.8), details, font_size=11, color=DARK_GRAY)
 
 # Right side: How it works
 add_text(slide, Inches(7.0), Inches(1.6), Inches(6), Inches(0.5),
@@ -434,8 +436,8 @@ add_text(slide, Inches(7.2), Inches(5.8), Inches(5.4), Inches(0.3),
          "Example Output:", font_size=12, bold=True, color=ORANGE)
 add_multiline(slide, Inches(7.2), Inches(6.1), Inches(5.4), Inches(0.8), [
     "Plasmid: SP12_P2  \u2192  IncX1 (confidence: 0.79)",
-    "  IncFII: 0.00  |  IncN: 0.21  |  IncX1: 0.79",
-], font_size=12, color=DARK_GRAY, font_name="Consolas")
+    "  Top 5: IncX1: 0.79 | IncN: 0.12 | IncX3: 0.04 | IncFII: 0.03 | IncI1: 0.02",
+], font_size=11, color=DARK_GRAY, font_name="Consolas")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -525,23 +527,25 @@ add_text(slide, Inches(0.7), Inches(2.92), Inches(2), Inches(0.35),
 
 # Tabs
 tabs_info = [
-    ("Overview", "pLIN description\nThreshold table\nMetrics dashboard\nAdaptive threshold info", MED_BLUE),
-    ("Results", "Interactive data table\nSearch/filter\nMobility column\npLIN distribution", GREEN),
-    ("Cladogram", "4 visualization types:\n\u2022 Rectangular\n\u2022 Circular\n\u2022 Heatmap\n\u2022 AMR Annotated", ORANGE),
-    ("AMR", "Gene prevalence\nDrug class pie\nCritical gene alerts\nFull detection table", RED),
-    ("Epidemiology", "Mobility prediction\nOutbreak detection\nRisk stratification\nDissemination risk", TEAL),
-    ("Export", "TSV tables\nPNG/PDF figures\nZIP bundle\nMobility + outbreak", PURPLE),
+    ("Overview", "pLIN description\nThreshold table\nMetrics dashboard", MED_BLUE),
+    ("Results", "Interactive data table\nSearch/filter\npLIN distribution", GREEN),
+    ("Cladogram", "Rectangular\nCircular\nHeatmap\nAMR Annotated", ORANGE),
+    ("AMR", "Gene prevalence\nDrug class pie\nCritical alerts", RED),
+    ("Epidemiology", "Mobility prediction\nOutbreak detection\nRisk stratification", TEAL),
+    ("CRISPR Host", "Spacer extraction\nHost-plasmid heatmap\nProbability ranking", RGBColor(0x00, 0x69, 0x5C)),
+    ("Buddy", "AI chatbot\nContext-aware Q&A\nOllama LLM", RGBColor(0x6A, 0x1B, 0x9A)),
+    ("Export", "TSV tables\nPNG/PDF figures\nZIP bundle", PURPLE),
 ]
 
 for i, (name, desc, color) in enumerate(tabs_info):
-    x = Inches(0.5 + i * 2.1)
+    x = Inches(0.4 + i * 1.6)
     y = Inches(3.8)
-    add_box(slide, x, y, Inches(1.95), Inches(0.45), color)
-    add_text(slide, x, y + Inches(0.05), Inches(1.95), Inches(0.35),
-             name, font_size=11, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
-    add_box(slide, x, y + Inches(0.45), Inches(1.95), Inches(2.5), WHITE, border_color=color, border_width=Pt(1))
-    add_multiline(slide, x + Inches(0.05), y + Inches(0.55), Inches(1.85), Inches(2.3),
-                  desc.split("\n"), font_size=9, color=DARK_GRAY)
+    add_box(slide, x, y, Inches(1.5), Inches(0.4), color)
+    add_text(slide, x, y + Inches(0.03), Inches(1.5), Inches(0.35),
+             name, font_size=9, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    add_box(slide, x, y + Inches(0.4), Inches(1.5), Inches(2.5), WHITE, border_color=color, border_width=Pt(1))
+    add_multiline(slide, x + Inches(0.05), y + Inches(0.5), Inches(1.4), Inches(2.3),
+                  desc.split("\n"), font_size=8, color=DARK_GRAY)
 
 # Sidebar
 add_box(slide, Inches(9.3), Inches(2.2), Inches(3.7), Inches(4.8), LIGHT_GRAY, border_color=MED_GRAY, border_width=Pt(1))
@@ -599,12 +603,14 @@ add_text(slide, Inches(5.2), Inches(1.6), Inches(3.5), Inches(0.5),
 
 data_items = [
     "plasmid_sequences_for_training/",
-    "  \u251c\u2500 IncFII/fastas/  (4,581 files)",
-    "  \u251c\u2500 IncN/fastas/    (1,064 files)",
-    "  \u2514\u2500 IncX1/fastas/   (701 files)",
+    "  \u251c\u2500 20 Inc group folders/fastas/",
+    "  \u2514\u2500 6,998 training files total",
+    "",
+    "reference/",
+    "  \u2514\u2500 72,556 individual plasmid FASTAs",
     "",
     "data/",
-    "  \u251c\u2500 inc_classifier.npz (4.3 MB)",
+    "  \u251c\u2500 inc_classifier.npz",
     "  \u2514\u2500 inc_centroids.npz",
     "",
     "test_plasmids/",
@@ -699,7 +705,7 @@ add_text(slide, Inches(0.7), Inches(5.7), Inches(12), Inches(0.4),
 
 metrics = [
     ("Simpson's D", "0.979", "Discriminatory power of pLIN system"),
-    ("CV Accuracy", "96.1%", "Inc group auto-detection (5-fold)"),
+    ("CV Accuracy", "92.2%", "Inc group auto-detection (20 groups, 5-fold)"),
     ("XGBoost F1", "0.903", "ML validation of k-mer features"),
     ("Concordance", "99.5%", "Composition vs known Inc groups"),
 ]
@@ -749,11 +755,11 @@ add_box(slide, Inches(0.4), Inches(4.3), Inches(6.2), Inches(2.8), WHITE, border
 add_text(slide, Inches(0.6), Inches(4.4), Inches(5.8), Inches(0.4),
          "Plasmid Mobility Prediction", font_size=16, bold=True, color=ORANGE)
 add_multiline(slide, Inches(0.6), Inches(4.9), Inches(5.8), Inches(2.0), [
-    "Classifies plasmids as Conjugative, Mobilizable, or Non-mobilizable",
-    "Scans AMRFinderPlus output for transfer/mobilization gene markers:",
-    "  Conjugative: tra/trb genes (Type IV secretion system)",
-    "  Mobilizable: mob genes (relaxase, oriT)",
+    "3-tier priority cascade: MOBsuite \u2192 AMRFinderPlus \u2192 Non-mobilizable",
+    "MOBsuite mob_typer: relaxase families (MOBF/H/P/Q/C/V) + MPF types",
+    "AMRFinderPlus scan: tra/trb/mob/virB1-11/trwA-N/pilX/taxC/nikC-E",
     "Conjugative + AMR plasmids flagged as HIGH RISK for dissemination",
+    "Relaxase family and MPF type charts in Epidemiology tab",
     "Enables risk-stratified surveillance of AMR-carrying plasmids",
 ], font_size=11, color=DARK_GRAY)
 
@@ -772,7 +778,165 @@ add_multiline(slide, Inches(7.1), Inches(4.9), Inches(5.6), Inches(2.0), [
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 10: Nucleotide Transformer LLM Integration
+# SLIDE 10: MOBsuite Mobility Typing (NEW)
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "MOBsuite Mobility Typing",
+               "Relaxase family classification and Mating Pair Formation typing")
+
+# Left: 3-tier cascade
+add_text(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(0.5),
+         "3-Tier Mobility Classification Cascade", font_size=18, bold=True, color=ORANGE)
+
+tiers = [
+    ("Priority 1: MOBsuite", "mob_typer classifies relaxase family (MOBF, MOBH, MOBP, MOBQ, MOBC, MOBV)\n"
+     "and MPF type (Type T, F, I, G). Most reliable when available.",
+     ORANGE, "HIGHEST"),
+    ("Priority 2: AMRFinderPlus", "Scans detected genes for transfer/mobilization markers:\n"
+     "Conjugative: tra/trb + virB1-11, trwA-N, pilX, taxC | Mobilizable: mob, nikC-E, oriT",
+     MED_BLUE, "MEDIUM"),
+    ("Priority 3: Non-mobilizable", "If no transfer genes detected by either method,\n"
+     "plasmid classified as Non-mobilizable (default).",
+     MED_GRAY, "DEFAULT"),
+]
+
+for i, (title, desc, color, priority) in enumerate(tiers):
+    y = Inches(2.2 + i * 1.5)
+    add_box(slide, Inches(0.5), y, Inches(6.0), Inches(1.3), WHITE, border_color=color, border_width=Pt(2))
+    add_text(slide, Inches(0.7), y + Inches(0.1), Inches(4.5), Inches(0.35),
+             title, font_size=14, bold=True, color=color)
+    add_text(slide, Inches(5.0), y + Inches(0.1), Inches(1.3), Inches(0.35),
+             priority, font_size=10, bold=True, color=color, alignment=PP_ALIGN.RIGHT)
+    add_text(slide, Inches(0.7), y + Inches(0.5), Inches(5.6), Inches(0.7),
+             desc, font_size=11, color=DARK_GRAY)
+    if i < len(tiers) - 1:
+        add_arrow(slide, Inches(3.2), y + Inches(1.3), Inches(0.4), Inches(0.2), color=MED_GRAY)
+
+# Right: Relaxase families + MPF types
+add_text(slide, Inches(7.0), Inches(1.6), Inches(6), Inches(0.5),
+         "Relaxase Families & MPF Types", font_size=18, bold=True, color=ORANGE)
+
+relaxases = [
+    ("MOBF", "F-type relaxases (IncF family)"),
+    ("MOBH", "H-type relaxases (IncHI family)"),
+    ("MOBP", "P-type relaxases (broad host range)"),
+    ("MOBQ", "Q-type relaxases (small plasmids)"),
+    ("MOBC", "C-type relaxases (ColE-like)"),
+    ("MOBV", "V-type relaxases (Vibrio-associated)"),
+]
+
+for i, (name, desc) in enumerate(relaxases):
+    y = Inches(2.2 + i * 0.5)
+    add_text(slide, Inches(7.2), y, Inches(1.2), Inches(0.35),
+             name, font_size=12, bold=True, color=ORANGE, font_name="Consolas")
+    add_text(slide, Inches(8.5), y, Inches(4.3), Inches(0.35),
+             desc, font_size=11, color=DARK_GRAY)
+
+add_text(slide, Inches(7.0), Inches(5.3), Inches(6), Inches(0.4),
+         "MPF Types (Mating Pair Formation)", font_size=14, bold=True, color=ORANGE)
+
+mpf_types = [("Type T", "T4SS-related"), ("Type F", "F-pilus"), ("Type I", "I-pilus"), ("Type G", "Gram-positive")]
+for i, (mtype, desc) in enumerate(mpf_types):
+    x = Inches(7.0 + i * 1.55)
+    add_box(slide, x, Inches(5.7), Inches(1.4), Inches(0.7), WHITE, border_color=ORANGE, border_width=Pt(1))
+    add_text(slide, x, Inches(5.75), Inches(1.4), Inches(0.3),
+             mtype, font_size=11, bold=True, color=ORANGE, alignment=PP_ALIGN.CENTER)
+    add_text(slide, x, Inches(6.05), Inches(1.4), Inches(0.3),
+             desc, font_size=9, color=MED_GRAY, alignment=PP_ALIGN.CENTER)
+
+# Risk stratification box at bottom
+add_box(slide, Inches(0.5), Inches(6.5), Inches(12.4), Inches(0.7), RGBColor(0xFF, 0xEB, 0xEE), border_color=RED, border_width=Pt(2))
+add_text(slide, Inches(0.7), Inches(6.55), Inches(5), Inches(0.3),
+         "Risk Stratification:", font_size=12, bold=True, color=RED)
+add_text(slide, Inches(0.7), Inches(6.85), Inches(12), Inches(0.3),
+         "Conjugative + AMR \u2192 HIGH RISK    |    Mobilizable + AMR \u2192 MODERATE RISK    |    Non-mobilizable \u2192 LOWER RISK",
+         font_size=11, color=DARK_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 11: CRISPR Host Inference (NEW)
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "CRISPR Spacer-Based Host Inference",
+               "Inferring plasmid-host relationships from CRISPR array matching")
+
+# Left: Pipeline
+add_text(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(0.5),
+         "Host Inference Pipeline", font_size=18, bold=True, color=TEAL)
+
+crispr_steps = [
+    ("1", "Upload Host Genomes", "Bacterial genome FASTAs (one or more hosts)", TEAL),
+    ("2", "Extract CRISPR Spacers", "MinCED identifies CRISPR arrays and extracts spacer sequences", GREEN),
+    ("3", "BLAST Spacers vs Plasmids", "BLASTN-short with -dust no -word_size 7 -evalue 1e-5", MED_BLUE),
+    ("4", "Stringent Filtering", "\u226595% identity, \u226525bp alignment, \u22641 mismatch, 0 gaps", ORANGE),
+    ("5", "Probability Ranking", "Softmax normalization per host-plasmid pair (temperature=1.0)", PURPLE),
+]
+
+for i, (num, title, desc, color) in enumerate(crispr_steps):
+    y = Inches(2.2 + i * 0.9)
+    circ = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(0.5), y, Inches(0.35), Inches(0.35))
+    circ.fill.solid()
+    circ.fill.fore_color.rgb = color
+    circ.line.fill.background()
+    tf = circ.text_frame
+    tf.paragraphs[0].text = num
+    tf.paragraphs[0].font.size = Pt(12)
+    tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = WHITE
+    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+    add_text(slide, Inches(1.0), y - Inches(0.02), Inches(5.5), Inches(0.3),
+             title, font_size=13, bold=True, color=color)
+    add_text(slide, Inches(1.0), y + Inches(0.28), Inches(5.5), Inches(0.3),
+             desc, font_size=10, color=MED_GRAY)
+
+    if i < len(crispr_steps) - 1:
+        line = slide.shapes.add_connector(1, Inches(0.68), y + Inches(0.35), Inches(0.68), y + Inches(0.9))
+        line.line.color.rgb = LIGHT_BLUE
+        line.line.width = Pt(2)
+
+# Right: Features
+add_text(slide, Inches(7.0), Inches(1.6), Inches(6), Inches(0.5),
+         "Key Features", font_size=18, bold=True, color=TEAL)
+
+feature_boxes = [
+    ("Two Source Modes", "Match spacers against uploaded plasmids\nor built-in reference DB (72,556 plasmids)",
+     RGBColor(0xE0, 0xF2, 0xF1), TEAL),
+    ("Confidence Categories", "High (\u22650.7): Strong CRISPR evidence\n"
+     "Medium (\u22650.4): Moderate support\nLow (<0.4): Weak association",
+     RGBColor(0xE8, 0xF5, 0xE9), GREEN),
+    ("Rich Visualizations", "Host-plasmid probability heatmap\n"
+     "Confidence pie chart, spacers bar chart\nFiltered BLAST hits expander",
+     RGBColor(0xE3, 0xF2, 0xFD), MED_BLUE),
+    ("Full Export", "CRISPR host predictions TSV\n"
+     "Extracted spacers TSV\nIncluded in ZIP bundle",
+     RGBColor(0xF3, 0xE5, 0xF5), PURPLE),
+]
+
+for i, (title, desc, bg_color, text_color) in enumerate(feature_boxes):
+    y = Inches(2.2 + i * 1.2)
+    add_box(slide, Inches(7.0), y, Inches(5.8), Inches(1.05), bg_color, border_color=text_color, border_width=Pt(1))
+    add_text(slide, Inches(7.2), y + Inches(0.05), Inches(5.4), Inches(0.3),
+             title, font_size=13, bold=True, color=text_color)
+    add_text(slide, Inches(7.2), y + Inches(0.35), Inches(5.4), Inches(0.65),
+             desc, font_size=10, color=DARK_GRAY)
+
+# Bottom info box
+add_box(slide, Inches(0.5), Inches(6.6), Inches(12.4), Inches(0.6), RGBColor(0xE0, 0xF2, 0xF1), border_color=TEAL, border_width=Pt(2))
+add_text(slide, Inches(0.7), Inches(6.65), Inches(12), Inches(0.5),
+         "Tools: MinCED 0.4.2 (spacer extraction) + BLASTN (NCBI BLAST+) | "
+         "Spacer IDs: {genome}__spacer_{N} for host tracing | "
+         "Numerically stable softmax with max-subtraction",
+         font_size=10, color=TEAL)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 12: Nucleotide Transformer LLM Integration
 # ══════════════════════════════════════════════════════════════════════════════
 
 slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -794,7 +958,7 @@ add_text(slide, Inches(0.9), Inches(2.15), Inches(5.1), Inches(0.35),
 add_multiline(slide, Inches(0.9), Inches(2.55), Inches(5.1), Inches(1.3), [
     "FASTA \u2192 4-mer frequency vectors (256D)",
     "KNN classifier (k=5, cosine distance)",
-    "96.1% cross-validation accuracy",
+    "92.2% cross-validation accuracy (20 groups)",
     "Instant inference (\u003C100ms)",
 ], font_size=11, color=DARK_GRAY)
 
@@ -961,12 +1125,12 @@ novelty_items = [
      MED_BLUE),
     ("Permanent, Hierarchical Codes",
      "pLIN codes are stable and never change when new sequences are added. Existing plasmid typing schemes "
-     "(e.g., pMLST) can reassign types as databases grow. The six-level hierarchy (Family \u2192 Strain) provides "
+     "(e.g., pMLST) can reassign types as databases grow. The six-level hierarchy (L1 \u2192 L6) provides "
      "resolution at multiple scales in a single code — no existing system offers this.",
      GREEN),
     ("Composition-Based Inc Group Detection",
      "Most Inc group detection tools (PlasmidFinder, COPLA) require gene-level BLAST searches. pLIN's KNN "
-     "classifier predicts Inc group from global k-mer composition alone (96% accuracy), enabling classification "
+     "classifier predicts Inc group from global k-mer composition alone (92% accuracy, 20 groups), enabling classification "
      "even when replicon genes are fragmented, truncated, or absent from assemblies.",
      ORANGE),
     ("Integrated AMR Surveillance Pipeline",
@@ -1019,26 +1183,26 @@ add_text(slide, Inches(0.5), Inches(1.6), Inches(6), Inches(0.5),
          "Current Limitations", font_size=20, bold=True, color=RED)
 
 limitations = [
-    ("Limited Inc Group Coverage",
-     "Classifier trained on 3 Inc groups only (IncFII, IncN, IncX1). Plasmids from IncA/C, IncI, "
-     "IncL/M, IncP, IncQ, ColE-type, and other groups will be misclassified into the nearest "
-     "available category. Expanding training data is essential."),
+    ("Uneven Inc Group Class Sizes",
+     "Classifier covers 20 Inc groups but with uneven training data: IncFII has 4,629 samples "
+     "while IncFIBK has only 11. Smaller classes may have lower per-class accuracy. "
+     "Balanced augmentation is needed for underrepresented groups."),
     ("Composition-Only Features",
      "4-mer frequency captures global sequence composition but ignores gene content, synteny, "
      "and structural rearrangements. Two plasmids with similar base composition but different "
      "gene cargo may receive similar pLIN codes at coarse levels."),
     ("Linkage Method Sensitivity",
-     "Single-linkage clustering (default) can produce chain-like clusters. While the tool now supports "
+     "Single-linkage clustering (default) can produce chain-like clusters. While the tool supports "
      "complete, average, and weighted linkage as alternatives, the pLIN thresholds were originally "
-     "calibrated for single-linkage — using other methods may require re-calibration."),
+     "calibrated for single-linkage \u2014 using other methods may require re-calibration."),
     ("No Fragmented Assembly Handling",
      "pLIN expects complete or near-complete plasmid sequences. Short contigs from fragmented "
      "assemblies will have noisy k-mer profiles, reducing classification accuracy. No scaffolding "
      "or multi-contig plasmid reconstruction is performed."),
-    ("Threshold Calibration Coverage",
-     "Adaptive per-Inc-group thresholds are now available, calibrated from training data quantiles. "
-     "However, calibration quality depends on training set size and diversity — smaller groups "
-     "(IncX1: 701 plasmids) may have less reliable thresholds than larger ones (IncFII: 4,581)."),
+    ("CRISPR Host Inference Depends on DB",
+     "CRISPR-based host prediction quality depends on completeness of the host genome "
+     "database and CRISPR array presence. Hosts lacking CRISPR systems will not be detected. "
+     "Reference DB mode requires the 72,556-plasmid sequences.fasta file."),
     ("No Real-Time Database Updates",
      "The KNN classifier uses a static training set. New plasmid submissions to GenBank/RefSeq "
      "are not automatically incorporated. Periodic retraining is needed to maintain accuracy "
@@ -1070,16 +1234,16 @@ add_text(slide, Inches(7.0), Inches(1.6), Inches(6), Inches(0.5),
          "Future Directions", font_size=20, bold=True, color=GREEN)
 
 futures = [
-    ("Expand Inc Group Training",
-     "Add IncA/C, IncI, IncL/M, IncP, IncQ, ColE, and non-typeable plasmids. "
-     "Target: 15+ Inc groups, 20,000+ training sequences.",
+    ("Balance Inc Group Training",
+     "Expand underrepresented groups (IncFIBK, ColE, IncI2) with targeted "
+     "data collection. Target: 30+ Inc groups, 20,000+ balanced training sequences.",
      GREEN),
     ("Hybrid Features",
      "Combine k-mer composition with gene presence/absence and synteny features "
      "for higher-resolution classification at fine levels (E, F).",
      MED_BLUE),
     ("Threshold Cross-Validation",
-     "Systematically validate adaptive thresholds across Inc groups. "
+     "Systematically validate adaptive thresholds across all 20 Inc groups. "
      "Benchmark linkage methods against known plasmid phylogenies.",
      ORANGE),
     ("Metagenomic Support",
@@ -1111,12 +1275,12 @@ for i, (title, desc, color) in enumerate(futures):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 14: Bacterial Buddy — AI Chatbot
+# SLIDE 14: DRAGNOME Buddy — AI Chatbot
 # ══════════════════════════════════════════════════════════════════════════════
 
 slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_bg(slide, WHITE)
-add_header_bar(slide, "Bacterial Buddy — AI Assistant",
+add_header_bar(slide, "DRAGNOME Buddy — AI Assistant",
                "Local LLM-powered chatbot for plasmid biology Q&A")
 
 # Left side: Architecture diagram
@@ -1301,22 +1465,22 @@ add_header_bar(slide, "Complete Feature Summary",
 # Feature grid - 4 columns x 4 rows
 features_grid = [
     # Row 1: Core
-    [("pLIN Classification", "6-level hierarchical codes\n(Family→Strain)", DARK_BLUE),
-     ("Inc Auto-Detection", "KNN classifier, 96.1%\naccuracy, 3 Inc groups", MED_BLUE),
+    [("pLIN Classification", "6-level hierarchical codes\n(L1\u2192L6)", DARK_BLUE),
+     ("Inc Auto-Detection", "KNN classifier, 92.2%\naccuracy, 20 Inc groups", MED_BLUE),
      ("AMRFinderPlus", "AMR/stress/virulence\ngene detection", RED),
      ("Prodigal Annotation", "Full ORF prediction,\ncoding density stats", GREEN)],
     # Row 2: Analysis
-    [("Mobility Prediction", "Conjugative/mobilizable\nfrom tra/mob genes", ORANGE),
+    [("Mobility Prediction", "MOBsuite + AMRFinderPlus\n3-tier cascade", ORANGE),
      ("Outbreak Detection", "Strain + AMR profile\ncluster identification", PURPLE),
-     ("Adaptive Thresholds", "Per-Inc calibrated\ndistance thresholds", TEAL),
-     ("Multi-Linkage", "Single/complete/average\nclustering methods", MED_GRAY)],
+     ("CRISPR Host Inference", "Spacer-based plasmid-host\nsoftmax probability", RGBColor(0x00, 0x69, 0x5C)),
+     ("Adaptive Thresholds", "Per-Inc calibrated\ndistance thresholds", TEAL)],
     # Row 3: AI/ML
     [("Nucleotide Transformer", "LLM-based Inc/AMR\nprediction (optional)", RGBColor(0x6A, 0x1B, 0x9A)),
-     ("Bacterial Buddy", "AI chatbot for Q&A\nvia local Ollama", RGBColor(0x00, 0x69, 0x5C)),
+     ("DRAGNOME Buddy", "AI chatbot for Q&A\nvia local Ollama", RGBColor(0x00, 0x69, 0x5C)),
      ("Unknown Detection", "Low-confidence flagging\n+ top 5 candidates", RGBColor(0xBF, 0x36, 0x0C)),
      ("Context-Aware AI", "Analysis results feed\ninto LLM responses", RGBColor(0x1A, 0x23, 0x7E))],
     # Row 4: Deployment
-    [("Streamlit GUI", "7-tab web interface\nno CLI required", RGBColor(0xFF, 0x4B, 0x4B)),
+    [("Streamlit GUI", "8-tab web interface\nno CLI required", RGBColor(0xFF, 0x4B, 0x4B)),
      ("Docker Support", "Containerized deployment\nfor servers", RGBColor(0x00, 0x97, 0xA7)),
      ("One-Click Launch", "Windows/macOS/Linux\nauto-setup launchers", RGBColor(0x7B, 0x1F, 0xA2)),
      ("Export Options", "TSV, PNG, PDF, ZIP\nbundle downloads", RGBColor(0x2E, 0x7D, 0x32))],
@@ -1334,8 +1498,258 @@ for row_idx, row in enumerate(features_grid):
 
 # Footer
 add_text(slide, Inches(0.5), Inches(7.0), Inches(12.3), Inches(0.3),
-         "pLIN v2.0 — Plasmid Life Identification Number System • GPL-3.0 + Citation Clause • github.com/xavierbasilbritto-hub/pLIN-plasmid-classification",
+         "pLIN v2.1 — Plasmid Life Identification Number System • GPL-3.0 + Citation Clause • github.com/xavierbasilbritto-hub/pLIN-plasmid-classification",
          font_size=10, color=MED_GRAY, alignment=PP_ALIGN.CENTER)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 17: Phase 1 Upgrades — ANI Validation & Metadata Integration
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Phase 1 Upgrades — ANI Validation & Metadata",
+               "Mash/MinHash integration, metadata upload, sequence length warnings")
+
+# Feature 1: Mash/MinHash ANI Estimation
+add_box(slide, Inches(0.4), Inches(1.5), Inches(6.2), Inches(2.5), WHITE, border_color=MED_BLUE, border_width=Pt(2))
+add_text(slide, Inches(0.6), Inches(1.6), Inches(5.8), Inches(0.4),
+         "Mash/MinHash ANI Estimation", font_size=16, bold=True, color=MED_BLUE)
+add_multiline(slide, Inches(0.6), Inches(2.1), Inches(5.8), Inches(1.6), [
+    "Fast pairwise ANI estimation via MinHash sketching",
+    "Parameters: k=21, sketch size=10,000",
+    "ANI estimate = (1 - Mash distance) x 100",
+    "Validates composition-based pLIN thresholds against ANI",
+    "Auto-detects mash binary from PATH / conda environments",
+    "Mean/min/max ANI metrics displayed in Epidemiology tab",
+], font_size=11, color=DARK_GRAY)
+
+# Feature 2: Metadata CSV Upload
+add_box(slide, Inches(6.9), Inches(1.5), Inches(6.0), Inches(2.5), WHITE, border_color=GREEN, border_width=Pt(2))
+add_text(slide, Inches(7.1), Inches(1.6), Inches(5.6), Inches(0.4),
+         "Metadata CSV/TSV Upload", font_size=16, bold=True, color=GREEN)
+add_multiline(slide, Inches(7.1), Inches(2.1), Inches(5.6), Inches(1.6), [
+    "Upload patient/sample metadata alongside plasmid sequences",
+    "Auto-detects join column: plasmid_id, filename, sample_id",
+    "Auto-parses date columns for temporal outbreak clustering",
+    "Merges metadata into integrated results table",
+    "Enables location + date based epidemiological analysis",
+    "Supports both CSV and TSV formats",
+], font_size=11, color=DARK_GRAY)
+
+# Feature 3: Sequence Length Warning
+add_box(slide, Inches(0.4), Inches(4.3), Inches(6.2), Inches(2.8), WHITE, border_color=ORANGE, border_width=Pt(2))
+add_text(slide, Inches(0.6), Inches(4.4), Inches(5.8), Inches(0.4),
+         "Sequence Length Warning System", font_size=16, bold=True, color=ORANGE)
+add_multiline(slide, Inches(0.6), Inches(4.9), Inches(5.8), Inches(2.0), [
+    "Threshold: 5,000 bp (SHORT_PLASMID_THRESHOLD)",
+    "Short plasmids have noisy 4-mer frequency profiles",
+    "Warning displayed in Overview tab with expandable detail",
+    "Shows: plasmid ID, Inc type, length, pLIN code",
+    "Recommends caution for classification of short sequences",
+    "Does not block analysis \u2014 informational warning only",
+], font_size=11, color=DARK_GRAY)
+
+# Feature 4: Adaptive Calibration Default
+add_box(slide, Inches(6.9), Inches(4.3), Inches(6.0), Inches(2.8), WHITE, border_color=PURPLE, border_width=Pt(2))
+add_text(slide, Inches(7.1), Inches(4.4), Inches(5.6), Inches(0.4),
+         "Adaptive Calibration (Now Default)", font_size=16, bold=True, color=PURPLE)
+add_multiline(slide, Inches(7.1), Inches(4.9), Inches(5.6), Inches(2.0), [
+    "Adaptive thresholds now enabled by default (was opt-in)",
+    "Calibrates pLIN thresholds per Inc group automatically",
+    "Uses quantile-based calibration on training distances",
+    "Better handles diverse Inc groups (e.g. IncFII vs IncX1)",
+    "Recommended for most analyses \u2014 fixed thresholds available",
+    "Checkbox still available for universal threshold users",
+], font_size=11, color=DARK_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 18: Phase 2 Upgrades — FastANI, SNP Sub-typing & Temporal Outbreaks
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Phase 2 Upgrades — Genomic Resolution",
+               "FastANI true ANI, minimap2 SNP sub-typing, temporal outbreak clustering")
+
+# Feature 1: FastANI Integration
+add_box(slide, Inches(0.4), Inches(1.5), Inches(4.0), Inches(2.7), WHITE, border_color=MED_BLUE, border_width=Pt(2))
+add_text(slide, Inches(0.6), Inches(1.6), Inches(3.6), Inches(0.4),
+         "FastANI True ANI", font_size=16, bold=True, color=MED_BLUE)
+add_multiline(slide, Inches(0.6), Inches(2.1), Inches(3.6), Inches(1.8), [
+    "All-vs-all true ANI computation",
+    "Optimized for plasmids: --fragLen 1000",
+    "4 threads for parallel execution",
+    "Pairwise ANI + fragment statistics",
+    "Auto-detects fastANI binary",
+    "Ground-truth validation of pLIN",
+], font_size=11, color=DARK_GRAY)
+
+# Feature 2: SNP Sub-typing within L6
+add_box(slide, Inches(4.7), Inches(1.5), Inches(4.0), Inches(2.7), WHITE, border_color=GREEN, border_width=Pt(2))
+add_text(slide, Inches(4.9), Inches(1.6), Inches(3.6), Inches(0.4),
+         "SNP Sub-typing (L6)", font_size=16, bold=True, color=GREEN)
+add_multiline(slide, Inches(4.9), Inches(2.1), Inches(3.6), Inches(1.8), [
+    "minimap2 alignment within L6 clusters",
+    "Preset: -cx asm5 (closely related)",
+    "Counts mismatches from CS tags",
+    "0-SNP pairs flagged as clonal",
+    "Resolves within-strain diversity",
+    "Critical for outbreak investigation",
+], font_size=11, color=DARK_GRAY)
+
+# Feature 3: Temporal Outbreak Clustering
+add_box(slide, Inches(9.0), Inches(1.5), Inches(4.0), Inches(2.7), WHITE, border_color=RED, border_width=Pt(2))
+add_text(slide, Inches(9.2), Inches(1.6), Inches(3.6), Inches(0.4),
+         "Temporal Outbreaks", font_size=16, bold=True, color=RED)
+add_multiline(slide, Inches(9.2), Inches(2.1), Inches(3.6), Inches(1.8), [
+    "30-day sliding window detection",
+    "Requires: L6 code + AMR + dates",
+    "3 risk levels: CRITICAL/HIGH/MOD",
+    "CRITICAL: \u22653 AMR + \u22647 days",
+    "Leverages metadata CSV upload",
+    "Real-time surveillance ready",
+], font_size=11, color=DARK_GRAY)
+
+# Bottom: Analysis Pipeline Flow
+add_box(slide, Inches(0.4), Inches(4.5), Inches(12.5), Inches(2.7), LIGHT_GRAY,
+        border_color=MED_GRAY, border_width=Pt(1))
+add_text(slide, Inches(0.6), Inches(4.6), Inches(12), Inches(0.4),
+         "Enhanced Analysis Pipeline (Steps 8\u201311)", font_size=16, bold=True, color=DARK_BLUE)
+
+pipeline_steps = [
+    ("Step 8b", "Temporal\nOutbreak\nClustering", RED),
+    ("Step 9", "Mash ANI\nEstimation\n(MinHash)", MED_BLUE),
+    ("Step 10", "FastANI\nTrue ANI\nComputation", GREEN),
+    ("Step 11", "minimap2\nSNP Sub-\ntyping", ORANGE),
+]
+
+for i, (step, desc, color) in enumerate(pipeline_steps):
+    x = Inches(0.8 + i * 3.1)
+    add_box(slide, x, Inches(5.2), Inches(2.5), Inches(1.6), WHITE, border_color=color, border_width=Pt(2))
+    add_text(slide, x, Inches(5.25), Inches(2.5), Inches(0.35),
+             step, font_size=13, bold=True, color=color, alignment=PP_ALIGN.CENTER)
+    add_text(slide, x, Inches(5.65), Inches(2.5), Inches(0.9),
+             desc, font_size=11, color=DARK_GRAY, alignment=PP_ALIGN.CENTER)
+
+    if i < len(pipeline_steps) - 1:
+        add_right_arrow(slide, x + Inches(2.55), Inches(5.8), Inches(0.5), Inches(0.3), color=MED_GRAY)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SLIDE 19: Complete Upgrade Summary
+# ══════════════════════════════════════════════════════════════════════════════
+
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+add_bg(slide, WHITE)
+add_header_bar(slide, "Upgrade Summary — v2.1 Feature Matrix",
+               "7 new features across Phase 1 (immediate) and Phase 2 (advanced)")
+
+# Phase 1 header
+add_box(slide, Inches(0.4), Inches(1.5), Inches(6.2), Inches(0.5), MED_BLUE)
+add_text(slide, Inches(0.5), Inches(1.55), Inches(6.0), Inches(0.4),
+         "Phase 1 \u2014 Immediate, High-Value", font_size=16, bold=True, color=WHITE)
+
+phase1_items = [
+    ("1", "Adaptive Calibration Default", "Per-Inc thresholds now enabled by default", MED_BLUE),
+    ("2", "Sequence Length Warning", "Flags plasmids < 5 kb with noisy profiles", ORANGE),
+    ("3", "Metadata CSV Upload", "Patient/sample data for epi analysis", GREEN),
+    ("4", "Mash/MinHash ANI", "Fast ANI validation (k=21, s=10000)", PURPLE),
+]
+
+for i, (num, title, desc, color) in enumerate(phase1_items):
+    y = Inches(2.15 + i * 0.6)
+    circ = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(0.5), y + Inches(0.05), Inches(0.3), Inches(0.3))
+    circ.fill.solid()
+    circ.fill.fore_color.rgb = color
+    circ.line.fill.background()
+    tf = circ.text_frame
+    tf.paragraphs[0].text = num
+    tf.paragraphs[0].font.size = Pt(11)
+    tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = WHITE
+    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    add_text(slide, Inches(0.95), y, Inches(2.5), Inches(0.3),
+             title, font_size=12, bold=True, color=color)
+    add_text(slide, Inches(0.95), y + Inches(0.28), Inches(5.5), Inches(0.25),
+             desc, font_size=10, color=MED_GRAY)
+
+# Phase 2 header
+add_box(slide, Inches(0.4), Inches(4.6), Inches(6.2), Inches(0.5), RED)
+add_text(slide, Inches(0.5), Inches(4.65), Inches(6.0), Inches(0.4),
+         "Phase 2 \u2014 Advanced Genomic Resolution", font_size=16, bold=True, color=WHITE)
+
+phase2_items = [
+    ("5", "FastANI True ANI", "Ground-truth ANI with --fragLen 1000", MED_BLUE),
+    ("6", "SNP Sub-typing (L6)", "minimap2 -cx asm5 within L6 clusters", GREEN),
+    ("7", "Temporal Outbreak Clustering", "30-day window + AMR fingerprint matching", RED),
+]
+
+for i, (num, title, desc, color) in enumerate(phase2_items):
+    y = Inches(5.25 + i * 0.6)
+    circ = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(0.5), y + Inches(0.05), Inches(0.3), Inches(0.3))
+    circ.fill.solid()
+    circ.fill.fore_color.rgb = color
+    circ.line.fill.background()
+    tf = circ.text_frame
+    tf.paragraphs[0].text = num
+    tf.paragraphs[0].font.size = Pt(11)
+    tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.color.rgb = WHITE
+    tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    add_text(slide, Inches(0.95), y, Inches(2.5), Inches(0.3),
+             title, font_size=12, bold=True, color=color)
+    add_text(slide, Inches(0.95), y + Inches(0.28), Inches(5.5), Inches(0.25),
+             desc, font_size=10, color=MED_GRAY)
+
+# Right side: Impact matrix
+add_text(slide, Inches(7.0), Inches(1.5), Inches(6), Inches(0.5),
+         "Impact & Tool Requirements", font_size=18, bold=True, color=DARK_BLUE)
+
+# Impact table header
+add_box(slide, Inches(7.0), Inches(2.1), Inches(5.8), Inches(0.4), DARK_BLUE)
+imp_headers = ["Feature", "Tool", "Impact"]
+imp_widths = [2.0, 1.5, 2.3]
+x = Inches(7.1)
+for h, w in zip(imp_headers, imp_widths):
+    add_text(slide, x, Inches(2.15), Inches(w), Inches(0.3),
+             h, font_size=10, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
+    x += Inches(w)
+
+impact_rows = [
+    ("Adaptive Default", "Built-in", "Better per-Inc accuracy"),
+    ("Length Warning", "Built-in", "User confidence"),
+    ("Metadata Upload", "Built-in", "Epi context"),
+    ("Mash ANI", "mash", "ANI validation"),
+    ("FastANI", "fastANI", "True ANI"),
+    ("SNP Sub-typing", "minimap2", "Outbreak resolution"),
+    ("Temporal Clusters", "Built-in", "Surveillance"),
+]
+
+for i, (feat, tool, impact) in enumerate(impact_rows):
+    y = Inches(2.55 + i * 0.42)
+    bg = LIGHT_GRAY if i % 2 == 0 else WHITE
+    add_box(slide, Inches(7.0), y, Inches(5.8), Inches(0.42), bg)
+    x = Inches(7.1)
+    for val, w in zip([feat, tool, impact], imp_widths):
+        c = GREEN if val == "Built-in" else DARK_GRAY
+        add_text(slide, x, y + Inches(0.08), Inches(w), Inches(0.25),
+                 val, font_size=10, color=c, alignment=PP_ALIGN.CENTER)
+        x += Inches(w)
+
+# Version badge
+add_box(slide, Inches(7.0), Inches(5.7), Inches(5.8), Inches(1.5), RGBColor(0xE8, 0xF5, 0xE9),
+        border_color=GREEN, border_width=Pt(2))
+add_text(slide, Inches(7.2), Inches(5.8), Inches(5.4), Inches(0.4),
+         "pLIN v2.1 \u2014 7 New Features", font_size=16, bold=True, color=GREEN)
+add_multiline(slide, Inches(7.2), Inches(6.3), Inches(5.4), Inches(0.8), [
+    "All Phase 2 tools are optional \u2014 graceful degradation when not installed",
+    "Phase 1 features require no additional software",
+    "Total: 19 slides, 28+ features, full GUI integration",
+], font_size=11, color=DARK_GRAY)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -5,6 +5,8 @@ __pycache__/
 
 # FASTA sequences (too large for GitHub — download from NCBI RefSeq)
 plasmid_sequences_for_training/
+reference/
+sequences.fasta
 
 # Large output files
 output/mash/

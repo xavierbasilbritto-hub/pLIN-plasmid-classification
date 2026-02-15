@@ -60,8 +60,8 @@ PLIN_THRESHOLDS = {
 }
 
 PLIN_LEVEL_NAMES = {
-    "A": "Family", "B": "Subfamily", "C": "Cluster",
-    "D": "Subcluster", "E": "Clone", "F": "Strain",
+    "A": "L1", "B": "L2", "C": "L3",
+    "D": "L4", "E": "L5", "F": "L6",
 }
 
 ANI_EQUIV = {
@@ -82,7 +82,23 @@ STRAIN_COLORS = [
 
 TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 
-INC_GROUPS = ["Auto-detect", "IncFII", "IncN", "IncX1", "IncX", "IncH", "Other"]
+# Paths to precomputed Inc-group classifier data
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+CLASSIFIER_PATH = os.path.join(_APP_DIR, "data", "inc_classifier.npz")
+CENTROID_PATH = os.path.join(_APP_DIR, "data", "inc_centroids.npz")
+
+def _get_inc_groups():
+    """Load Inc group names from classifier data, with Auto-detect and Other."""
+    groups = ["Auto-detect"]
+    if os.path.exists(CLASSIFIER_PATH):
+        data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+        groups.extend(sorted(str(g) for g in data["group_names"]))
+    else:
+        groups.extend(["IncFII", "IncN", "IncX1"])  # fallback
+    groups.append("Other")
+    return groups
+
+INC_GROUPS = _get_inc_groups()
 
 LINKAGE_METHODS = ["single", "complete", "average", "weighted"]
 
@@ -90,34 +106,92 @@ LINKAGE_METHODS = ["single", "complete", "average", "weighted"]
 # Below this threshold, plasmids are flagged as "Unknown/Novel" Inc type
 INC_CONFIDENCE_THRESHOLD = 0.40  # 40% confidence minimum
 
+# Threshold for detecting multiple Inc types (multi-replicon plasmids)
+# If 2+ Inc types have confidence >= this threshold, flag as "Multiple Inc"
+MULTI_INC_THRESHOLD = 0.25  # 25% minimum for secondary Inc types
+
+# Minimum sequence length for reliable 4-mer classification
+# Plasmids shorter than this have high stochastic variance in k-mer profiles
+SHORT_PLASMID_THRESHOLD = 5000  # 5 kb — warn users about unreliable pLIN codes
+
 # Mobility/conjugation marker genes detectable from AMRFinderPlus output
 MOBILITY_GENES = {
     "conjugative": {
-        "tra": "Transfer (conjugation)",
-        "trb": "Transfer (type IV secretion)",
-        "vir": "Virulence/T4SS (conjugation-related)",
+        "tra": "Transfer (F-type conjugation)",
+        "trb": "Transfer (IncP/Ti-type T4SS)",
+        "trw": "Transfer (IncW-type T4SS)",
+        "virB": "Type IV secretion system (T4SS)",
+        "virD": "Relaxase/coupling protein (T4SS)",
+        "pil": "Type IV pilus (conjugation)",
     },
     "mobilizable": {
         "mob": "Mobilization protein",
         "oriT": "Origin of transfer",
-        "nic": "Nickase (relaxase)",
+        "nic/nik": "Nickase (relaxase)",
+        "MOBF/MOBH/MOBP/MOBQ/MOBC/MOBV": "Relaxase MOB families",
     },
 }
 
 # All mobility gene prefixes for scanning
-MOBILITY_PREFIXES_CONJUGATIVE = ["traA", "traB", "traC", "traD", "traE", "traF",
-                                  "traG", "traH", "traI", "traJ", "traK", "traL",
-                                  "traM", "traN", "traP", "traQ", "traR", "traS",
-                                  "traT", "traU", "traV", "traW", "traX", "traY",
-                                  "trbA", "trbB", "trbC", "trbD", "trbE", "trbF",
-                                  "trbG", "trbH", "trbI", "trbJ"]
-MOBILITY_PREFIXES_MOBILIZABLE = ["mobA", "mobB", "mobC", "mobD", "mobE", "mobF",
-                                  "nikA", "nikB"]
+MOBILITY_PREFIXES_CONJUGATIVE = [
+    # tra genes (F-type conjugation system)
+    "traA", "traB", "traC", "traD", "traE", "traF",
+    "traG", "traH", "traI", "traJ", "traK", "traL",
+    "traM", "traN", "traO", "traP", "traQ", "traR",
+    "traS", "traT", "traU", "traV", "traW", "traX", "traY",
+    # trb genes (IncP-type / Ti-type T4SS)
+    "trbA", "trbB", "trbC", "trbD", "trbE", "trbF",
+    "trbG", "trbH", "trbI", "trbJ", "trbK", "trbL", "trbM", "trbN",
+    # trw genes (IncW-type T4SS)
+    "trwA", "trwB", "trwC", "trwD", "trwE", "trwF", "trwG", "trwH",
+    "trwI", "trwJ", "trwK", "trwL", "trwM", "trwN",
+    # virB/virD genes (Agrobacterium-like T4SS, also in conjugative plasmids)
+    "virB1", "virB2", "virB3", "virB4", "virB5", "virB6", "virB7",
+    "virB8", "virB9", "virB10", "virB11", "virD2", "virD4",
+    # Type IV pilus
+    "pilX",
+    # Transfer accessory
+    "taxC",
+]
+MOBILITY_PREFIXES_MOBILIZABLE = [
+    # mob genes (mobilization proteins)
+    "mobA", "mobB", "mobC", "mobD", "mobE", "mobF",
+    # nik genes (nickase/relaxase)
+    "nikA", "nikB", "nikC", "nikD", "nikE",
+    # Relaxase MOB families (as classified by MOBscan)
+    "MOBF", "MOBH", "MOBP", "MOBQ", "MOBC", "MOBV",
+    # oriT-associated
+    "oriT",
+    # Mobilization-associated primase/nickase
+    "mps",
+]
 
-# Paths to precomputed Inc-group classifier data
-_APP_DIR = os.path.dirname(os.path.abspath(__file__))
-CLASSIFIER_PATH = os.path.join(_APP_DIR, "data", "inc_classifier.npz")
-CENTROID_PATH = os.path.join(_APP_DIR, "data", "inc_centroids.npz")
+# Keyword patterns for scanning gene names/descriptions
+MOBILITY_KEYWORDS_CONJUGATIVE = [
+    "conjugal transfer", "conjugative transfer", "conjugation",
+    "type iv secretion", "type 4 secretion", "t4ss",
+    "mating pair formation",
+    "coupling protein", "t4cp",
+    "dna transfer", "sex pilus",
+]
+MOBILITY_KEYWORDS_MOBILIZABLE = [
+    "mobilization", "mobilisation",
+    "relaxase", "relaxosome",
+    "nickase", "origin of transfer", "orit",
+    "mob family",
+]
+
+# ── CRISPR Host Inference Constants ──────────────────────────────────────────
+
+CRISPR_BLAST_IDENTITY_MIN = 95.0      # Minimum % identity for spacer-plasmid hit
+CRISPR_BLAST_ALIGNMENT_MIN = 25       # Minimum alignment length (bp)
+CRISPR_BLAST_MISMATCH_MAX = 1         # Maximum allowed mismatches
+CRISPR_BLAST_GAPS_MAX = 0             # No gaps allowed
+CRISPR_BLAST_EVALUE = 1e-5            # E-value cutoff for blastn-short
+CRISPR_SOFTMAX_TEMPERATURE = 1.0      # Softmax temperature (higher = flatter distribution)
+
+REFERENCE_FASTA_PATH = os.path.join(_APP_DIR, "sequences.fasta")
+REFERENCE_BLASTDB_PATH = os.path.join(_APP_DIR, "reference", "plasmid_blastdb")
 
 # ── Nucleotide Transformer (optional LLM) ────────────────────────────────────
 
@@ -184,9 +258,11 @@ def classify_inc_group(sequence, group_names, classifier):
     """Classify a plasmid to its Inc group using KNN or centroid distance.
 
     Returns dict with:
-        - predicted_group: str (best Inc type or "Unknown/Novel" if low confidence)
+        - predicted_group: str (best Inc type, "Multiple Inc", or "Unknown/Novel")
         - confidence: float (0-1)
         - is_low_confidence: bool
+        - is_multiple_inc: bool (True if 2+ Inc types detected above threshold)
+        - multiple_inc_types: list of (inc_type, confidence) for detected Inc types
         - top5_candidates: list of (inc_type, confidence) tuples
         - all_probabilities: dict {inc_type: probability}
     """
@@ -205,11 +281,28 @@ def classify_inc_group(sequence, group_names, classifier):
         # Check if confidence is below threshold
         is_low_confidence = confidence < INC_CONFIDENCE_THRESHOLD
 
+        # Check for multiple Inc types (multi-replicon plasmids)
+        # Find all Inc types above the multi-Inc threshold
+        high_conf_incs = [(inc, conf) for inc, conf in sorted_candidates if conf >= MULTI_INC_THRESHOLD]
+        is_multiple_inc = len(high_conf_incs) >= 2
+
+        # Determine the predicted group label
+        if is_low_confidence:
+            predicted_group = "Unknown/Novel"
+        elif is_multiple_inc:
+            # Format as "IncF/IncN" for the top detected types
+            inc_names = [inc for inc, _ in high_conf_incs[:3]]  # Max 3 in label
+            predicted_group = "Multiple: " + "/".join(inc_names)
+        else:
+            predicted_group = best_group
+
         return {
-            "predicted_group": "Unknown/Novel" if is_low_confidence else best_group,
+            "predicted_group": predicted_group,
             "best_match": best_group,  # Always store the best match even if flagged as Unknown
             "confidence": confidence,
             "is_low_confidence": is_low_confidence,
+            "is_multiple_inc": is_multiple_inc,
+            "multiple_inc_types": high_conf_incs if is_multiple_inc else [],
             "top5_candidates": sorted_candidates,
             "all_probabilities": proba_dict,
         }
@@ -232,11 +325,26 @@ def classify_inc_group(sequence, group_names, classifier):
         # Check if confidence is below threshold
         is_low_confidence = confidence < INC_CONFIDENCE_THRESHOLD
 
+        # Check for multiple Inc types
+        high_conf_incs = [(inc, conf) for inc, conf in sorted_candidates if conf >= MULTI_INC_THRESHOLD]
+        is_multiple_inc = len(high_conf_incs) >= 2
+
+        # Determine the predicted group label
+        if is_low_confidence:
+            predicted_group = "Unknown/Novel"
+        elif is_multiple_inc:
+            inc_names = [inc for inc, _ in high_conf_incs[:3]]
+            predicted_group = "Multiple: " + "/".join(inc_names)
+        else:
+            predicted_group = best_group
+
         return {
-            "predicted_group": "Unknown/Novel" if is_low_confidence else best_group,
+            "predicted_group": predicted_group,
             "best_match": best_group,
             "confidence": confidence,
             "is_low_confidence": is_low_confidence,
+            "is_multiple_inc": is_multiple_inc,
+            "multiple_inc_types": high_conf_incs if is_multiple_inc else [],
             "top5_candidates": sorted_candidates,
             "all_probabilities": similarities,
         }
@@ -252,7 +360,7 @@ def calibrate_inc_thresholds():
 
     Uses quantile-based calibration: for each Inc group, compute pairwise cosine
     distances and set thresholds at specific quantile percentiles that correspond
-    to the hierarchical levels (Family→Strain).
+    to the hierarchical levels (L1→L6).
 
     Returns dict: {inc_group: {A: thresh, B: thresh, ...}} or None if no data.
     """
@@ -268,12 +376,12 @@ def calibrate_inc_thresholds():
     # These correspond to the fraction of within-group distances that should
     # fall below each threshold
     level_quantiles = {
-        "A": 0.99,   # Family — nearly all within-group distances below this
-        "B": 0.95,   # Subfamily
-        "C": 0.75,   # Cluster
-        "D": 0.50,   # Subcluster — median distance
-        "E": 0.25,   # Clone
-        "F": 0.05,   # Strain — only very close pairs
+        "A": 0.99,   # L1 — nearly all within-group distances below this
+        "B": 0.95,   # L2
+        "C": 0.75,   # L3
+        "D": 0.50,   # L4 — median distance
+        "E": 0.25,   # L5
+        "F": 0.05,   # L6 — only very close pairs
     }
 
     calibrated = {}
@@ -315,66 +423,147 @@ def calibrate_inc_thresholds():
 #  MOBILITY PREDICTION
 # ══════════════════════════════════════════════════════════════════════════════
 
-def classify_mobility(amr_df, source_file):
-    """Classify plasmid mobility from AMRFinderPlus output.
+def classify_mobility(amr_df, source_file, mobsuite_df=None):
+    """Classify plasmid mobility using best available data.
+
+    Priority: MOBsuite (gold standard) > AMRFinderPlus gene scan > Non-mobilizable.
 
     Categories:
-    - Conjugative: has tra/trb transfer genes (can self-transfer)
-    - Mobilizable: has mob genes but no full tra system (needs helper)
+    - Conjugative: has tra/trb/virB/trw transfer genes or MOBsuite says conjugative
+    - Mobilizable: has mob/nik genes or MOBsuite says mobilizable (needs helper)
     - Non-mobilizable: no detectable transfer/mobilization genes
 
-    Returns (category, genes_found, details).
+    Returns dict with keys:
+        mobility, genes, detail, source, relaxase_family, mpf_type
     """
-    if amr_df is None or len(amr_df) == 0:
-        return "Unknown", [], "No AMR data"
-
     sf = source_file.replace(".fasta", "").replace(".fa", "").replace(".fna", "")
-    hits = amr_df[amr_df["source_file"] == sf]
 
+    # ── Tier 1: MOBsuite (if available) ──
+    if mobsuite_df is not None and len(mobsuite_df) > 0:
+        mob_hits = mobsuite_df[mobsuite_df["source_file"] == sf]
+        if len(mob_hits) > 0:
+            row = mob_hits.iloc[0]
+            mobility = str(row.get("predicted_mobility", "")).lower()
+            relaxase = str(row.get("relaxase_type(s)", ""))
+            mpf = str(row.get("mpf_type", ""))
+            if relaxase in ("-", "nan", ""):
+                relaxase = ""
+            if mpf in ("-", "nan", ""):
+                mpf = ""
+            detail_parts = []
+            if relaxase:
+                detail_parts.append(f"Relaxase: {relaxase}")
+            if mpf:
+                detail_parts.append(f"MPF: {mpf}")
+            detail = "; ".join(detail_parts) if detail_parts else "MOBsuite classification"
+
+            if "conjugative" in mobility:
+                return {
+                    "mobility": "Conjugative",
+                    "genes": [g for g in [relaxase, mpf] if g],
+                    "detail": detail, "source": "MOBsuite",
+                    "relaxase_family": relaxase, "mpf_type": mpf,
+                }
+            elif "mobilizable" in mobility:
+                return {
+                    "mobility": "Mobilizable",
+                    "genes": [relaxase] if relaxase else [],
+                    "detail": detail, "source": "MOBsuite",
+                    "relaxase_family": relaxase, "mpf_type": mpf,
+                }
+            else:
+                return {
+                    "mobility": "Non-mobilizable",
+                    "genes": [], "detail": detail, "source": "MOBsuite",
+                    "relaxase_family": "", "mpf_type": "",
+                }
+
+    # ── Tier 2: AMRFinderPlus gene scan (expanded) ──
+    if amr_df is None or len(amr_df) == 0:
+        return {
+            "mobility": "Unknown", "genes": [], "detail": "No AMR data",
+            "source": "None", "relaxase_family": "", "mpf_type": "",
+        }
+
+    hits = amr_df[amr_df["source_file"] == sf]
     if len(hits) == 0:
-        return "Non-mobilizable", [], "No genes detected"
+        return {
+            "mobility": "Non-mobilizable", "genes": [],
+            "detail": "No genes detected", "source": "AMRFinderPlus",
+            "relaxase_family": "", "mpf_type": "",
+        }
 
     gene_col = "Element symbol" if "Element symbol" in hits.columns else None
     name_col = "Element name" if "Element name" in hits.columns else None
 
     if gene_col is None:
-        return "Unknown", [], "No gene symbol column"
+        return {
+            "mobility": "Unknown", "genes": [],
+            "detail": "No gene symbol column", "source": "AMRFinderPlus",
+            "relaxase_family": "", "mpf_type": "",
+        }
 
     all_genes = hits[gene_col].tolist()
     all_names = hits[name_col].tolist() if name_col else []
 
-    # Check for conjugative markers
+    # Check for conjugative markers (prefix match)
     conj_found = []
     for gene in all_genes:
+        gene_str = str(gene)
         for prefix in MOBILITY_PREFIXES_CONJUGATIVE:
-            if gene.startswith(prefix):
-                conj_found.append(gene)
+            if gene_str.startswith(prefix):
+                conj_found.append(gene_str)
                 break
 
-    # Also check gene names/descriptions for transfer keywords
-    for name in all_names:
+    # Scan gene names/descriptions for conjugative keywords
+    for i, name in enumerate(all_names):
         name_lower = str(name).lower()
-        if "conjugal transfer" in name_lower or "type iv secretion" in name_lower:
-            # Find the corresponding gene
-            idx = all_names.index(name)
-            g = all_genes[idx]
-            if g not in conj_found:
-                conj_found.append(g)
+        for keyword in MOBILITY_KEYWORDS_CONJUGATIVE:
+            if keyword in name_lower:
+                g = str(all_genes[i])
+                if g not in conj_found:
+                    conj_found.append(g)
+                break
 
-    # Check for mobilizable markers
+    # Check for mobilizable markers (prefix match)
     mob_found = []
     for gene in all_genes:
+        gene_str = str(gene)
         for prefix in MOBILITY_PREFIXES_MOBILIZABLE:
-            if gene.startswith(prefix):
-                mob_found.append(gene)
+            if gene_str.startswith(prefix):
+                mob_found.append(gene_str)
+                break
+
+    # Scan gene names/descriptions for mobilizable keywords
+    for i, name in enumerate(all_names):
+        name_lower = str(name).lower()
+        for keyword in MOBILITY_KEYWORDS_MOBILIZABLE:
+            if keyword in name_lower:
+                g = str(all_genes[i])
+                if g not in mob_found and g not in conj_found:
+                    mob_found.append(g)
                 break
 
     if conj_found:
-        return "Conjugative", list(set(conj_found)), f"{len(set(conj_found))} transfer gene(s)"
+        unique_genes = list(set(conj_found))
+        return {
+            "mobility": "Conjugative", "genes": unique_genes,
+            "detail": f"{len(unique_genes)} transfer gene(s)",
+            "source": "AMRFinderPlus", "relaxase_family": "", "mpf_type": "",
+        }
     elif mob_found:
-        return "Mobilizable", list(set(mob_found)), f"{len(set(mob_found))} mobilization gene(s)"
+        unique_genes = list(set(mob_found))
+        return {
+            "mobility": "Mobilizable", "genes": unique_genes,
+            "detail": f"{len(unique_genes)} mobilization gene(s)",
+            "source": "AMRFinderPlus", "relaxase_family": "", "mpf_type": "",
+        }
     else:
-        return "Non-mobilizable", [], "No transfer/mobilization genes detected"
+        return {
+            "mobility": "Non-mobilizable", "genes": [],
+            "detail": "No transfer/mobilization genes detected",
+            "source": "AMRFinderPlus", "relaxase_family": "", "mpf_type": "",
+        }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -571,6 +760,8 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
                     rec_dict["inc_best_match"] = result["best_match"]
                     rec_dict["inc_confidence"] = round(result["confidence"], 4)
                     rec_dict["inc_is_low_confidence"] = result["is_low_confidence"]
+                    rec_dict["inc_is_multiple"] = result["is_multiple_inc"]
+                    rec_dict["inc_multiple_types"] = result["multiple_inc_types"]
                     rec_dict["inc_top5_candidates"] = result["top5_candidates"]
                     rec_dict["inc_probabilities"] = result["all_probabilities"]
                 else:
@@ -623,6 +814,15 @@ def assign_plin_codes(vectors, linkage_method="single", thresholds=None):
 
 def build_results_df(records, plin_codes, cluster_assignments):
     """Build results DataFrame."""
+    # Validate array lengths match
+    n_records = len(records)
+    n_plin = len(plin_codes)
+    if n_records != n_plin:
+        raise ValueError(
+            f"Mismatch: {n_records} records but {n_plin} pLIN codes. "
+            "This may be a caching issue - try refreshing the page."
+        )
+
     rows = []
     for i, rec in enumerate(records):
         row = {
@@ -636,6 +836,12 @@ def build_results_df(records, plin_codes, cluster_assignments):
             row["inc_confidence"] = rec["inc_confidence"]
         if "inc_is_low_confidence" in rec:
             row["inc_is_low_confidence"] = rec["inc_is_low_confidence"]
+        if "inc_is_multiple" in rec:
+            row["inc_is_multiple"] = rec["inc_is_multiple"]
+        if "inc_multiple_types" in rec and rec["inc_multiple_types"]:
+            # Format multiple Inc types: "IncFII (45%), IncN (30%)"
+            multi_str = ", ".join([f"{inc} ({conf*100:.1f}%)" for inc, conf in rec["inc_multiple_types"]])
+            row["inc_multiple_types"] = multi_str
         if "inc_best_match" in rec:
             row["inc_best_match"] = rec["inc_best_match"]
         if "inc_top5_candidates" in rec:
@@ -937,13 +1143,901 @@ def run_prodigal_on_files(uploaded_files, binary, progress_callback=None):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  MOBSUITE MOBILITY TYPING FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_mobsuite():
+    """Auto-detect MOBsuite (mob_typer) binary."""
+    binary = None
+
+    # 1. Check PATH
+    try:
+        result = subprocess.run(["which", "mob_typer"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+
+    # 2. Check conda envs
+    if not binary:
+        home = os.path.expanduser("~")
+        search_dirs = [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]
+        for base in search_dirs:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "mob_typer")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+
+    return binary
+
+
+def run_mobsuite_on_files(uploaded_files, binary, progress_callback=None):
+    """Run MOBsuite mob_typer on uploaded FASTA files.
+
+    Returns DataFrame with columns: source_file, predicted_mobility,
+    relaxase_type(s), mpf_type, orit_type(s), rep_type(s), etc.
+    """
+    all_results = []
+    total = len(uploaded_files)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for idx, uf in enumerate(uploaded_files):
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+
+            out_path = os.path.join(tmpdir, f"{uf.name}.mobtyper.txt")
+            source_name = uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+
+            cmd = [binary, "--infile", fasta_path, "--out_file", out_path]
+
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=300)
+                if os.path.isfile(out_path):
+                    df = pd.read_csv(out_path, sep="\t")
+                    df.insert(0, "source_file", source_name)
+                    all_results.append(df)
+            except Exception:
+                pass
+
+            if progress_callback:
+                progress_callback((idx + 1) / total)
+
+    if all_results:
+        return pd.concat(all_results, ignore_index=True)
+    return pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MASH / MINHASH ANI ESTIMATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_mash():
+    """Auto-detect Mash binary."""
+    binary = None
+    try:
+        result = subprocess.run(["which", "mash"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+    if not binary:
+        home = os.path.expanduser("~")
+        for base in [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "mash")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+    return binary
+
+
+def run_mash_distances(uploaded_files, mash_binary, progress_callback=None):
+    """Run Mash pairwise distance estimation on uploaded FASTA files.
+
+    Returns DataFrame with columns: query, reference, mash_distance, p_value, matching_hashes, ani_estimate
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write all FASTAs to temp dir
+        fasta_paths = []
+        for uf in uploaded_files:
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+            fasta_paths.append(fasta_path)
+
+        if len(fasta_paths) < 2:
+            return pd.DataFrame()
+
+        # Create combined sketch
+        sketch_path = os.path.join(tmpdir, "all_plasmids.msh")
+        cmd_sketch = [mash_binary, "sketch", "-o", sketch_path, "-k", "21", "-s", "10000"] + fasta_paths
+        try:
+            subprocess.run(cmd_sketch, capture_output=True, timeout=600)
+        except Exception:
+            return pd.DataFrame()
+
+        # Pairwise distances
+        dist_path = os.path.join(tmpdir, "mash_dist.tsv")
+        cmd_dist = [mash_binary, "dist", sketch_path, sketch_path]
+        try:
+            result = subprocess.run(cmd_dist, capture_output=True, text=True, timeout=600)
+            if result.returncode != 0:
+                return pd.DataFrame()
+        except Exception:
+            return pd.DataFrame()
+
+        # Parse Mash output: ref\tquery\tdist\tp-value\tmatching-hashes
+        rows = []
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 5:
+                ref = os.path.basename(parts[0]).replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+                query = os.path.basename(parts[1]).replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+                if ref == query:
+                    continue
+                mash_dist = float(parts[2])
+                p_value = float(parts[3])
+                matching = parts[4]
+                ani_est = round((1 - mash_dist) * 100, 2)
+                rows.append({
+                    "query": query, "reference": ref,
+                    "mash_distance": round(mash_dist, 6),
+                    "p_value": p_value,
+                    "matching_hashes": matching,
+                    "ani_estimate": ani_est,
+                })
+
+        if progress_callback:
+            progress_callback(1.0)
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FASTANI INTEGRATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_fastani():
+    """Auto-detect FastANI binary."""
+    binary = None
+    try:
+        result = subprocess.run(["which", "fastANI"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+    if not binary:
+        home = os.path.expanduser("~")
+        for base in [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "fastANI")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+    return binary
+
+
+def run_fastani(uploaded_files, fastani_binary, progress_callback=None):
+    """Run FastANI all-vs-all on uploaded FASTA files.
+
+    Returns DataFrame with columns: query, reference, ani, orthologous_matches, total_fragments
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fasta_paths = []
+        for uf in uploaded_files:
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+            fasta_paths.append(fasta_path)
+
+        if len(fasta_paths) < 2:
+            return pd.DataFrame()
+
+        # Write query and reference lists
+        list_path = os.path.join(tmpdir, "file_list.txt")
+        with open(list_path, "w") as f:
+            for p in fasta_paths:
+                f.write(p + "\n")
+
+        out_path = os.path.join(tmpdir, "fastani_out.tsv")
+        cmd = [
+            fastani_binary,
+            "--ql", list_path,
+            "--rl", list_path,
+            "-o", out_path,
+            "--fragLen", "1000",  # Smaller fragment for plasmids
+            "-t", "4",
+        ]
+
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=1800)
+        except Exception:
+            return pd.DataFrame()
+
+        if not os.path.isfile(out_path) or os.path.getsize(out_path) == 0:
+            return pd.DataFrame()
+
+        # Parse FastANI output: query\treference\tANI\torthologous_matches\ttotal_fragments
+        rows = []
+        with open(out_path, "r") as f:
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) >= 5:
+                    query = os.path.basename(parts[0]).replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+                    ref = os.path.basename(parts[1]).replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+                    if query == ref:
+                        continue
+                    rows.append({
+                        "query": query, "reference": ref,
+                        "ani": round(float(parts[2]), 2),
+                        "orthologous_matches": int(parts[3]),
+                        "total_fragments": int(parts[4]),
+                    })
+
+        if progress_callback:
+            progress_callback(1.0)
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SNP SUB-TYPING WITHIN L6 CLUSTERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_minimap2():
+    """Auto-detect minimap2 binary."""
+    binary = None
+    try:
+        result = subprocess.run(["which", "minimap2"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+    if not binary:
+        home = os.path.expanduser("~")
+        for base in [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "minimap2")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+    return binary
+
+
+def run_snp_subtyping(records, cluster_assignments, minimap2_binary, progress_callback=None):
+    """Run SNP-level sub-typing within each L6 cluster using minimap2 + paftools variant calling.
+
+    For each L6 cluster with >=2 plasmids, aligns all members against the longest
+    member as reference and counts mismatches (approximate SNP differences).
+
+    Returns DataFrame with columns: l6_cluster, plasmid_id, reference_id, snp_count, alignment_identity
+    """
+    l6_clusters = {}
+    for i, rec in enumerate(records):
+        cl = int(cluster_assignments["F"][i])
+        l6_clusters.setdefault(cl, []).append(i)
+
+    # Only process clusters with >=2 members
+    multi_clusters = {k: v for k, v in l6_clusters.items() if len(v) >= 2}
+    if not multi_clusters:
+        return pd.DataFrame()
+
+    all_results = []
+    total = len(multi_clusters)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ci, (cluster_id, member_indices) in enumerate(multi_clusters.items()):
+            # Pick longest plasmid as reference
+            ref_idx = max(member_indices, key=lambda i: records[i]["length"])
+            ref_rec = records[ref_idx]
+
+            ref_path = os.path.join(tmpdir, f"ref_c{cluster_id}.fasta")
+            with open(ref_path, "w") as f:
+                f.write(f">{ref_rec['plasmid_id']}\n{ref_rec['sequence']}\n")
+
+            for m_idx in member_indices:
+                if m_idx == ref_idx:
+                    all_results.append({
+                        "l6_cluster": cluster_id,
+                        "plasmid_id": records[m_idx]["plasmid_id"],
+                        "reference_id": ref_rec["plasmid_id"],
+                        "snp_count": 0,
+                        "alignment_identity": 100.0,
+                    })
+                    continue
+
+                query_rec = records[m_idx]
+                query_path = os.path.join(tmpdir, f"q_c{cluster_id}_{m_idx}.fasta")
+                with open(query_path, "w") as f:
+                    f.write(f">{query_rec['plasmid_id']}\n{query_rec['sequence']}\n")
+
+                # Run minimap2 -cx asm5 (for closely related sequences)
+                try:
+                    result = subprocess.run(
+                        [minimap2_binary, "-cx", "asm5", "--cs", ref_path, query_path],
+                        capture_output=True, text=True, timeout=120,
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        # Parse PAF output to extract alignment identity and mismatches
+                        best_identity = 0.0
+                        total_mismatches = 0
+                        total_aligned = 0
+                        for line in result.stdout.strip().split("\n"):
+                            fields = line.split("\t")
+                            if len(fields) >= 12:
+                                matches = int(fields[9])
+                                block_len = int(fields[10])
+                                mismatches = block_len - matches
+                                identity = matches / block_len * 100 if block_len > 0 else 0
+                                if block_len > total_aligned:
+                                    best_identity = identity
+                                    total_mismatches = mismatches
+                                    total_aligned = block_len
+
+                        all_results.append({
+                            "l6_cluster": cluster_id,
+                            "plasmid_id": query_rec["plasmid_id"],
+                            "reference_id": ref_rec["plasmid_id"],
+                            "snp_count": total_mismatches,
+                            "alignment_identity": round(best_identity, 3),
+                        })
+                    else:
+                        all_results.append({
+                            "l6_cluster": cluster_id,
+                            "plasmid_id": query_rec["plasmid_id"],
+                            "reference_id": ref_rec["plasmid_id"],
+                            "snp_count": -1,
+                            "alignment_identity": 0.0,
+                        })
+                except Exception:
+                    all_results.append({
+                        "l6_cluster": cluster_id,
+                        "plasmid_id": query_rec["plasmid_id"],
+                        "reference_id": ref_rec["plasmid_id"],
+                        "snp_count": -1,
+                        "alignment_identity": 0.0,
+                    })
+
+            if progress_callback:
+                progress_callback((ci + 1) / total)
+
+    return pd.DataFrame(all_results) if all_results else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TEMPORAL OUTBREAK CLUSTERING
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_window_days=30):
+    """Flag potential outbreak clusters with temporal evidence.
+
+    Extends basic outbreak detection by requiring plasmids to share:
+    1. Same L6 pLIN cluster (bin_F)
+    2. Identical AMR resistance profile
+    3. Collection dates within a specified time window
+
+    Returns list of dicts with cluster info including temporal evidence.
+    """
+    if integrated_df is None or len(integrated_df) == 0 or metadata_df is None:
+        return []
+
+    df = integrated_df.copy()
+
+    # Merge metadata date columns
+    date_col = None
+    for col in metadata_df.columns:
+        if any(kw in col.lower() for kw in ["date", "collection_date", "sample_date"]):
+            date_col = col
+            break
+
+    if date_col is None:
+        return []
+
+    meta_dates = metadata_df[["plasmid_id", date_col]].copy()
+    meta_dates = meta_dates.rename(columns={date_col: "_collection_date"})
+    meta_dates["_collection_date"] = pd.to_datetime(meta_dates["_collection_date"], errors="coerce")
+    df = df.merge(meta_dates, on="plasmid_id", how="left")
+
+    if df["_collection_date"].isna().all():
+        return []
+
+    # Create AMR fingerprint
+    if "AMR_genes" in df.columns:
+        df["_amr_fingerprint"] = df["AMR_genes"].fillna("").apply(
+            lambda x: "|".join(sorted(g.strip() for g in x.split(";") if g.strip()))
+        )
+    else:
+        df["_amr_fingerprint"] = ""
+
+    if "bin_F" not in df.columns:
+        df["bin_F"] = df["pLIN"].apply(lambda x: x.split(".")[-1] if isinstance(x, str) else "")
+
+    # Merge location if available
+    location_col = None
+    for col in metadata_df.columns:
+        if any(kw in col.lower() for kw in ["location", "ward", "hospital", "site", "unit"]):
+            location_col = col
+            break
+
+    clusters = []
+    grouped = df.groupby(["bin_F", "_amr_fingerprint"])
+    for (strain_f, amr_fp), group in grouped:
+        if len(group) < 2:
+            continue
+        # Filter to those with valid dates
+        dated = group.dropna(subset=["_collection_date"])
+        if len(dated) < 2:
+            continue
+
+        # Check if collection dates fall within time window
+        date_range = (dated["_collection_date"].max() - dated["_collection_date"].min()).days
+        if date_range <= time_window_days:
+            plasmids = dated["plasmid_id"].tolist()
+            amr_genes = [g.strip() for g in amr_fp.split("|") if g.strip()] if amr_fp else []
+            plin_code = dated["pLIN"].iloc[0]
+
+            # Gather location info
+            locations = []
+            if location_col and location_col in metadata_df.columns:
+                loc_data = dated.merge(
+                    metadata_df[["plasmid_id", location_col]], on="plasmid_id", how="left"
+                )
+                locations = loc_data[location_col].dropna().unique().tolist()
+
+            risk = "CRITICAL" if len(amr_genes) >= 3 and date_range <= 7 else \
+                   "HIGH" if len(amr_genes) >= 3 or date_range <= 7 else "MODERATE"
+
+            clusters.append({
+                "strain_cluster": int(strain_f) if str(strain_f).isdigit() else strain_f,
+                "pLIN": plin_code,
+                "n_plasmids": len(dated),
+                "plasmids": plasmids,
+                "amr_genes": amr_genes,
+                "n_amr_genes": len(amr_genes),
+                "date_range_days": date_range,
+                "earliest_date": str(dated["_collection_date"].min().date()),
+                "latest_date": str(dated["_collection_date"].max().date()),
+                "locations": locations,
+                "risk_level": risk,
+                "temporal_evidence": True,
+            })
+
+    clusters.sort(key=lambda c: (-{"CRITICAL": 3, "HIGH": 2, "MODERATE": 1}.get(c["risk_level"], 0),
+                                  -c["n_amr_genes"], -c["n_plasmids"]))
+    return clusters
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CRISPR HOST INFERENCE FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_minced():
+    """Auto-detect MinCED (Mining CRISPRs in Environmental Datasets) binary."""
+    binary = None
+    try:
+        result = subprocess.run(["which", "minced"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+
+    if not binary:
+        home = os.path.expanduser("~")
+        search_dirs = [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]
+        for base in search_dirs:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "minced")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+
+    if not binary:
+        home = os.path.expanduser("~")
+        for prefix in [
+            os.path.join(home, "miniforge3", "bin", "minced"),
+            os.path.join(home, "miniconda3", "bin", "minced"),
+            os.path.join(home, "anaconda3", "bin", "minced"),
+            os.path.join(home, "mambaforge", "bin", "minced"),
+        ]:
+            if os.path.isfile(prefix) and os.access(prefix, os.X_OK):
+                binary = prefix
+                break
+
+    return binary
+
+
+def detect_blastn():
+    """Auto-detect BLAST+ blastn and makeblastdb binaries.
+
+    Returns (blastn_path, makeblastdb_path) — either may be None.
+    """
+    blastn = None
+    makeblastdb = None
+
+    for tool_name in ["blastn", "makeblastdb"]:
+        try:
+            result = subprocess.run(["which", tool_name], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                if tool_name == "blastn":
+                    blastn = result.stdout.strip()
+                else:
+                    makeblastdb = result.stdout.strip()
+        except Exception:
+            pass
+
+    home = os.path.expanduser("~")
+    search_bases = [
+        os.path.join(home, "miniforge3"),
+        os.path.join(home, "miniconda3"),
+        os.path.join(home, "anaconda3"),
+        os.path.join(home, "mambaforge"),
+    ]
+
+    for tool_name in ["blastn", "makeblastdb"]:
+        current = blastn if tool_name == "blastn" else makeblastdb
+        if current:
+            continue
+        for base in search_bases:
+            candidate = os.path.join(base, "bin", tool_name)
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                if tool_name == "blastn":
+                    blastn = candidate
+                else:
+                    makeblastdb = candidate
+                break
+        current = blastn if tool_name == "blastn" else makeblastdb
+        if current:
+            continue
+        for base in search_bases:
+            envs_dir = os.path.join(base, "envs")
+            if os.path.isdir(envs_dir):
+                for env in sorted(os.listdir(envs_dir)):
+                    candidate = os.path.join(envs_dir, env, "bin", tool_name)
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        if tool_name == "blastn":
+                            blastn = candidate
+                        else:
+                            makeblastdb = candidate
+                        break
+                if (tool_name == "blastn" and blastn) or (tool_name == "makeblastdb" and makeblastdb):
+                    break
+
+    return blastn, makeblastdb
+
+
+def _enrich_spacers_from_gff(spacers_list, gff_path, genome_name):
+    """Parse MinCED GFF to add array coordinates and repeat info to spacer records."""
+    array_info = {}
+    try:
+        with open(gff_path, "r") as f:
+            for line in f:
+                if line.startswith("#") or not line.strip():
+                    continue
+                parts = line.strip().split("\t")
+                if len(parts) >= 9 and "CRISPR" in parts[2]:
+                    aid = None
+                    rpt = None
+                    for attr in parts[8].split(";"):
+                        if attr.startswith("ID="):
+                            aid = attr.split("=", 1)[1]
+                        if "rpt_unit_seq=" in attr:
+                            rpt = attr.split("=", 1)[1]
+                    if aid:
+                        array_info[aid] = {
+                            "array_start": int(parts[3]),
+                            "array_end": int(parts[4]),
+                        }
+                        if rpt:
+                            array_info[aid]["repeat_sequence"] = rpt
+                            array_info[aid]["repeat_length"] = len(rpt)
+    except Exception:
+        pass
+
+    for spacer in spacers_list:
+        if spacer["host_genome"] == genome_name:
+            info = array_info.get(spacer.get("array_id"), {})
+            spacer.setdefault("array_start", info.get("array_start"))
+            spacer.setdefault("array_end", info.get("array_end"))
+            spacer.setdefault("repeat_sequence", info.get("repeat_sequence", ""))
+            spacer.setdefault("repeat_length", info.get("repeat_length", 0))
+
+
+def run_minced_on_genomes(genome_files, minced_binary, progress_callback=None):
+    """Run MinCED on host genome FASTA files to extract CRISPR spacers.
+
+    Returns (spacers_df, spacers_fasta_text, summary_df).
+    """
+    all_spacers = []
+    summaries = []
+    fasta_lines = []
+    total = len(genome_files)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for idx, uf in enumerate(genome_files):
+            genome_name = uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", "")
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+
+            gff_path = os.path.join(tmpdir, f"{uf.name}.gff")
+            spacers_path = os.path.join(tmpdir, f"{uf.name}_spacers.fa")
+
+            cmd = [minced_binary, fasta_path, gff_path, "-spacers", spacers_path]
+
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=600)
+
+                if os.path.isfile(spacers_path):
+                    spacer_index = 0
+                    for record in SeqIO.parse(spacers_path, "fasta"):
+                        header_parts = record.id.split("_")
+                        array_id = "_".join(header_parts[:-1]) if len(header_parts) > 1 else record.id
+                        seq_str = str(record.seq)
+
+                        all_spacers.append({
+                            "host_genome": genome_name,
+                            "array_id": array_id,
+                            "spacer_index": spacer_index,
+                            "spacer_id": f"{genome_name}__spacer_{spacer_index}",
+                            "spacer_sequence": seq_str,
+                            "spacer_length": len(seq_str),
+                        })
+
+                        fasta_lines.append(f">{genome_name}__spacer_{spacer_index}")
+                        fasta_lines.append(seq_str)
+                        spacer_index += 1
+
+                    if os.path.isfile(gff_path):
+                        _enrich_spacers_from_gff(all_spacers, gff_path, genome_name)
+
+                    genome_spacers = [s for s in all_spacers if s["host_genome"] == genome_name]
+                    unique_arrays = len(set(s["array_id"] for s in genome_spacers))
+                    avg_len = np.mean([s["spacer_length"] for s in genome_spacers]) if genome_spacers else 0
+
+                    summaries.append({
+                        "host_genome": genome_name,
+                        "total_arrays": unique_arrays,
+                        "total_spacers": len(genome_spacers),
+                        "avg_spacer_length": round(avg_len, 1),
+                    })
+                else:
+                    summaries.append({
+                        "host_genome": genome_name,
+                        "total_arrays": 0, "total_spacers": 0, "avg_spacer_length": 0,
+                    })
+            except Exception:
+                summaries.append({
+                    "host_genome": genome_name,
+                    "total_arrays": 0, "total_spacers": 0, "avg_spacer_length": 0,
+                })
+
+            if progress_callback:
+                progress_callback((idx + 1) / total)
+
+    spacers_df = pd.DataFrame(all_spacers) if all_spacers else pd.DataFrame()
+    summary_df = pd.DataFrame(summaries) if summaries else pd.DataFrame()
+    spacers_fasta = "\n".join(fasta_lines)
+    return spacers_df, spacers_fasta, summary_df
+
+
+def build_blast_db(source, makeblastdb_binary, db_title="plasmid_db"):
+    """Build a BLAST nucleotide database.
+
+    Args:
+        source: str (file path) or list of UploadedFile objects.
+        makeblastdb_binary: path to makeblastdb.
+
+    Returns (db_path, tmpdir_handle) — caller must keep tmpdir alive.
+    """
+    tmpdir = tempfile.TemporaryDirectory()
+    try:
+        if isinstance(source, str):
+            fasta_path = source
+        else:
+            fasta_path = os.path.join(tmpdir.name, "plasmids_combined.fasta")
+            with open(fasta_path, "w") as out_f:
+                for uf in source:
+                    content = uf.getvalue().decode("utf-8", errors="replace")
+                    if not content.endswith("\n"):
+                        content += "\n"
+                    out_f.write(content)
+
+        db_path = os.path.join(tmpdir.name, db_title)
+        cmd = [makeblastdb_binary, "-in", fasta_path, "-dbtype", "nucl",
+               "-out", db_path, "-title", db_title, "-parse_seqids"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        if result.returncode != 0:
+            tmpdir.cleanup()
+            return None, None
+        return db_path, tmpdir
+    except Exception:
+        tmpdir.cleanup()
+        return None, None
+
+
+@st.cache_resource(show_spinner="Building reference BLAST database (one-time)...")
+def get_or_build_reference_blastdb(makeblastdb_binary):
+    """Build or locate pre-built BLAST database from reference plasmid sequences."""
+    if os.path.isfile(REFERENCE_BLASTDB_PATH + ".ndb") or os.path.isfile(REFERENCE_BLASTDB_PATH + ".nsq"):
+        return REFERENCE_BLASTDB_PATH
+    if not os.path.isfile(REFERENCE_FASTA_PATH):
+        return None
+    os.makedirs(os.path.dirname(REFERENCE_BLASTDB_PATH), exist_ok=True)
+    cmd = [makeblastdb_binary, "-in", REFERENCE_FASTA_PATH, "-dbtype", "nucl",
+           "-out", REFERENCE_BLASTDB_PATH, "-title", "pLIN_reference_plasmids",
+           "-parse_seqids"]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+        if result.returncode == 0:
+            return REFERENCE_BLASTDB_PATH
+    except Exception:
+        pass
+    return None
+
+
+def run_spacer_blast(spacers_fasta, db_path, blastn_binary):
+    """Run BLASTN-short: spacers vs plasmid BLAST database."""
+    if not spacers_fasta.strip():
+        return pd.DataFrame()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        query_path = os.path.join(tmpdir, "spacers_query.fasta")
+        out_path = os.path.join(tmpdir, "blast_results.tsv")
+
+        with open(query_path, "w") as f:
+            f.write(spacers_fasta)
+
+        cmd = [
+            blastn_binary, "-task", "blastn-short",
+            "-query", query_path, "-db", db_path, "-out", out_path,
+            "-outfmt", "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen",
+            "-evalue", str(CRISPR_BLAST_EVALUE),
+            "-num_threads", "4", "-max_target_seqs", "500",
+            "-dust", "no", "-word_size", "7",
+        ]
+
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=1800)
+            if os.path.isfile(out_path) and os.path.getsize(out_path) > 0:
+                col_names = ["qseqid", "sseqid", "pident", "length", "mismatch",
+                             "gapopen", "qstart", "qend", "sstart", "send",
+                             "evalue", "bitscore", "qlen", "slen"]
+                return pd.read_csv(out_path, sep="\t", header=None, names=col_names)
+        except Exception:
+            pass
+    return pd.DataFrame()
+
+
+def filter_blast_hits(blast_df):
+    """Apply stringent CRISPR spacer-plasmid matching criteria."""
+    if blast_df.empty:
+        return pd.DataFrame()
+
+    filtered = blast_df[
+        (blast_df["gapopen"] == CRISPR_BLAST_GAPS_MAX) &
+        (blast_df["pident"] >= CRISPR_BLAST_IDENTITY_MIN) &
+        (blast_df["length"] >= CRISPR_BLAST_ALIGNMENT_MIN) &
+        (blast_df["mismatch"] <= CRISPR_BLAST_MISMATCH_MAX)
+    ].copy()
+
+    if filtered.empty:
+        return pd.DataFrame()
+
+    filtered["host_genome"] = filtered["qseqid"].str.rsplit("__spacer_", n=1).str[0]
+    filtered["plasmid_id"] = filtered["sseqid"]
+    filtered["alignment_quality"] = filtered["bitscore"] / filtered["length"]
+    return filtered.reset_index(drop=True)
+
+
+def compute_host_probabilities(filtered_hits_df, spacer_summary_df, temperature=None):
+    """Compute host probability rankings per plasmid using softmax transformation.
+
+    Returns (host_probs_df, summary_df).
+    """
+    if temperature is None:
+        temperature = CRISPR_SOFTMAX_TEMPERATURE
+    if filtered_hits_df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    pair_stats = filtered_hits_df.groupby(["host_genome", "plasmid_id"]).agg(
+        spacer_hits=("qseqid", "count"),
+        unique_spacers=("qseqid", "nunique"),
+        avg_quality=("alignment_quality", "mean"),
+        avg_identity=("pident", "mean"),
+        avg_length=("length", "mean"),
+        best_bitscore=("bitscore", "max"),
+    ).reset_index()
+
+    spacer_totals = spacer_summary_df[["host_genome", "total_spacers"]].copy()
+    pair_stats = pair_stats.merge(spacer_totals, on="host_genome", how="left")
+    pair_stats["total_spacers"] = pair_stats["total_spacers"].fillna(1)
+    pair_stats["normalized_score"] = pair_stats["unique_spacers"] / pair_stats["total_spacers"].clip(lower=1)
+
+    all_probs = []
+    summaries = []
+
+    for plasmid_id, group in pair_stats.groupby("plasmid_id"):
+        scores = group["normalized_score"].values
+        # Numerically stable softmax
+        shifted = scores - scores.max()
+        exp_scores = np.exp(shifted / temperature)
+        probabilities = exp_scores / exp_scores.sum()
+
+        group = group.copy()
+        group["probability"] = probabilities
+        group["rank"] = group["probability"].rank(ascending=False, method="min").astype(int)
+        group = group.sort_values("rank")
+        all_probs.append(group)
+
+        top = group.iloc[0]
+        confidence = "High" if top["probability"] >= 0.7 else "Medium" if top["probability"] >= 0.4 else "Low"
+        summaries.append({
+            "plasmid_id": plasmid_id,
+            "predicted_host": top["host_genome"],
+            "probability": round(float(top["probability"]), 4),
+            "spacer_hits": int(top["unique_spacers"]),
+            "avg_identity": round(float(top["avg_identity"]), 1),
+            "confidence_category": confidence,
+            "n_candidate_hosts": len(group),
+        })
+
+    host_probs_df = pd.concat(all_probs, ignore_index=True) if all_probs else pd.DataFrame()
+    summary_df = pd.DataFrame(summaries) if summaries else pd.DataFrame()
+    return host_probs_df, summary_df
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  BACTERIAL BUDDY — OLLAMA LLM CHATBOT
 # ══════════════════════════════════════════════════════════════════════════════
 
 OLLAMA_DEFAULT_URL = "http://localhost:11434"
 OLLAMA_MODELS = ["llama3.2", "llama3.1", "llama3", "mistral", "mixtral", "gemma2", "phi3"]
 
-BACTERIAL_BUDDY_SYSTEM_PROMPT = """You are Bacterial Buddy, a friendly and knowledgeable AI assistant specialized in plasmid biology and antimicrobial resistance. You help researchers understand their plasmid analysis results from the pLIN (Plasmid Life Identification Number) classification tool.
+BACTERIAL_BUDDY_SYSTEM_PROMPT = """You are DRAGNOME Buddy, a friendly and knowledgeable AI assistant specialized in plasmid biology and antimicrobial resistance. You help researchers understand their plasmid analysis results from the pLIN (Plasmid Life Identification Number) classification tool.
 
 Your personality:
 - Friendly, approachable, and enthusiastic about microbiology
@@ -1206,9 +2300,9 @@ def plot_rectangular_cladogram(Z, labels, plin_codes, strain_clusters):
                      fontfamily="monospace", fontweight="bold", color=color, va="center")
 
     legend_elements = [mpatches.Patch(color=strain_cmap[sc],
-                       label=f"Strain {sc} (n={sum(1 for s in strain_clusters if s == sc)})")
+                       label=f"L6 {sc} (n={sum(1 for s in strain_clusters if s == sc)})")
                        for sc in unique_strains]
-    ax_dendro.legend(handles=legend_elements, title="pLIN Strain (F)",
+    ax_dendro.legend(handles=legend_elements, title="pLIN L6",
                      loc="upper right", fontsize=7, title_fontsize=8, framealpha=0.9)
 
     fig.suptitle(f"pLIN Cladogram (n={len(labels)})", fontsize=13, fontweight="bold", y=0.98)
@@ -1271,8 +2365,8 @@ def plot_circular_cladogram(Z, labels, plin_codes, strain_clusters):
     ax.grid(False)
     ax.set_title(f"pLIN Circular Cladogram (n={n})", fontsize=13, fontweight="bold", pad=30)
 
-    legend_elements = [mpatches.Patch(color=strain_cmap[sc], label=f"Strain {sc}") for sc in unique_strains]
-    ax.legend(handles=legend_elements, title="pLIN Strain (F)", loc="lower left",
+    legend_elements = [mpatches.Patch(color=strain_cmap[sc], label=f"L6 {sc}") for sc in unique_strains]
+    ax.legend(handles=legend_elements, title="pLIN L6", loc="lower left",
               bbox_to_anchor=(-0.05, -0.05), fontsize=7, title_fontsize=8, framealpha=0.9)
     return fig
 
@@ -1424,13 +2518,13 @@ def plot_cladogram_amr(Z, labels, plin_codes, strain_clusters, amr_df, records):
     # Legend
     ax_l.axis("off")
     y = 0.95
-    ax_l.text(0.05, y, "Strain Clusters", fontsize=8, fontweight="bold", transform=ax_l.transAxes)
+    ax_l.text(0.05, y, "L6 Clusters", fontsize=8, fontweight="bold", transform=ax_l.transAxes)
     y -= 0.04
     for sc in unique_strains:
         n = sum(1 for s in strain_clusters if s == sc)
         ax_l.add_patch(mpatches.FancyBboxPatch((0.05, y - 0.01), 0.08, 0.025, transform=ax_l.transAxes,
                        boxstyle="round,pad=0.003", facecolor=strain_cmap[sc], edgecolor="none"))
-        ax_l.text(0.16, y + 0.003, f"Strain {sc} (n={n})", fontsize=7,
+        ax_l.text(0.16, y + 0.003, f"L6 {sc} (n={n})", fontsize=7,
                   transform=ax_l.transAxes, va="center")
         y -= 0.035
 
@@ -1446,13 +2540,15 @@ def plot_cladogram_amr(Z, labels, plin_codes, strain_clusters, amr_df, records):
 for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
             "plin_codes", "strain_clusters", "cluster_assignments", "analysis_done",
             "mobility_results", "outbreak_clusters", "active_thresholds",
-            "linkage_method_used", "nt_results", "prodigal_genes_df", "prodigal_summary_df"]:
+            "linkage_method_used", "nt_results", "prodigal_genes_df", "prodigal_summary_df",
+            "mobsuite_df", "crispr_spacers_df", "crispr_spacer_summary_df",
+            "crispr_host_probs_df", "crispr_host_summary_df", "crispr_filtered_hits_df"]:
     if key not in st.session_state:
         st.session_state[key] = None
 if "analysis_done" not in st.session_state:
     st.session_state.analysis_done = False
 
-# Bacterial Buddy chat state
+# DRAGNOME Buddy chat state
 if "buddy_messages" not in st.session_state:
     st.session_state.buddy_messages = []
 if "buddy_model" not in st.session_state:
@@ -1472,7 +2568,23 @@ amr_binary, amr_db = detect_amrfinder()
 # Prodigal detection
 prodigal_binary = detect_prodigal()
 
-# Ollama detection for Bacterial Buddy
+# MOBsuite detection
+mobsuite_binary = detect_mobsuite()
+
+# Mash detection (ANI estimation)
+mash_binary = detect_mash()
+
+# FastANI detection (true ANI computation)
+fastani_binary = detect_fastani()
+
+# minimap2 detection (SNP sub-typing)
+minimap2_binary = detect_minimap2()
+
+# CRISPR Host Inference tool detection
+minced_binary = detect_minced()
+blastn_binary, makeblastdb_binary = detect_blastn()
+
+# Ollama detection for DRAGNOME Buddy
 ollama_available, ollama_models = detect_ollama()
 
 if not st.session_state.analysis_done:
@@ -1486,11 +2598,19 @@ if not st.session_state.analysis_done:
             help="Upload one or more plasmid FASTA files (.fasta, .fa, .fna)",
             key="main_uploader",
         )
+        metadata_file = st.file_uploader(
+            "Upload metadata (optional)",
+            type=["csv", "tsv", "txt"],
+            accept_multiple_files=False,
+            help="CSV/TSV with columns: plasmid_id (or filename), collection_date, location, patient_id, source, etc. "
+                 "Used for temporal outbreak clustering and epidemiological context.",
+            key="metadata_uploader",
+        )
     with upload_col2:
         inc_type = st.selectbox(
             "Incompatibility Group",
             INC_GROUPS, index=0,
-            help="'Auto-detect' uses a KNN classifier (96% accuracy) trained on 6,346 plasmids to identify Inc group per sequence",
+            help=f"'Auto-detect' uses a KNN classifier trained on {len(INC_GROUPS) - 2} Inc/Rep groups to identify Inc group per sequence",
         )
         linkage_method = st.selectbox(
             "Linkage Method",
@@ -1499,8 +2619,8 @@ if not st.session_state.analysis_done:
         )
         use_adaptive = st.checkbox(
             "Adaptive thresholds",
-            value=False,
-            help="Calibrate pLIN thresholds per Inc group from training data distance distributions instead of fixed thresholds",
+            value=True,
+            help="Calibrate pLIN thresholds per Inc group from training data distance distributions (recommended). Uncheck to use fixed universal thresholds.",
         )
         if amr_binary:
             run_amr = st.checkbox("Run AMRFinderPlus", value=True,
@@ -1519,6 +2639,94 @@ if not st.session_state.analysis_done:
         else:
             run_prodigal = False
             st.info("Prodigal not found. Install: `conda install -c bioconda prodigal`", icon="🧬")
+
+        # MOBsuite mobility typing (optional)
+        if mobsuite_binary:
+            run_mobsuite = st.checkbox(
+                "Run MOBsuite typing",
+                value=False,
+                help="Classify plasmid mobility, relaxase families (MOB), and MPF types using MOBsuite mob_typer.",
+            )
+        else:
+            run_mobsuite = False
+            st.info("MOBsuite not found. Install: `conda install -c bioconda mob_suite`", icon="🔬")
+
+        # ANI Validation tools (optional)
+        st.divider()
+        st.markdown("**ANI Validation & SNP Sub-typing**")
+        if mash_binary:
+            run_mash = st.checkbox(
+                "Run Mash (ANI estimation)",
+                value=False,
+                help="Fast MinHash-based ANI estimation. Validates pLIN cosine distances against approximate ANI values.",
+            )
+        else:
+            run_mash = False
+            st.info("Mash not found. Install: `conda install -c bioconda mash`", icon="📐")
+
+        if fastani_binary:
+            run_fastani = st.checkbox(
+                "Run FastANI (true ANI)",
+                value=False,
+                help="Compute true Average Nucleotide Identity for all plasmid pairs. More accurate but slower than Mash.",
+            )
+        else:
+            run_fastani = False
+            st.info("FastANI not found. Install: `conda install -c bioconda fastani`", icon="📐")
+
+        if minimap2_binary:
+            run_snp_subtype = st.checkbox(
+                "Run SNP sub-typing (L6 clusters)",
+                value=False,
+                help="Align plasmids within L6 clusters using minimap2 to count SNP differences. Critical for outbreak-level resolution.",
+            )
+        else:
+            run_snp_subtype = False
+            st.info("minimap2 not found. Install: `conda install -c bioconda minimap2`", icon="🔬")
+
+        # CRISPR Host Inference (optional)
+        st.divider()
+        st.markdown("**CRISPR Host Inference**")
+        crispr_tools_ok = bool(minced_binary and blastn_binary and makeblastdb_binary)
+        if crispr_tools_ok:
+            run_crispr = st.checkbox(
+                "Run CRISPR host inference",
+                value=False,
+                help="Infer plasmid-host relationships using CRISPR spacer matching. "
+                     "Requires host bacterial genome FASTAs.",
+            )
+            if run_crispr:
+                crispr_source = st.radio(
+                    "Plasmid database source",
+                    ["Uploaded plasmids", "Reference DB (72,556 plasmids)"],
+                    index=0,
+                    help="Match spacers against your uploaded plasmids or the built-in reference database.",
+                    horizontal=True,
+                )
+                crispr_host_files = st.file_uploader(
+                    "Upload host bacterial genome FASTAs",
+                    type=["fasta", "fa", "fna"],
+                    accept_multiple_files=True,
+                    help="Upload one or more bacterial genome FASTA files to screen for CRISPR spacers.",
+                    key="crispr_host_uploader",
+                )
+            else:
+                crispr_source = "Uploaded plasmids"
+                crispr_host_files = None
+        else:
+            run_crispr = False
+            crispr_source = "Uploaded plasmids"
+            crispr_host_files = None
+            missing = []
+            if not minced_binary:
+                missing.append("minced")
+            if not blastn_binary or not makeblastdb_binary:
+                missing.append("blast")
+            st.info(
+                f"CRISPR Host Inference requires: {', '.join(missing)}. "
+                f"Install: `conda install -c bioconda {' '.join(missing)}`",
+                icon="🧫",
+            )
 
         # Nucleotide Transformer (optional LLM)
         if NT_AVAILABLE:
@@ -1570,6 +2778,10 @@ else:
     nt_device = st.session_state.get("_nt_device", "cpu")
     run_amr = amr_binary is not None
     run_prodigal = st.session_state.get("_run_prodigal", False)
+    run_mash = False
+    run_fastani = False
+    run_snp_subtype = False
+    metadata_file = None
     run_btn = False
 
 
@@ -1644,6 +2856,32 @@ if run_btn and uploaded_files:
     st.session_state._nt_model_choice = nt_model_choice
     st.session_state._nt_device = nt_device
     st.session_state._run_prodigal = run_prodigal
+
+    # Parse metadata CSV if provided
+    metadata_df = None
+    if metadata_file is not None:
+        try:
+            sep = "\t" if metadata_file.name.endswith((".tsv", ".txt")) else ","
+            metadata_df = pd.read_csv(metadata_file, sep=sep)
+            # Standardize join column: try plasmid_id, filename, sample_id
+            join_col = None
+            for candidate in ["plasmid_id", "Plasmid_ID", "filename", "Filename", "sample_id", "Sample_ID", "name", "Name"]:
+                if candidate in metadata_df.columns:
+                    join_col = candidate
+                    break
+            if join_col and join_col != "plasmid_id":
+                metadata_df = metadata_df.rename(columns={join_col: "plasmid_id"})
+            # Parse date columns
+            for col in metadata_df.columns:
+                if any(kw in col.lower() for kw in ["date", "collection_date", "sample_date"]):
+                    metadata_df[col] = pd.to_datetime(metadata_df[col], errors="coerce")
+            st.session_state.metadata_df = metadata_df
+        except Exception as e:
+            st.warning(f"Could not parse metadata file: {e}", icon="⚠️")
+            metadata_df = None
+    else:
+        st.session_state.metadata_df = None
+
     progress = st.progress(0, text="Starting analysis...")
 
     # Step 1: Parse sequences (+ Inc group auto-detection)
@@ -1663,6 +2901,14 @@ if run_btn and uploaded_files:
     progress.progress(15, text=f"Computing 4-mer vectors for {len(records)} plasmids...")
     sequences = [r["sequence"] for r in records]
     vectors = compute_kmer_vectors(tuple(sequences), k=4)
+
+    # Validate vectors shape matches records count
+    if vectors.shape[0] != len(records):
+        st.error(
+            f"Vector computation mismatch: {len(records)} records but {vectors.shape[0]} vectors. "
+            "This is likely a caching issue. Please refresh the page (Ctrl+R / Cmd+R) and try again."
+        )
+        st.stop()
 
     # Step 2b: Adaptive threshold calibration (if enabled)
     active_thresholds = PLIN_THRESHOLDS
@@ -1756,28 +3002,152 @@ if run_btn and uploaded_files:
     st.session_state.prodigal_genes_df = prodigal_genes_df
     st.session_state.prodigal_summary_df = prodigal_summary_df
 
+    # Step 5c: MOBsuite mobility typing (optional)
+    mobsuite_df = pd.DataFrame()
+    if run_mobsuite and mobsuite_binary:
+        progress.progress(86, text="Running MOBsuite mobility typing...")
+
+        def mob_cb(pct):
+            progress.progress(int(86 + pct * 4), text=f"MOBsuite: {int(pct * 100)}%")
+
+        mobsuite_df = run_mobsuite_on_files(uploaded_files, mobsuite_binary, mob_cb)
+
+    st.session_state.mobsuite_df = mobsuite_df
+
+    # Step 5d: CRISPR host inference (optional)
+    if run_crispr and crispr_host_files:
+        progress.progress(87, text="Running CRISPR host inference — extracting spacers...")
+
+        # 5d-i: Run MinCED on host genomes
+        def crispr_cb(pct):
+            progress.progress(int(87 + pct * 2), text=f"MinCED spacer extraction: {int(pct * 100)}%")
+
+        spacers_df, spacers_fasta_text, spacer_summary_df = run_minced_on_genomes(
+            crispr_host_files, minced_binary, crispr_cb
+        )
+        st.session_state.crispr_spacers_df = spacers_df
+        st.session_state.crispr_spacer_summary_df = spacer_summary_df
+
+        if len(spacers_df) > 0 and spacers_fasta_text.strip():
+            # 5d-ii: Build or load BLAST DB
+            progress.progress(90, text="Building BLAST database for spacer matching...")
+            tmpdir_handle = None
+            if crispr_source == "Reference DB (72,556 plasmids)":
+                db_path = get_or_build_reference_blastdb(makeblastdb_binary)
+            else:
+                db_path, tmpdir_handle = build_blast_db(uploaded_files, makeblastdb_binary)
+
+            if db_path:
+                # 5d-iii: Run BLASTN-short
+                progress.progress(91, text="Running BLASTN-short: spacers vs plasmids...")
+                blast_df = run_spacer_blast(spacers_fasta_text, db_path, blastn_binary)
+
+                if len(blast_df) > 0:
+                    # 5d-iv: Filter hits
+                    progress.progress(92, text="Filtering BLAST hits (stringent criteria)...")
+                    filtered_hits_df = filter_blast_hits(blast_df)
+                    st.session_state.crispr_filtered_hits_df = filtered_hits_df
+
+                    if len(filtered_hits_df) > 0:
+                        # 5d-v: Compute host probabilities
+                        progress.progress(93, text="Computing host-plasmid probability rankings...")
+                        host_probs_df, host_summary_df = compute_host_probabilities(
+                            filtered_hits_df, spacer_summary_df
+                        )
+                        st.session_state.crispr_host_probs_df = host_probs_df
+                        st.session_state.crispr_host_summary_df = host_summary_df
+                    else:
+                        st.session_state.crispr_filtered_hits_df = pd.DataFrame()
+                else:
+                    st.session_state.crispr_filtered_hits_df = pd.DataFrame()
+
+                # Clean up temp BLAST DB if built from uploads
+                if tmpdir_handle is not None:
+                    try:
+                        tmpdir_handle.cleanup()
+                    except Exception:
+                        pass
+            else:
+                st.warning("Could not build BLAST database for CRISPR analysis.")
+        else:
+            st.info("No CRISPR spacers were extracted from the uploaded host genomes.")
+
     # Step 6: Integration
-    progress.progress(90, text="Integrating results...")
+    progress.progress(94, text="Integrating results...")
     integrated_df = integrate_plin_amr(plin_df, amr_df)
+
+    # Merge user-provided metadata if available
+    if st.session_state.get("metadata_df") is not None:
+        meta = st.session_state.metadata_df
+        if "plasmid_id" in meta.columns:
+            # Strip file extensions from metadata plasmid_id to match
+            meta_clean = meta.copy()
+            meta_clean["plasmid_id"] = meta_clean["plasmid_id"].astype(str).str.replace(
+                r"\.(fasta|fa|fna)$", "", regex=True
+            )
+            # Merge, keeping all plasmids (left join)
+            extra_cols = [c for c in meta_clean.columns if c != "plasmid_id" and c not in integrated_df.columns]
+            if extra_cols:
+                integrated_df = integrated_df.merge(
+                    meta_clean[["plasmid_id"] + extra_cols], on="plasmid_id", how="left"
+                )
+
     st.session_state.integrated_df = integrated_df
 
     # Step 7: Mobility prediction
-    progress.progress(93, text="Predicting plasmid mobility...")
+    progress.progress(95, text="Predicting plasmid mobility...")
+    mobsuite_df = st.session_state.get("mobsuite_df")
     mobility_results = []
     for rec in records:
-        mob_class, mob_genes, mob_detail = classify_mobility(amr_df, rec["source_file"])
+        mob_result = classify_mobility(amr_df, rec["source_file"], mobsuite_df=mobsuite_df)
         mobility_results.append({
             "plasmid_id": rec["plasmid_id"],
-            "mobility": mob_class,
-            "mobility_genes": "; ".join(mob_genes) if mob_genes else "",
-            "mobility_detail": mob_detail,
+            "mobility": mob_result["mobility"],
+            "mobility_genes": "; ".join(mob_result["genes"]) if mob_result["genes"] else "",
+            "mobility_detail": mob_result["detail"],
+            "mobility_source": mob_result["source"],
+            "relaxase_family": mob_result["relaxase_family"],
+            "mpf_type": mob_result["mpf_type"],
         })
     st.session_state.mobility_results = pd.DataFrame(mobility_results)
 
     # Step 8: Outbreak detection
-    progress.progress(96, text="Scanning for outbreak clusters...")
+    progress.progress(92, text="Scanning for outbreak clusters...")
     outbreak_clusters = detect_outbreak_clusters(plin_df, integrated_df)
     st.session_state.outbreak_clusters = outbreak_clusters
+
+    # Step 8b: Temporal outbreak clustering (if metadata with dates provided)
+    temporal_clusters = []
+    if st.session_state.get("metadata_df") is not None:
+        progress.progress(93, text="Checking temporal outbreak patterns...")
+        temporal_clusters = detect_temporal_outbreak_clusters(
+            plin_df, integrated_df, st.session_state.metadata_df, time_window_days=30
+        )
+    st.session_state.temporal_outbreak_clusters = temporal_clusters
+
+    # Step 9: Mash ANI estimation (optional)
+    if run_mash and mash_binary:
+        progress.progress(94, text="Running Mash ANI estimation...")
+        mash_df = run_mash_distances(uploaded_files, mash_binary)
+        st.session_state.mash_df = mash_df
+    else:
+        st.session_state.mash_df = None
+
+    # Step 10: FastANI (optional)
+    if run_fastani and fastani_binary:
+        progress.progress(96, text="Running FastANI (true ANI computation)...")
+        fastani_df = run_fastani(uploaded_files, fastani_binary)
+        st.session_state.fastani_df = fastani_df
+    else:
+        st.session_state.fastani_df = None
+
+    # Step 11: SNP sub-typing within L6 clusters (optional)
+    if run_snp_subtype and minimap2_binary:
+        progress.progress(98, text="SNP sub-typing within L6 clusters...")
+        snp_df = run_snp_subtyping(records, cluster_assignments, minimap2_binary)
+        st.session_state.snp_subtype_df = snp_df
+    else:
+        st.session_state.snp_subtype_df = None
 
     progress.progress(100, text="Analysis complete!")
     st.session_state.analysis_done = True
@@ -1788,9 +3158,9 @@ if run_btn and uploaded_files:
 #  TABS
 # ══════════════════════════════════════════════════════════════════════════════
 
-tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_buddy, tab_export = st.tabs(
+tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_crispr, tab_buddy, tab_export = st.tabs(
     ["📋 Overview", "📊 Results", "🌳 Cladogram", "💊 AMR Analysis",
-     "🔬 Epidemiology", "🦠 Bacterial Buddy", "📥 Export"]
+     "🔬 Epidemiology", "🧫 CRISPR Host", "🧬 DRAGNOME Buddy", "📥 Export"]
 )
 
 # ── TAB 1: Overview ──────────────────────────────────────────────────────────
@@ -1798,7 +3168,7 @@ tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_buddy, tab_export = 
 with tab_overview:
     st.header("pLIN — Plasmid Life Identification Number")
     st.markdown("""
-    **pLIN** assigns each plasmid a six-position hierarchical code (`A.B.C.D.E.F`)
+    **pLIN** assigns each plasmid a six-position hierarchical code (`L1.L2.L3.L4.L5.L6`)
     based on tetranucleotide (4-mer) composition distances and single-linkage clustering.
     """)
 
@@ -1828,9 +3198,24 @@ with tab_overview:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Plasmids", len(df))
         c2.metric("Unique pLIN Codes", df["pLIN"].nunique())
-        c3.metric("Strain Clusters (F)", df["bin_F"].nunique())
+        c3.metric("L6 Clusters (F)", df["bin_F"].nunique())
         amr_count = st.session_state.integrated_df["AMR_count"].sum() if st.session_state.integrated_df is not None else 0
         c4.metric("AMR Detections", int(amr_count))
+
+        # Sequence length warning for short plasmids
+        short_plasmids = df[df["length_bp"] < SHORT_PLASMID_THRESHOLD]
+        if len(short_plasmids) > 0:
+            st.warning(
+                f"**{len(short_plasmids)} plasmid(s) shorter than {SHORT_PLASMID_THRESHOLD/1000:.0f} kb** — "
+                f"4-mer frequency vectors from short sequences have higher stochastic variance, "
+                f"which may produce unreliable pLIN codes and inflated inter-plasmid distances. "
+                f"Interpret these assignments with caution."
+            )
+            with st.expander(f"View short plasmids ({len(short_plasmids)})"):
+                st.dataframe(
+                    short_plasmids[["plasmid_id", "length_bp", "pLIN", "inc_type"]],
+                    use_container_width=True, hide_index=True,
+                )
 
         # Show analysis parameters
         params_col1, params_col2 = st.columns(2)
@@ -1893,6 +3278,35 @@ with tab_overview:
                             "(2) the plasmid may be a novel/rare Inc type, or (3) it may be a mosaic/hybrid plasmid."
                         )
 
+            # Check for multiple Inc type detections (multi-replicon plasmids)
+            has_multi_inc = "inc_is_multiple" in df.columns
+            if has_multi_inc:
+                multi_inc_df = df[df["inc_is_multiple"] == True]
+                multi_inc_count = len(multi_inc_df)
+                if multi_inc_count > 0:
+                    st.warning(
+                        f"**{multi_inc_count} plasmid(s) detected with Multiple Inc types** — "
+                        f"These may be multi-replicon or mosaic plasmids carrying multiple incompatibility groups. "
+                        f"Threshold: ≥{MULTI_INC_THRESHOLD*100:.0f}% confidence for secondary Inc types."
+                    )
+                    # Show multi-Inc plasmids with their detected types
+                    with st.expander(f"View Multiple Inc type plasmids ({multi_inc_count})"):
+                        multi_cols = ["plasmid_id", "inc_type", "inc_confidence"]
+                        if "inc_multiple_types" in df.columns:
+                            multi_cols.append("inc_multiple_types")
+                        multi_display = multi_inc_df[multi_cols].copy()
+                        multi_display = multi_display.rename(columns={
+                            "inc_type": "Detected Inc Types",
+                            "inc_confidence": "Primary Confidence",
+                            "inc_multiple_types": "All Detected Inc Types",
+                        })
+                        st.dataframe(multi_display, use_container_width=True, hide_index=True)
+                        st.caption(
+                            "**Note:** Multi-replicon plasmids carry replicons from multiple incompatibility groups. "
+                            "This is common in large conjugative plasmids (e.g., IncF plasmids often carry multiple FII/FIA/FIB replicons). "
+                            "Consider verifying with PlasmidFinder or BLAST against NCBI replicon database."
+                        )
+
             inc_summary = df.groupby("inc_type").agg(
                 count=("plasmid_id", "count"),
                 avg_confidence=("inc_confidence", "mean"),
@@ -1909,8 +3323,9 @@ with tab_overview:
 
             # Warn about mixed Inc groups
             n_inc_groups = df["inc_type"].nunique()
-            # Don't count Unknown/Novel as a real Inc group for the warning
-            real_inc_groups = [g for g in df["inc_type"].unique() if g != "Unknown/Novel"]
+            # Don't count Unknown/Novel or Multiple Inc types as single Inc groups for the warning
+            real_inc_groups = [g for g in df["inc_type"].unique()
+                              if g != "Unknown/Novel" and not g.startswith("Multiple:")]
             if len(real_inc_groups) > 1:
                 st.info(
                     f"**{len(real_inc_groups)} Inc groups detected** in your upload. "
@@ -2273,6 +3688,12 @@ with tab_epi:
                 mc2.metric("Mobilizable", int(mob_counts.get("Mobilizable", 0)))
                 mc3.metric("Non-mobilizable", int(mob_counts.get("Non-mobilizable", 0)))
 
+                # Show prediction source
+                if "mobility_source" in mob_df.columns:
+                    sources = mob_df["mobility_source"].value_counts()
+                    source_str = ", ".join(f"{src}: {cnt}" for src, cnt in sources.items())
+                    st.caption(f"Prediction source: {source_str}")
+
                 # Pie chart
                 fig_mob = px.pie(
                     values=mob_counts.values, names=mob_counts.index,
@@ -2282,6 +3703,34 @@ with tab_epi:
                 )
                 fig_mob.update_layout(height=350)
                 st.plotly_chart(fig_mob, use_container_width=True)
+
+                # Relaxase family distribution (when MOBsuite data available)
+                if "relaxase_family" in mob_df.columns:
+                    relaxase_data = mob_df[mob_df["relaxase_family"].astype(str).str.strip() != ""]
+                    if len(relaxase_data) > 0:
+                        rel_counts = relaxase_data["relaxase_family"].value_counts()
+                        fig_rel = px.bar(
+                            x=rel_counts.index, y=rel_counts.values,
+                            title="Relaxase (MOB) Family Distribution",
+                            labels={"x": "Relaxase Family", "y": "Count"},
+                            color=rel_counts.index,
+                        )
+                        fig_rel.update_layout(height=300, showlegend=False)
+                        st.plotly_chart(fig_rel, use_container_width=True)
+
+                # MPF type distribution (when MOBsuite data available)
+                if "mpf_type" in mob_df.columns:
+                    mpf_data = mob_df[mob_df["mpf_type"].astype(str).str.strip() != ""]
+                    if len(mpf_data) > 0:
+                        mpf_counts = mpf_data["mpf_type"].value_counts()
+                        fig_mpf = px.bar(
+                            x=mpf_counts.index, y=mpf_counts.values,
+                            title="Mating Pair Formation (MPF) Type Distribution",
+                            labels={"x": "MPF Type", "y": "Count"},
+                            color=mpf_counts.index,
+                        )
+                        fig_mpf.update_layout(height=300, showlegend=False)
+                        st.plotly_chart(fig_mpf, use_container_width=True)
 
                 # Detail table
                 with st.expander("Mobility Details"):
@@ -2295,7 +3744,7 @@ with tab_epi:
                         "posing higher risk for AMR dissemination."
                     )
             else:
-                st.info("No mobility data. Run analysis with AMRFinderPlus enabled.")
+                st.info("No mobility data. Run analysis with AMRFinderPlus or MOBsuite enabled.")
 
         # ─── Outbreak Detection ───
         with epi_col2:
@@ -2312,7 +3761,7 @@ with tab_epi:
                         f"({cluster['n_plasmids']} plasmids, {cluster['n_amr_genes']} AMR genes)"
                     ):
                         st.markdown(f"**Risk level:** {cluster['risk_level']}")
-                        st.markdown(f"**Strain cluster (F):** {cluster['strain_cluster']}")
+                        st.markdown(f"**L6 cluster (F):** {cluster['strain_cluster']}")
                         st.markdown(f"**Shared AMR genes:** {', '.join(cluster['amr_genes'])}")
                         st.markdown(f"**Plasmids:**")
                         for p in cluster["plasmids"]:
@@ -2321,13 +3770,13 @@ with tab_epi:
                 if any(c["risk_level"] == "HIGH" for c in outbreak_clusters):
                     st.error(
                         "**HIGH-RISK outbreak cluster(s) detected.** "
-                        "Plasmids sharing identical strain-level pLIN codes AND "
+                        "Plasmids sharing identical L6-level pLIN codes AND "
                         "the same AMR resistance profile may indicate clonal spread."
                     )
             else:
                 st.info(
                     "No outbreak clusters detected. Outbreak detection flags groups of "
-                    "plasmids sharing the same pLIN strain code (F-level) AND identical "
+                    "plasmids sharing the same pLIN L6 code (F-level) AND identical "
                     "AMR resistance profiles."
                 )
 
@@ -2339,8 +3788,15 @@ with tab_epi:
         mob_df = st.session_state.get("mobility_results")
 
         if integrated is not None and mob_df is not None and len(mob_df) > 0:
+            # Build merge columns list based on available data
+            mob_merge_cols = ["plasmid_id", "mobility"]
+            if "relaxase_family" in mob_df.columns:
+                mob_merge_cols.append("relaxase_family")
+            if "mpf_type" in mob_df.columns:
+                mob_merge_cols.append("mpf_type")
+
             risk_df = integrated[["plasmid_id", "pLIN", "inc_type", "AMR_count"]].merge(
-                mob_df[["plasmid_id", "mobility"]], on="plasmid_id", how="left"
+                mob_df[mob_merge_cols], on="plasmid_id", how="left"
             )
 
             # High risk: conjugative + AMR genes
@@ -2360,19 +3816,262 @@ with tab_epi:
                     f"**{len(high_risk)} high-risk plasmid(s):** conjugative AND carrying AMR genes. "
                     "These represent the highest priority for infection control surveillance."
                 )
-                st.dataframe(high_risk[["plasmid_id", "pLIN", "inc_type", "AMR_count", "mobility"]],
+                # Show columns dynamically based on available data
+                display_cols = ["plasmid_id", "pLIN", "inc_type", "AMR_count", "mobility"]
+                if "relaxase_family" in high_risk.columns:
+                    display_cols.append("relaxase_family")
+                if "mpf_type" in high_risk.columns:
+                    display_cols.append("mpf_type")
+                st.dataframe(high_risk[display_cols],
                              use_container_width=True, hide_index=True)
 
+        # ─── Temporal Outbreak Clusters ───
+        temporal_clusters = st.session_state.get("temporal_outbreak_clusters", [])
+        if temporal_clusters:
+            st.divider()
+            st.subheader("Temporal Outbreak Clusters")
+            st.caption("Plasmids sharing L6 code + AMR profile + collection dates within 30-day window")
+            st.metric("Temporal Outbreak Clusters", len(temporal_clusters))
 
-# ── TAB 6: Bacterial Buddy ───────────────────────────────────────────────────
+            for i, tc in enumerate(temporal_clusters):
+                risk_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MODERATE": "🟡"}.get(tc["risk_level"], "⚪")
+                with st.expander(
+                    f"{risk_icon} Cluster {i+1}: pLIN {tc['pLIN']} — "
+                    f"{tc['n_plasmids']} plasmids, {tc['date_range_days']}d span, "
+                    f"{tc['n_amr_genes']} AMR genes"
+                ):
+                    st.markdown(f"**Risk level:** {tc['risk_level']}")
+                    st.markdown(f"**Date range:** {tc['earliest_date']} → {tc['latest_date']} ({tc['date_range_days']} days)")
+                    if tc.get("locations"):
+                        st.markdown(f"**Locations:** {', '.join(str(l) for l in tc['locations'])}")
+                    st.markdown(f"**Shared AMR genes:** {', '.join(tc['amr_genes']) if tc['amr_genes'] else 'None'}")
+                    st.markdown("**Plasmids:**")
+                    for p in tc["plasmids"]:
+                        st.markdown(f"  - `{p}`")
+
+            if any(tc["risk_level"] == "CRITICAL" for tc in temporal_clusters):
+                st.error(
+                    "**CRITICAL temporal outbreak cluster(s) detected.** "
+                    "Plasmids with identical L6 codes, same AMR profile, and collection dates "
+                    "within 7 days — strongly suggestive of active clonal transmission."
+                )
+
+        # ─── ANI Validation Results ───
+        mash_df = st.session_state.get("mash_df")
+        fastani_df = st.session_state.get("fastani_df")
+        snp_df = st.session_state.get("snp_subtype_df")
+
+        if (mash_df is not None and len(mash_df) > 0) or \
+           (fastani_df is not None and len(fastani_df) > 0) or \
+           (snp_df is not None and len(snp_df) > 0):
+            st.divider()
+            st.subheader("ANI Validation & SNP Sub-typing")
+
+        if mash_df is not None and len(mash_df) > 0:
+            with st.expander(f"Mash ANI Estimates ({len(mash_df)} pairs)"):
+                mc1, mc2, mc3 = st.columns(3)
+                mc1.metric("Mean ANI", f"{mash_df['ani_estimate'].mean():.1f}%")
+                mc2.metric("Min ANI", f"{mash_df['ani_estimate'].min():.1f}%")
+                mc3.metric("Max ANI", f"{mash_df['ani_estimate'].max():.1f}%")
+                st.dataframe(
+                    mash_df[["query", "reference", "mash_distance", "ani_estimate", "p_value"]].sort_values("ani_estimate", ascending=False),
+                    use_container_width=True, hide_index=True,
+                )
+
+        if fastani_df is not None and len(fastani_df) > 0:
+            with st.expander(f"FastANI True ANI ({len(fastani_df)} pairs)"):
+                fc1, fc2, fc3 = st.columns(3)
+                fc1.metric("Mean ANI", f"{fastani_df['ani'].mean():.1f}%")
+                fc2.metric("Min ANI", f"{fastani_df['ani'].min():.1f}%")
+                fc3.metric("Max ANI", f"{fastani_df['ani'].max():.1f}%")
+                st.dataframe(
+                    fastani_df[["query", "reference", "ani", "orthologous_matches", "total_fragments"]].sort_values("ani", ascending=False),
+                    use_container_width=True, hide_index=True,
+                )
+
+        if snp_df is not None and len(snp_df) > 0:
+            with st.expander(f"SNP Sub-typing within L6 Clusters ({len(snp_df)} comparisons)"):
+                valid_snps = snp_df[snp_df["snp_count"] >= 0]
+                if len(valid_snps) > 0:
+                    sc1, sc2, sc3 = st.columns(3)
+                    sc1.metric("L6 Clusters Analyzed", valid_snps["l6_cluster"].nunique())
+                    sc2.metric("Mean SNPs", f"{valid_snps['snp_count'].mean():.1f}")
+                    sc3.metric("Max SNPs", int(valid_snps["snp_count"].max()))
+
+                    # Flag identical plasmids (0 SNPs)
+                    identical = valid_snps[valid_snps["snp_count"] == 0]
+                    non_ref_identical = identical[identical["plasmid_id"] != identical["reference_id"]]
+                    if len(non_ref_identical) > 0:
+                        st.warning(
+                            f"**{len(non_ref_identical)} plasmid pair(s) with 0 SNP differences** — "
+                            "these are likely identical or near-identical sequences, strongly suggesting "
+                            "recent clonal transmission or the same plasmid isolated multiple times."
+                        )
+
+                st.dataframe(
+                    snp_df[["l6_cluster", "plasmid_id", "reference_id", "snp_count", "alignment_identity"]],
+                    use_container_width=True, hide_index=True,
+                )
+
+
+# ── TAB 6: CRISPR Host Inference ────────────────────────────────────────────
+
+with tab_crispr:
+    if not st.session_state.analysis_done:
+        st.info("Run analysis first to see CRISPR host inference results.")
+    else:
+        spacers_df = st.session_state.get("crispr_spacers_df")
+        spacer_summary = st.session_state.get("crispr_spacer_summary_df")
+        host_probs = st.session_state.get("crispr_host_probs_df")
+        host_summary = st.session_state.get("crispr_host_summary_df")
+        filtered_hits = st.session_state.get("crispr_filtered_hits_df")
+
+        has_results = (
+            host_probs is not None
+            and isinstance(host_probs, pd.DataFrame)
+            and len(host_probs) > 0
+        )
+
+        if not has_results:
+            st.header("🧫 CRISPR Host Inference")
+            st.info(
+                "**No CRISPR host inference results available.**\n\n"
+                "To enable CRISPR-based host prediction:\n"
+                "1. Ensure **minced** and **BLAST** are installed\n"
+                "2. Check **Run CRISPR host inference** in the sidebar\n"
+                "3. Upload one or more **bacterial genome FASTA** files\n"
+                "4. Re-run the analysis"
+            )
+        else:
+            st.header("🧫 CRISPR Host Inference")
+            st.caption(
+                "Plasmid-host relationships inferred from CRISPR spacer matching "
+                "(minced + BLASTN-short + softmax probability ranking)"
+            )
+
+            # ── Metrics row ──────────────────────────────────────────────
+            n_hosts = spacer_summary["genome"].nunique() if spacer_summary is not None and len(spacer_summary) > 0 else 0
+            n_arrays = spacer_summary["arrays"].sum() if spacer_summary is not None and len(spacer_summary) > 0 else 0
+            n_spacers = len(spacers_df) if spacers_df is not None else 0
+            n_predictions = len(host_probs)
+
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            mc1.metric("Host Genomes Screened", n_hosts)
+            mc2.metric("CRISPR Arrays Found", int(n_arrays))
+            mc3.metric("Total Spacers", n_spacers)
+            mc4.metric("Host–Plasmid Predictions", n_predictions)
+
+            # ── High-confidence alert ────────────────────────────────────
+            if "confidence" in host_probs.columns:
+                high_conf = host_probs[host_probs["confidence"] == "High"]
+                if len(high_conf) > 0:
+                    st.success(
+                        f"**{len(high_conf)} high-confidence host–plasmid prediction(s)** detected "
+                        f"(probability >= 0.7). These represent strong CRISPR-based evidence of "
+                        f"plasmid-host association."
+                    )
+
+            # ── Two-column layout ────────────────────────────────────────
+            col_left, col_right = st.columns(2)
+
+            with col_left:
+                # Confidence distribution pie chart
+                if "confidence" in host_probs.columns:
+                    st.subheader("Prediction Confidence")
+                    conf_counts = host_probs["confidence"].value_counts().reset_index()
+                    conf_counts.columns = ["Confidence", "Count"]
+                    color_map = {"High": "#2ecc71", "Medium": "#f39c12", "Low": "#e74c3c"}
+                    fig_pie = px.pie(
+                        conf_counts, names="Confidence", values="Count",
+                        color="Confidence", color_discrete_map=color_map,
+                        title="Confidence Distribution"
+                    )
+                    fig_pie.update_layout(height=350)
+                    st.plotly_chart(fig_pie, use_container_width=True)
+
+                # Top host predictions table
+                st.subheader("Top Host Predictions")
+                display_cols_hp = ["host_genome", "plasmid_id", "probability", "unique_spacers"]
+                if "confidence" in host_probs.columns:
+                    display_cols_hp.append("confidence")
+                top_preds = host_probs.nlargest(20, "probability")
+                st.dataframe(
+                    top_preds[display_cols_hp],
+                    use_container_width=True, hide_index=True
+                )
+
+            with col_right:
+                # Spacers per host bar chart
+                if spacer_summary is not None and len(spacer_summary) > 0:
+                    st.subheader("Spacers per Host Genome")
+                    fig_bar = px.bar(
+                        spacer_summary.sort_values("spacers", ascending=False).head(20),
+                        x="genome", y="spacers",
+                        color="arrays", color_continuous_scale="Viridis",
+                        labels={"genome": "Host Genome", "spacers": "Spacers", "arrays": "Arrays"},
+                        title="CRISPR Spacers Extracted per Host"
+                    )
+                    fig_bar.update_layout(height=350, xaxis_tickangle=-45)
+                    st.plotly_chart(fig_bar, use_container_width=True)
+
+                # Host-plasmid probability heatmap
+                st.subheader("Host–Plasmid Probability Heatmap")
+                if len(host_probs) > 0:
+                    # Pivot for heatmap (limit to top hosts/plasmids)
+                    top_hosts = host_probs.groupby("host_genome")["probability"].max().nlargest(15).index
+                    top_plasmids = host_probs.groupby("plasmid_id")["probability"].max().nlargest(20).index
+                    hm_data = host_probs[
+                        host_probs["host_genome"].isin(top_hosts)
+                        & host_probs["plasmid_id"].isin(top_plasmids)
+                    ]
+                    if len(hm_data) > 0:
+                        hm_pivot = hm_data.pivot_table(
+                            index="host_genome", columns="plasmid_id",
+                            values="probability", fill_value=0
+                        )
+                        fig_hm = px.imshow(
+                            hm_pivot, aspect="auto",
+                            color_continuous_scale="YlOrRd",
+                            labels=dict(x="Plasmid", y="Host Genome", color="Probability"),
+                            title="Host–Plasmid Association Probabilities"
+                        )
+                        fig_hm.update_layout(height=450)
+                        st.plotly_chart(fig_hm, use_container_width=True)
+                    else:
+                        st.info("Not enough data for heatmap visualization.")
+
+            # ── Expanders ────────────────────────────────────────────────
+            with st.expander("Filtered BLAST Hits", expanded=False):
+                if filtered_hits is not None and len(filtered_hits) > 0:
+                    st.dataframe(filtered_hits, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No filtered BLAST hits available.")
+
+            with st.expander("All Extracted Spacers", expanded=False):
+                if spacers_df is not None and len(spacers_df) > 0:
+                    st.dataframe(spacers_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No spacers extracted.")
+
+            with st.expander("Full Probability Rankings", expanded=False):
+                if host_probs is not None and len(host_probs) > 0:
+                    st.dataframe(
+                        host_probs.sort_values("probability", ascending=False),
+                        use_container_width=True, hide_index=True
+                    )
+                else:
+                    st.info("No probability rankings available.")
+
+
+# ── TAB 7: DRAGNOME Buddy ───────────────────────────────────────────────────
 
 with tab_buddy:
-    st.header("🦠 Bacterial Buddy")
+    st.header("🧬 DRAGNOME Buddy")
     st.caption("Your AI assistant for plasmid biology and AMR analysis")
 
     if not ollama_available:
         st.warning(
-            "**Ollama not detected.** Bacterial Buddy requires Ollama running locally.\n\n"
+            "**Ollama not detected.** DRAGNOME Buddy requires Ollama running locally.\n\n"
             "**Setup instructions:**\n"
             "1. Install Ollama: https://ollama.ai\n"
             "2. Start Ollama: `ollama serve`\n"
@@ -2410,7 +4109,7 @@ with tab_buddy:
 
         # Show analysis status
         if st.session_state.analysis_done:
-            st.success("Analysis data loaded. Bacterial Buddy can answer questions about your results!", icon="✅")
+            st.success("Analysis data loaded. DRAGNOME Buddy can answer questions about your results!", icon="✅")
         else:
             st.info("Run an analysis first for context-aware answers, or ask general plasmid biology questions.", icon="💡")
 
@@ -2431,7 +4130,7 @@ with tab_buddy:
 
         # Chat input
         if selected_model:
-            if prompt := st.chat_input("Ask Bacterial Buddy about your plasmids..."):
+            if prompt := st.chat_input("Ask DRAGNOME Buddy about your plasmids..."):
                 # Add user message
                 st.session_state.buddy_messages.append({"role": "user", "content": prompt})
 
@@ -2491,7 +4190,7 @@ with tab_buddy:
                     st.rerun()
 
 
-# ── TAB 7: Export ────────────────────────────────────────────────────────────
+# ── TAB 8: Export ────────────────────────────────────────────────────────────
 
 with tab_export:
     if not st.session_state.analysis_done:
@@ -2538,6 +4237,23 @@ with tab_export:
                 prodigal_genes_csv = prodigal_genes.to_csv(sep="\t", index=False).encode()
                 st.download_button("📥 Prodigal Genes (TSV)", prodigal_genes_csv,
                                    "prodigal_genes.tsv", "text/tab-separated-values")
+
+            # CRISPR host inference results
+            crispr_host_summary = st.session_state.get("crispr_host_summary_df")
+            crispr_spacers = st.session_state.get("crispr_spacers_df")
+            crispr_host_probs = st.session_state.get("crispr_host_probs_df")
+            if crispr_host_probs is not None and len(crispr_host_probs) > 0:
+                crispr_probs_csv = crispr_host_probs.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 CRISPR Host Predictions (TSV)", crispr_probs_csv,
+                                   "crispr_host_predictions.tsv", "text/tab-separated-values")
+            if crispr_spacers is not None and len(crispr_spacers) > 0:
+                crispr_spacers_csv = crispr_spacers.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 CRISPR Spacers (TSV)", crispr_spacers_csv,
+                                   "crispr_spacers.tsv", "text/tab-separated-values")
+            if crispr_host_summary is not None and len(crispr_host_summary) > 0:
+                crispr_summ_csv = crispr_host_summary.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 CRISPR Host Summary (TSV)", crispr_summ_csv,
+                                   "crispr_host_summary.tsv", "text/tab-separated-values")
 
         with col2:
             st.subheader("Figures")
@@ -2609,6 +4325,19 @@ with tab_export:
                     if prodigal_genes is not None and len(prodigal_genes) > 0:
                         zf.writestr("prodigal_genes.tsv",
                                     prodigal_genes.to_csv(sep="\t", index=False))
+                    # CRISPR results
+                    crispr_hp = st.session_state.get("crispr_host_probs_df")
+                    crispr_sp = st.session_state.get("crispr_spacers_df")
+                    crispr_hs = st.session_state.get("crispr_host_summary_df")
+                    if crispr_hp is not None and len(crispr_hp) > 0:
+                        zf.writestr("crispr_host_predictions.tsv",
+                                    crispr_hp.to_csv(sep="\t", index=False))
+                    if crispr_sp is not None and len(crispr_sp) > 0:
+                        zf.writestr("crispr_spacers.tsv",
+                                    crispr_sp.to_csv(sep="\t", index=False))
+                    if crispr_hs is not None and len(crispr_hs) > 0:
+                        zf.writestr("crispr_host_summary.tsv",
+                                    crispr_hs.to_csv(sep="\t", index=False))
                     for name, func, args in [
                         ("cladogram_rectangular", plot_rectangular_cladogram,
                          (Z, labels, plin_codes, strain_clusters)),

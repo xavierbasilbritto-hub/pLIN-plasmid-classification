@@ -21,21 +21,26 @@ from Bio import SeqIO
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TRAINING_DIR = os.path.join(BASE_DIR, "plasmid_sequences_for_training")
 
-INC_TYPES = {
-    "IncFII": os.path.join(TRAINING_DIR, "IncFII", "fastas"),
-    "IncN":   os.path.join(TRAINING_DIR, "IncN",   "fastas"),
-    "IncX1":  os.path.join(TRAINING_DIR, "IncX1",  "fastas"),
-}
+def _discover_inc_types():
+    """Dynamically discover all Inc type training folders."""
+    inc_types = {}
+    for inc_dir in sorted(glob.glob(os.path.join(TRAINING_DIR, "*", "fastas"))):
+        inc_name = os.path.basename(os.path.dirname(inc_dir))
+        if glob.glob(os.path.join(inc_dir, "*.fasta")):
+            inc_types[inc_name] = inc_dir
+    return inc_types
+
+INC_TYPES = _discover_inc_types()
 
 # pLIN hierarchical thresholds (cosine distance on 4-mer frequencies)
 # Mapped from ANI-based thresholds to composition-distance equivalents
 PLIN_THRESHOLDS = {
-    "A": 0.150,   # ~85% ANI — Broad plasmid family
-    "B": 0.100,   # ~90% ANI — Subfamily
-    "C": 0.050,   # ~95% ANI — Cluster
-    "D": 0.020,   # ~98% ANI — Subcluster
-    "E": 0.010,   # ~99% ANI — Clone
-    "F": 0.001,   # ~99.9% ANI — Strain / Outbreak
+    "A": 0.150,   # ~85% ANI — L1 (Broad plasmid family)
+    "B": 0.100,   # ~90% ANI — L2 (Subfamily)
+    "C": 0.050,   # ~95% ANI — L3 (Cluster)
+    "D": 0.020,   # ~98% ANI — L4 (Subcluster)
+    "E": 0.010,   # ~99% ANI — L5 (Clone)
+    "F": 0.001,   # ~99.9% ANI — L6 (Strain / Outbreak)
 }
 
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")

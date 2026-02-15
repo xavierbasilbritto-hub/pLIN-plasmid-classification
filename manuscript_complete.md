@@ -12,29 +12,70 @@ Plasmids are central agents of horizontal gene transfer in bacteria, driving the
 
 ## 1. INTRODUCTION
 
-### 1.1 Background
+### 1.1 The AMR Crisis and the Central Role of Plasmids
 
-Bacterial plasmids are extrachromosomal DNA elements that serve as the primary vehicles of horizontal gene transfer (HGT) in prokaryotes, facilitating the rapid dissemination of antimicrobial resistance (AMR) genes, virulence factors, metabolic functions, and stress tolerance determinants across species and genera (Carattoli, 2009; San Millan, 2018). The clinical importance of plasmid-mediated AMR is underscored by the global spread of carbapenem resistance (*blaKPC*, *blaNDM*), extended-spectrum beta-lactamase (ESBL) genes (*blaCTX-M*), and plasmid-mediated colistin resistance (*mcr*) on conjugative plasmids belonging to a limited number of high-risk incompatibility (Inc) groups, notably IncFII, IncN, and IncX (Partridge et al., 2018; Wang et al., 2018; Rozwandowicz et al., 2018).
+Antimicrobial resistance (AMR) represents one of the most pressing global health threats of the 21st century. The World Health Organization (WHO) has designated AMR as one of the top ten threats to global health, and the landmark Murray et al. (2022) study estimated that bacterial AMR was directly responsible for 1.27 million deaths and associated with 4.95 million deaths worldwide in 2019 alone — a burden exceeding that of HIV/AIDS or malaria. Without decisive action, AMR-attributable deaths are projected to reach 10 million annually by 2050, surpassing cancer as a leading cause of death globally (O'Neill, 2016). The economic impact is equally staggering: the World Bank estimates AMR could reduce global GDP by 1.0–3.4% by 2030, pushing 24 million additional people into extreme poverty (World Bank, 2017).
 
-Despite the centrality of plasmids to the AMR crisis, the field lacks a unified, stable, and hierarchical nomenclature system for plasmid classification. The current landscape of plasmid typing tools, while individually valuable, suffers from fundamental limitations that hinder comparative genomic epidemiology:
+At the molecular centre of this crisis are **bacterial plasmids** — extrachromosomal, self-replicating DNA elements that serve as the primary vehicles of horizontal gene transfer (HGT) in prokaryotes. Plasmids facilitate the rapid dissemination of AMR genes, virulence factors, metabolic functions, and stress tolerance determinants across species and genera, enabling resistance to spread far faster than vertical inheritance would allow (Carattoli, 2009; San Millan, 2018). The clinical impact of plasmid-mediated AMR is immediate and devastating: carbapenem-resistant Enterobacterales (CRE), driven largely by plasmid-borne carbapenemases (*blaKPC*, *blaNDM*, *blaOXA-48*), are classified by the CDC as an "urgent threat" with mortality rates of 40–50% in bloodstream infections (CDC, 2019). Extended-spectrum beta-lactamase (ESBL) genes (*blaCTX-M*, *blaSHV*, *blaTEM*), carried predominantly on IncF-family plasmids, have rendered third-generation cephalosporins unreliable for empirical therapy in many settings worldwide (Bevan et al., 2017). The emergence of plasmid-mediated colistin resistance (*mcr-1*) on IncI2, IncX4, and IncHI2 plasmids threatens the last-resort antibiotic for multidrug-resistant Gram-negative infections (Liu et al., 2016; Wang et al., 2018).
 
-**Replicon-based Inc typing (PlasmidFinder).** The most widely used approach, PlasmidFinder (Carattoli et al., 2014), detects incompatibility group markers by BLAST comparison against a curated database of replicon sequences. While computationally efficient, this method produces flat (single-level) classifications, fails to detect novel or divergent replicons, requires database updates, and cannot distinguish between closely related plasmid lineages within the same Inc group.
+What makes plasmids uniquely dangerous as AMR vectors is their capacity for **multi-drug resistance stacking**: a single conjugative plasmid can carry multiple resistance determinants simultaneously, creating extensively drug-resistant (XDR) phenotypes in a single transfer event. The notorious IncFII/IncN plasmid lineages, for example, frequently harbour combinations of carbapenemases, ESBLs, aminoglycoside-modifying enzymes, and quinolone resistance determinants (Partridge et al., 2018; Rozwandowicz et al., 2018). Moreover, plasmid **conjugation** — the direct cell-to-cell transfer of DNA through type IV secretion systems — enables resistance dissemination across species barriers, from commensal *Escherichia coli* in the gut microbiome to pathogenic *Klebsiella pneumoniae* in the bloodstream (Sheppard et al., 2016). This inter-species transfer renders traditional species-based surveillance insufficient: tracking the plasmid, not just the pathogen, is essential for understanding and controlling AMR spread.
 
-**Plasmid multilocus sequence typing (pMLST).** Analogous to bacterial MLST, pMLST (Carattoli et al., 2014) assigns sequence types based on allelic variants of multiple loci within specific Inc-group schemes. However, pMLST schemes exist for only six Inc groups, produce flat classifications, and require curated allele databases that must be updated as new variants emerge.
+### 1.2 The Critical Need for Plasmid Classification
 
-**MOB-suite.** Robertson and Nash (2018) developed MOB-suite, which classifies plasmids based on relaxase typing and Mash distance clustering at a fixed distance threshold of 0.06. While broader in scope than replicon-based methods, MOB-suite produces flat cluster codes, depends on a reference database, and re-assigns cluster identifiers when the database is updated, violating code permanence.
+Despite the central role of plasmids in the AMR crisis, the field of plasmid genomics suffers from a fundamental gap: **the absence of a unified, stable, and hierarchical classification system** comparable to what exists for bacterial chromosomes. While bacterial taxonomy benefits from established frameworks — from 16S rRNA phylogeny to whole-genome ANI-based species delineation (Jain et al., 2018) — plasmid classification remains fragmented, ad hoc, and tool-dependent. This deficiency has profound consequences for surveillance, epidemiological investigation, and our understanding of plasmid evolution:
 
-**COPLA and Plasmid Taxonomic Units (PTUs).** Redondo-Salvo et al. (2021) defined PTUs using average nucleotide identity (ANI) networks and hierarchical stochastic block modelling (HSBM). COPLA provides semi-hierarchical classification but could assign only 41% of plasmids (63% of Enterobacterales plasmids) to defined PTUs, and codes are recomputed with each database release.
+**Outbreak investigation is hampered.** When carbapenem-resistant organisms are detected in multiple patients in an intensive care unit, clinicians and infection preventionists need to determine whether the same plasmid — carrying the same resistance genes — is spreading between patients, or whether multiple independent acquisition events have occurred. Without a standardised plasmid classification system that can distinguish between identical, closely related, and distinct plasmids at multiple resolution levels, this determination is often impossible without costly whole-genome sequencing analyses interpreted by specialist bioinformaticians.
 
-**mge-cluster.** Shaw et al. (2023) introduced mge-cluster, a reference-free method based on unitig Jaccard distances and HDBSCAN clustering. While reference-free and applicable to diverse mobile genetic elements, mge-cluster produces flat, single-level clusters and requires complete re-embedding (via t-SNE) when new sequences are added.
+**Longitudinal surveillance is undermined.** Public health agencies tracking the spread of high-risk plasmid lineages across hospitals, regions, and countries require a nomenclature that is **permanent** — once a plasmid receives a classification code, that code must remain stable regardless of future database updates or the addition of new sequences. Current systems violate this requirement: MOB-suite reassigns cluster codes when its reference database is updated; COPLA recomputes PTU assignments with each release; and pMLST schemes are limited to six Inc groups.
 
-### 1.2 The Life Identification Number (LIN) Framework
+**Evolutionary analysis is incomplete.** Understanding how plasmids evolve — through backbone divergence, gene acquisition, modular recombination, and host-range adaptation — requires a classification system that captures relatedness at **multiple hierarchical levels simultaneously**. A plasmid that belongs to the same broad family as another but differs at the strain level carries fundamentally different epidemiological implications than one that is clonally identical. No existing tool provides this multi-resolution view.
 
-The Life Identification Number (LIN) system was originally developed for hierarchical, permanent classification of bacterial strains based on whole-genome similarity (Vinatzer et al., 2017; Tian et al., 2020). LIN assigns each genome a multi-position numerical code based on its similarity to previously coded genomes at a series of nested distance thresholds. The key properties of LIN—hierarchical multi-resolution classification, code permanence (codes are never retroactively changed), and nearest-neighbour assignment—make it ideally suited for a plasmid classification system, yet LIN has never been applied to plasmid genomes.
+### 1.3 Limitations of Current Plasmid Typing Approaches
 
-### 1.3 Rationale and Objectives
+The current landscape of plasmid typing tools, while individually valuable, each suffers from one or more critical limitations that prevent it from serving as a comprehensive plasmid nomenclature system:
 
-We hypothesised that the LIN framework can be adapted to plasmid genomes using whole-plasmid tetranucleotide composition distances, and that the resulting pLIN (plasmid Life Identification Number) system would provide a classification scheme that is simultaneously (i) hierarchical, (ii) permanent, (iii) reference-free, (iv) biologically meaningful, and (v) integrable with AMR gene surveillance data.
+**Replicon-based Inc typing (PlasmidFinder).** The most widely used approach, PlasmidFinder (Carattoli et al., 2014), detects incompatibility group markers by BLAST comparison against a curated database of replicon sequences. While computationally efficient, this method produces flat (single-level) classifications, fails to detect novel or divergent replicons, requires database updates, and cannot distinguish between closely related plasmid lineages within the same Inc group. A plasmid identified as "IncFII" could be one of thousands of distinct lineages with vastly different AMR cargo — the classification conveys the replicon identity but nothing about evolutionary relationships.
+
+**Plasmid multilocus sequence typing (pMLST).** Analogous to bacterial MLST, pMLST (Carattoli et al., 2014) assigns sequence types based on allelic variants of multiple loci within specific Inc-group schemes. However, pMLST schemes exist for only six Inc groups, produce flat classifications, and require curated allele databases that must be updated as new variants emerge. The vast majority of plasmid diversity falls outside the scope of pMLST entirely.
+
+**MOB-suite.** Robertson and Nash (2018) developed MOB-suite, which classifies plasmids based on relaxase typing and Mash distance clustering at a fixed distance threshold of 0.06. While broader in scope than replicon-based methods, MOB-suite produces flat cluster codes, depends on a reference database, and re-assigns cluster identifiers when the database is updated, violating code permanence. The single-threshold approach also means that two plasmids either belong to the same cluster or they do not — there is no granularity to assess whether they are distantly or closely related within a group.
+
+**COPLA and Plasmid Taxonomic Units (PTUs).** Redondo-Salvo et al. (2021) defined PTUs using average nucleotide identity (ANI) networks and hierarchical stochastic block modelling (HSBM). COPLA provides semi-hierarchical classification but could assign only 41% of plasmids (63% of Enterobacterales plasmids) to defined PTUs, and codes are recomputed with each database release. The majority of newly sequenced plasmids cannot be classified.
+
+**mge-cluster.** Shaw et al. (2023) introduced mge-cluster, a reference-free method based on unitig Jaccard distances and HDBSCAN clustering. While reference-free and applicable to diverse mobile genetic elements, mge-cluster produces flat, single-level clusters and requires complete re-embedding (via t-SNE) when new sequences are added, making it unsuitable for permanent nomenclature.
+
+Table 1 summarises the comparative limitations of existing approaches against the five criteria required for an effective plasmid classification system:
+
+| Criterion | PlasmidFinder | pMLST | MOB-suite | COPLA/PTU | mge-cluster | **pLIN** |
+|-----------|:---:|:---:|:---:|:---:|:---:|:---:|
+| Hierarchical (multi-level) | No | No | No | Partial | No | **Yes (6 levels)** |
+| Code permanence | Yes | Yes | No | No | No | **Yes** |
+| Reference-free | No | No | No | No | Yes | **Yes** |
+| Broad taxonomic scope | No (replicon-dependent) | No (6 Inc groups) | Partial | Partial (41%) | Yes | **Yes (20 Inc groups)** |
+| AMR integration | No | No | No | No | No | **Yes (AMRFinderPlus)** |
+
+### 1.4 The Life Identification Number (LIN) Framework
+
+The Life Identification Number (LIN) system was originally developed for hierarchical, permanent classification of bacterial strains based on whole-genome similarity (Vinatzer et al., 2017; Tian et al., 2020). LIN assigns each genome a multi-position numerical code based on its similarity to previously coded genomes at a series of nested distance thresholds. The fundamental principle is elegant: at each threshold level, a query genome either falls within the same cluster as its nearest neighbour (inheriting that cluster's identifier) or exceeds the threshold (receiving a new, unique identifier). This nearest-neighbour assignment rule guarantees two critical properties:
+
+1. **Hierarchical consistency**: if two genomes share the same code at a coarse level, they necessarily share the same code at all coarser levels, producing a nested, tree-like classification.
+2. **Code permanence**: once a genome is assigned a LIN code, that code is never altered by the subsequent addition of new genomes to the database. This is because the assignment depends only on the query's distance to its nearest neighbour, not on the global structure of the database.
+
+LIN has been successfully applied to bacterial species classification (Vinatzer et al., 2017) and plant pathogen strain typing (Tian et al., 2020), demonstrating its scalability and biological interpretability. However, **LIN has never been applied to plasmid genomes** — an application that presents unique challenges (smaller genome sizes, extensive mosaicism, horizontal transfer between hosts) but also unique opportunities (the urgent need for a stable, hierarchical plasmid nomenclature integrated with AMR surveillance).
+
+### 1.5 Rationale: Why pLIN is Needed Now
+
+The convergence of three developments makes the present moment uniquely opportune for a plasmid-specific LIN system:
+
+**First, the explosion of plasmid sequence data.** The number of complete plasmid genome sequences in NCBI RefSeq has grown exponentially, from fewer than 5,000 in 2015 to over 100,000 in 2024. This wealth of data enables robust training of composition-based classifiers and calibration of distance thresholds across diverse plasmid families — a prerequisite for a reliable classification system that was not achievable even five years ago.
+
+**Second, the maturation of AMR gene databases.** NCBI AMRFinderPlus (Feldgarden et al., 2021), with its comprehensive curated database of AMR, stress tolerance, and virulence genes, now provides a standardised, regularly updated framework for annotating plasmid gene cargo. Integrating plasmid classification with AMR gene annotation enables a fundamentally new analytical paradigm: tracking resistance gene dissemination through plasmid lineage surveillance rather than species-level epidemiology alone.
+
+**Third, the clinical urgency of plasmid surveillance.** High-profile outbreaks of plasmid-mediated carbapenem resistance (e.g., the global spread of *blaKPC*-carrying IncN plasmids and *blaNDM*-carrying IncX3 plasmids) have demonstrated that plasmid-level tracking is essential for effective infection control (David et al., 2019; Pitout et al., 2024). Public health agencies including the CDC, ECDC, and WHO have called for enhanced surveillance of mobile genetic elements, but no tool currently provides the integrated classification-plus-AMR-annotation capability needed for routine plasmid surveillance.
+
+### 1.6 Objectives
+
+We present pLIN (plasmid Life Identification Number), the first application of the LIN framework to plasmid genomes. pLIN uses whole-plasmid tetranucleotide composition distances and single-linkage hierarchical clustering at six biologically calibrated thresholds to assign each plasmid a permanent, hierarchical six-position code spanning family-level (L1, ~85% ANI) to strain-level (L6, ~99.9% ANI) resolution. pLIN is implemented as an interactive Streamlit web application with integrated AMR gene surveillance, plasmid mobility prediction, CRISPR-based host inference, ANI validation, SNP sub-typing, and temporal outbreak clustering capabilities.
 
 The specific objectives of this study were:
 
@@ -43,6 +84,7 @@ The specific objectives of this study were:
 3. To independently validate the compositional features underlying pLIN using a machine learning pipeline with nested cross-validation.
 4. To characterise plasmid backbone architecture and mosaic structure using composition-based analyses.
 5. To integrate pLIN with NCBI AMRFinderPlus for comprehensive antimicrobial resistance, virulence, and stress gene surveillance, demonstrating the utility of pLIN lineages as a framework for tracking resistance gene dissemination.
+6. To implement a complete, cross-platform bioinformatics tool with ANI validation (Mash, FastANI), SNP sub-typing (minimap2), temporal outbreak clustering, and an interactive web GUI accessible to both bioinformaticians and clinical microbiologists.
 
 ---
 
@@ -69,6 +111,8 @@ The final deduplicated dataset comprised **6,346 non-redundant plasmid sequences
 ### 2.2 pLIN Classification System
 
 #### 2.2.1 Tetranucleotide (4-mer) Frequency Vector Computation
+
+The overall pLIN analysis pipeline is illustrated in Figure 8, which depicts the 12-step workflow from FASTA input through pLIN assignment, AMR annotation, and epidemiological analysis.
 
 For each plasmid sequence, a normalised tetranucleotide frequency vector of length 256 (4^4 possible 4-mers over the alphabet {A, C, G, T}) was computed. For each of the 256 canonical tetranucleotides *k*, the frequency was calculated as:
 
@@ -109,7 +153,7 @@ The dendrogram was cut at six distance thresholds using `scipy.cluster.hierarchy
 
 #### 2.2.4 Hierarchical Threshold Calibration
 
-Six cosine distance thresholds were defined, each corresponding to a biologically meaningful level of plasmid relatedness calibrated against established average nucleotide identity (ANI) benchmarks:
+Six cosine distance thresholds were defined, each corresponding to a biologically meaningful level of plasmid relatedness calibrated against established average nucleotide identity (ANI) benchmarks (Figure 9):
 
 | Bin | Level | Cosine Distance Threshold (d) | Approximate ANI Equivalent | Biological Interpretation |
 |-----|-------|-------------------------------|---------------------------|---------------------------|
@@ -358,6 +402,72 @@ All statistical analyses were performed in Python 3.14 using NumPy 2.4, Pandas 2
 
 All analyses were performed on a single Apple M-series laptop (macOS Darwin 24.5.0). The complete pLIN assignment pipeline executes in under 2 minutes for 6,346 plasmids; AMRFinderPlus processing required approximately 90 minutes for the full dataset.
 
+### 2.10 ANI Validation and Genomic Resolution Enhancements (v2.1)
+
+#### 2.10.1 Mash/MinHash ANI Estimation
+
+To validate composition-based pLIN distance thresholds against established average nucleotide identity (ANI) metrics, we integrated Mash v2.3 (Ondov et al., 2016) for rapid pairwise ANI estimation. For each pair of uploaded plasmid sequences, MinHash sketches were generated with parameters k=21 (k-mer size) and s=10,000 (sketch size). The Mash distance was converted to an ANI estimate using:
+
+    ANI_estimate = (1 - Mash_distance) × 100
+
+Mash binary detection follows the same auto-discovery pattern as AMRFinderPlus, searching system PATH and conda environments. Results are displayed in the Epidemiology tab with mean, minimum, and maximum ANI metrics.
+
+#### 2.10.2 FastANI True ANI Computation
+
+For ground-truth ANI validation, FastANI v1.34 (Jain et al., 2018) was integrated for all-vs-all pairwise ANI computation. FastANI uses a mapping-based approach that avoids the limitations of MinHash approximation. Parameters were optimized for plasmid genomes:
+
+- Fragment length: 1,000 bp (reduced from default 3,000 bp to accommodate shorter plasmid sequences)
+- Threads: 4 (parallel execution)
+- Output: pairwise ANI values, matched fragments, and total fragments
+
+FastANI results are displayed alongside Mash estimates in the Epidemiology tab, enabling direct comparison of composition-based pLIN thresholds against both approximate and true ANI values.
+
+#### 2.10.3 SNP Sub-typing Within L6 Clusters
+
+To resolve within-strain diversity below the resolution of composition-based clustering, minimap2 v2.26 (Li, 2018) was integrated for SNP sub-typing within L6 (strain-level) clusters. For each L6 cluster containing two or more members:
+
+1. The longest sequence is selected as the reference
+2. All other members are aligned against the reference using minimap2 with preset `-cx asm5` (optimized for closely related sequences with <5% divergence) and the `--cs` flag for generating CIGAR strings
+3. Mismatches are counted from the PAF-format output CS tags
+4. Pairs with 0 SNPs are flagged as potentially clonal
+
+This sub-strain resolution is critical for outbreak investigation, where composition-based L6 clusters may contain multiple distinct variants that differ by only a handful of SNPs.
+
+#### 2.10.4 Temporal Outbreak Clustering
+
+Building on the basic outbreak detection module (Section 2.7), a temporal outbreak clustering algorithm was implemented to leverage epidemiological metadata. The algorithm requires:
+
+1. **pLIN L6 code identity:** Plasmids must share the same strain-level pLIN code
+2. **AMR fingerprint concordance:** Plasmids must carry an identical set of AMR genes
+3. **Temporal proximity:** Collection dates must fall within a configurable time window (default: 30 days)
+
+Risk levels are assigned based on the intersection of AMR burden and temporal proximity:
+
+| Risk Level | Criteria |
+|-----------|---------|
+| CRITICAL | ≥3 shared AMR genes AND collection dates within 7 days |
+| HIGH | ≥3 shared AMR genes OR collection dates within 7 days |
+| MODERATE | Same L6 code + same AMR profile within 30-day window |
+
+Temporal outbreak clustering requires metadata upload (CSV/TSV format) containing a date column, which is auto-detected and parsed by the application.
+
+#### 2.10.5 Metadata Integration
+
+A metadata upload module was implemented to support epidemiological analysis. Users can upload CSV or TSV files containing sample-level metadata (e.g., collection date, location, hospital, ward, patient identifiers). The module:
+
+1. Auto-detects the join column by matching against `plasmid_id`, `filename`, or `sample_id` fields
+2. Auto-parses date columns using pandas datetime inference
+3. Performs a left join to merge metadata into the integrated results table
+4. Makes date information available for temporal outbreak clustering
+
+#### 2.10.6 Sequence Length Quality Warning
+
+A sequence length warning system was implemented to alert users when uploaded plasmid sequences fall below 5,000 bp (SHORT_PLASMID_THRESHOLD). Short sequences produce noisy 4-mer frequency profiles due to insufficient k-mer sampling, potentially reducing classification accuracy. The warning is displayed in the Overview tab with an expandable detail table showing affected plasmids, their Inc type predictions, lengths, and pLIN codes. The warning is informational and does not block analysis.
+
+#### 2.10.7 Adaptive Threshold Calibration (Default Enabled)
+
+The per-Inc-group adaptive threshold calibration, previously available as an opt-in feature, was enabled by default in v2.1. This change reflects validation results demonstrating improved classification consistency when distance thresholds are calibrated to the within-group distance distribution of each Inc group. Users who prefer fixed universal thresholds can disable adaptive calibration via the sidebar checkbox.
+
 ---
 
 ## 3. RESULTS
@@ -416,7 +526,7 @@ The largest strain-level cluster (pLIN 1.1.1.7.30.1240, n=817) consisted almost 
 
 ### 3.3 Concordance with Established Inc-Group Classification
 
-To assess whether pLIN codes preserve established plasmid taxonomy, we evaluated the Inc-type purity of strain-level pLIN clusters (Bin F). Of 2,232 unique pLIN codes, 2,220 (99.5%) contained plasmids from a single Inc group, and only 12 codes (0.5%) contained members from two or more Inc groups (Table 3). This near-perfect concordance indicates that pLIN captures Inc-group boundaries as an emergent property of whole-plasmid composition, without requiring explicit replicon detection.
+To assess whether pLIN codes preserve established plasmid taxonomy, we evaluated the Inc-type purity of strain-level pLIN clusters (Bin F). The distribution of training samples across all 20 supported Inc groups and key performance metrics are shown in Figure 12. Of 2,232 unique pLIN codes, 2,220 (99.5%) contained plasmids from a single Inc group, and only 12 codes (0.5%) contained members from two or more Inc groups (Table 3). This near-perfect concordance indicates that pLIN captures Inc-group boundaries as an emergent property of whole-plasmid composition, without requiring explicit replicon detection.
 
 **Table 3. Mixed-Inc pLIN codes at strain level (Bin F).**
 
@@ -502,7 +612,7 @@ Compositional heterogeneity analysis using GC-content variation across 1-kb slid
 
 ### 3.8 Comparison with Existing Methods
 
-To contextualise the pLIN system, we systematically compared its properties with all major existing plasmid typing approaches (Table 7).
+To contextualise the pLIN system, we systematically compared its properties with all major existing plasmid typing approaches (Table 7; Figure 10).
 
 **Table 7. Comparative analysis of plasmid typing and classification systems.**
 
@@ -695,7 +805,18 @@ Several limitations should be acknowledged:
 
 5. **Threshold calibration.** The six distance thresholds were calibrated against the IncX-like reference plasmid distribution and ANI equivalence estimates. These calibrations are approximate and may benefit from refinement as larger multi-Inc datasets become available. The mapping between cosine distance and ANI is empirical rather than theoretical, and its accuracy may vary across plasmid families with different base composition distributions.
 
-### 4.6 Future Directions
+
+### 4.6 Enhanced Genomic Resolution and Epidemiological Features (v2.1)
+
+Seven new features were implemented across two development phases to address key limitations identified in the initial release (Figure 11). Phase 1 additions (adaptive calibration default, sequence length warnings, metadata upload, Mash ANI estimation) required no additional software installations, while Phase 2 features (FastANI true ANI, minimap2 SNP sub-typing, temporal outbreak clustering) leverage optional external tools with graceful degradation when unavailable.
+
+The integration of Mash (Ondov et al., 2016) and FastANI (Jain et al., 2018) enables direct validation of composition-based pLIN distance thresholds against established ANI metrics. This dual-validation approach addresses the fundamental limitation that cosine distance on 4-mer frequency vectors is a proxy for, rather than a direct measure of, sequence similarity. Users can now compare pLIN cluster assignments against both approximate (Mash) and true (FastANI) ANI values to assess threshold calibration quality.
+
+The minimap2-based SNP sub-typing module resolves within-strain diversity below the L6 threshold (d ≤ 0.001, ~99.9% ANI), which is critical for outbreak investigation where epidemiologically linked plasmids may differ by only 0-5 SNPs. Pairs with 0 SNP differences are flagged as potentially clonal, supporting infection control decision-making.
+
+Temporal outbreak clustering extends the basic outbreak detection by incorporating collection dates from uploaded metadata, enabling time-windowed clustering that more closely reflects epidemiological reality. The three-tier risk classification (CRITICAL, HIGH, MODERATE) prioritizes clusters based on AMR burden and temporal proximity, supporting real-time surveillance workflows.
+
+### 4.7 Future Directions
 
 Several extensions of the pLIN framework are envisioned:
 
@@ -728,6 +849,16 @@ We present pLIN, the first hierarchical, permanent, reference-free classificatio
 **Figure 6. pLIN hierarchical structure.** (A) Number of clusters resolved at each hierarchical threshold level, overall and per Inc type (log scale). (B) Strain-level (Bin F) cluster size distribution, showing the predominance of singletons (76.3% of pLIN codes).
 
 **Figure 7. Composite manuscript figure.** Multi-panel summary combining dataset overview (A–C), AMR prevalence (D–F), pLIN-AMR lineage heatmap (G), and clinically critical resistance and co-occurrence analyses (H–J).
+
+**Figure 8. pLIN analysis pipeline overview.** Twelve-step workflow diagram illustrating the complete pLIN analysis pipeline from FASTA input (Step 1) through tetranucleotide frequency computation (Step 2), pairwise cosine distance calculation (Step 3), single-linkage hierarchical clustering (Step 4), six-level pLIN code assignment (Step 5), Inc-group prediction (Step 6), AMR gene detection via AMRFinderPlus (Step 7), integrated results table generation (Step 8), and v2.1 Phase 2 enhancements including Mash/FastANI validation (Step 9), SNP sub-typing (Step 10), temporal outbreak clustering (Step 11), and interactive web GUI (Step 12). Core pipeline steps (1–8) are shown in blue; Phase 2 enhancements (9–12) in green.
+
+**Figure 9. pLIN hierarchical classification system.** (A) Threshold table showing the six hierarchical levels (L1–L6) with their cosine distance thresholds, approximate ANI equivalents, biological interpretation, and an example pLIN code (1.3.7.15.42.128) with colour-coded level indicators. (B) Algorithm flowchart depicting the six-step pLIN code assignment process: compute 4-mer frequency vector, calculate pairwise cosine distances, identify nearest neighbour, compare distance against each threshold, assign cluster identifiers (inherit or create new), and assemble the final six-position pLIN code.
+
+**Figure 10. Comparison of plasmid classification methods.** Tabular comparison of six plasmid classification approaches (PlasmidFinder, pMLST, MOB-suite, COPLA, mge-cluster, pLIN) across seven criteria: hierarchical levels, code permanence, reference-free operation, taxonomic scope, resolution, AMR integration, and computational requirements. Green checkmarks indicate full support; yellow tildes indicate partial support; red crosses indicate absence. pLIN is the only method satisfying all seven criteria simultaneously.
+
+**Figure 11. pLIN v2.1 feature upgrades.** Overview of seven new features implemented across two development phases. Phase 1 (no additional software required): adaptive threshold calibration (default enabled), sequence length warning (<5 kb), metadata CSV upload with auto-join, and Mash/MinHash ANI estimation (k=21, s=10,000). Phase 2 (optional external tools): FastANI true ANI computation (--fragLen 1000), minimap2 SNP sub-typing (-cx asm5 within L6 clusters), and temporal outbreak clustering (30-day window, three-tier risk classification). Impact matrix shows the affected analysis domains (accuracy, quality control, epidemiology, validation, resolution, surveillance) for each feature.
+
+**Figure 12. Inc group training data and classifier performance.** (A) Horizontal bar chart showing the number of training sequences for each of the 20 supported Inc groups, with the three original study groups (IncFII, IncN, IncX1) highlighted. Total training set: 6,998 sequences. (B) Six key performance metrics summarising the pLIN classification system: 20 Inc groups supported, 6,998 training samples, 92.2% classifier accuracy, 6 hierarchical levels, 0.979 Simpson's Diversity Index, and 99.5% Inc-group concordance.
 
 ---
 
@@ -777,4 +908,4 @@ Wang, R., van Dorp, L., Shaw, L. P., et al. (2018). The global distribution and 
 
 ## DATA AVAILABILITY
 
-The complete pLIN assignment pipeline (assign_pLIN.py), AMRFinderPlus batch runner (run_amrfinder_all.sh), integration analysis script (integrate_pLIN_AMR.py), and figure generation script (generate_figures.py) are available at https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification. The analytical notebook (pLIN.ipynb) and all output data files (Supplementary Tables S1–S3, Figures 1–7) are included in the repository. The IncX1 threshold configuration is provided in Data/IncX_PLIN_thresholds_v0_python.yaml. All plasmid sequences were obtained from NCBI RefSeq and are publicly accessible via their accession numbers listed in Supplementary Table S1.
+The complete pLIN source code, interactive web application (plin_app.py), assignment pipeline (assign_pLIN.py), classifier training script (build_inc_centroids.py), AMRFinderPlus batch runner (run_amrfinder_all.sh), integration analysis script (integrate_pLIN_AMR.py), and figure generation scripts (generate_figures.py, generate_manuscript_figures.py) are available at https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification under the GPL-3.0 license with a citation clause. The repository includes cross-platform installation scripts (install_pLIN.sh for macOS/Linux, install_pLIN.bat for Windows) and one-click launchers (launch_pLIN.command for macOS, launch_pLIN.sh for Linux) for ease of deployment. The analytical notebook (pLIN.ipynb), pre-trained Inc-group classifier (Data/inc_classifier.npz), and all output data files (Supplementary Tables S1–S3, Figures 1–12) are included in the repository. The IncX1 threshold configuration is provided in Data/IncX_PLIN_thresholds_v0_python.yaml. All plasmid sequences were obtained from NCBI RefSeq and are publicly accessible via their accession numbers listed in Supplementary Table S1.

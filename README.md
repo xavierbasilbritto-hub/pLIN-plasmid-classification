@@ -1,344 +1,404 @@
-# pLIN: Plasmid Life Identification Number System
+# pLIN — Plasmid Life Identification Number
 
-A hierarchical, permanent, reference-free classification system for bacterial plasmid genomes integrated with antimicrobial resistance gene surveillance.
+A hierarchical, reference-free classification system for bacterial plasmid genomes with integrated antimicrobial resistance (AMR) gene surveillance.
+
+**Author:** Basil Xavier Britto
+**License:** GPL-3.0 with mandatory citation clause
+**Citation Required:** See CITATION.cff
+
+---
 
 ## Overview
 
-**pLIN** (plasmid Life Identification Number) is the first application of the Life Identification Number (LIN) framework to plasmid genomes. It assigns each plasmid a six-position hierarchical code (A.B.C.D.E.F) based on tetranucleotide composition distances and single-linkage clustering at six biologically calibrated thresholds.
+pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.12.45`) based on tetranucleotide (4-mer) composition distances and single-linkage clustering at six biologically calibrated thresholds. The system spans from broad family-level (~85% ANI) to strain-level (~99.9% ANI) resolution.
 
 ### Key Features
 
-- **Hierarchical**: 6 nested levels from family (~85% ANI) to strain (~99.9% ANI)
-- **Permanent**: Codes never change when new plasmids are added
-- **Reference-free**: No external database required — works on raw nucleotide sequences
-- **AMR-integrated**: Full integration with NCBI AMRFinderPlus for resistance gene surveillance
-- **Inc Auto-Detection**: KNN classifier (96.1% accuracy) identifies Inc groups from k-mer composition
-- **Mobility Prediction**: Classifies plasmids as conjugative, mobilizable, or non-mobilizable
-- **Outbreak Detection**: Flags clonal clusters sharing identical pLIN codes and AMR profiles
-- **Adaptive Thresholds**: Per-Inc-group distance threshold calibration from training data
-- **Multi-Linkage**: Selectable clustering methods (single, complete, average, weighted)
-- **Interactive GUI**: Streamlit web app with 6 analysis tabs — no command line needed
-- **ML-validated**: Nested cross-validation confirms compositional features predict Inc-group membership (F1=0.903)
+| Category | Features |
+|----------|----------|
+| **Classification** | 6-level hierarchical pLIN codes (L1-L6), KNN Inc group detection (92.2% accuracy, 20 groups), Unknown/Novel Inc flagging |
+| **AMR Surveillance** | AMRFinderPlus integration (AMR + stress + virulence genes), critical gene alerts, drug class analysis |
+| **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI true ANI, minimap2 SNP sub-typing within L6 clusters |
+| **Epidemiology** | Plasmid mobility prediction (MOBsuite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
+| **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+), reference DB (72,556 plasmids) |
+| **AI/ML** | Nucleotide Transformer LLM (optional), DRAGNOME Buddy AI chatbot (Ollama), adaptive per-Inc thresholds |
+| **Visualization** | Interactive Streamlit GUI (8 tabs), cladograms, heatmaps, Plotly charts |
+| **Deployment** | Cross-platform (macOS/Windows/Linux), Docker support, one-click launchers |
 
-## Dataset
+### Performance Metrics
 
-- **6,346** complete plasmid genomes from NCBI RefSeq
-- **3 Inc groups**: IncFII (n=4,581), IncN (n=1,064), IncX1 (n=701)
-- **2,232** unique strain-level pLIN codes (Simpson's D = 0.979)
+- **Simpson's Diversity Index:** 0.979
+- **Inc Detection Accuracy:** 92.2% (5-fold CV, 20 groups)
+- **Training Dataset:** 6,998 plasmids across 20 Inc groups
+- **Unique pLIN Codes:** 2,232 strain-level codes
 
-## Results Highlights
+---
 
-| Metric | Value |
-|--------|-------|
-| Total plasmids | 6,346 |
-| Unique pLIN codes | 2,232 |
-| Simpson's Diversity (D) | 0.979 |
-| Inc-group concordance | 99.5% |
-| ML best F1 (XGBoost) | 0.903 |
-| AMR gene detections | 27,465 |
-| Virulence detections | 5,834 |
-| Plasmids with any hit | 84.2% |
-| Carbapenemase detections | 1,490 |
-| Colistin resistance (mcr) | 160 |
+## Installation
 
-## Repository Structure
+### Prerequisites
 
-```
-pLIN/
-├── plin_app.py                 # Streamlit GUI (main interactive app)
-├── assign_pLIN.py              # Batch pLIN assignment pipeline
-├── build_inc_centroids.py      # Train Inc group KNN classifier
-├── integrate_pLIN_AMR.py       # pLIN + AMR integration script
-├── generate_figures.py         # Publication figure generation
-├── create_architecture_pptx.py # PowerPoint architecture generator
-├── test_pLIN.py                # Test pLIN on 22 plasmids
-├── test_cladogram.py           # Test cladogram generation
-├── test_integrate_and_cladogram.py  # Test AMR + cladogram
-├── train_nt_classifier.py      # Train Nucleotide Transformer probes
-├── Dockerfile                  # Docker container build
-├── docker-compose.yml          # Docker Compose config
-├── launch_pLIN.bat             # Windows one-click launcher
-├── launch_pLIN.command         # macOS one-click launcher
-├── launch_pLIN.sh              # Linux one-click launcher
-├── setup.sh / setup.bat        # One-command setup
-├── run_all.sh / run_all.bat    # Run complete pipeline
-├── run_amrfinder_all.sh        # AMRFinderPlus batch runner
-├── requirements.txt            # Python dependencies
-├── pLIN.ipynb                  # Main analytical notebook
-├── manuscript_complete.md      # Complete manuscript
-├── LICENSE                     # GPL-3.0 + Citation clause
-├── CITATION.cff               # GitHub citation metadata
-├── Data/
-│   ├── inc_classifier.npz      # KNN classifier model (4.3 MB)
-│   ├── inc_centroids.npz       # Inc group centroid profiles
-│   └── IncX_PLIN_thresholds_v0_python.yaml
-├── test_plasmids/              # Test FASTA files (IncX, IncFII, IncH)
-├── output/
-│   ├── pLIN_Tool_Architecture.pptx  # 11-slide architecture presentation
-│   ├── pLIN_assignments.tsv
-│   ├── integrated/
-│   ├── figures/
-│   └── test/                   # Test output (cladograms, AMR results)
-└── README.md
-```
+- **Python 3.10 or higher** (Python 3.11+ recommended)
+- **Git** (for cloning the repository)
+- **Conda** (recommended) or **pip** with virtual environment
 
-## Quick Start
-
-### One-Click Launch (Recommended)
-
-Download the repository and double-click the launcher for your platform:
-
-| Platform | Launcher File | How to Run |
-|----------|--------------|------------|
-| **Windows** | `launch_pLIN.bat` | Double-click the file |
-| **macOS** | `launch_pLIN.command` | Double-click the file |
-| **Linux** | `launch_pLIN.sh` | Run `chmod +x launch_pLIN.sh && ./launch_pLIN.sh` |
-
-The launcher will automatically:
-1. Check for Python 3.10+
-2. Create a virtual environment
-3. Install all dependencies
-4. Launch the pLIN web app in your browser
-
-**No command-line experience required** — just download and double-click.
-
-### Manual Setup
+### Quick Start (All Platforms)
 
 ```bash
-# 1. Clone and setup
+# 1. Clone the repository
 git clone https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification.git
 cd pLIN-plasmid-classification
-pip install -r requirements.txt
 
-# 2. Launch the web app
+# 2. Run the install script (see platform-specific instructions below)
+# macOS/Linux:
+bash install_pLIN.sh
+
+# Windows:
+install_pLIN.bat
+
+# 3. Launch the GUI
+conda activate pLIN_tools
 streamlit run plin_app.py
 ```
 
-Then open your browser to `http://localhost:8501`, upload FASTA files, and click **Run Analysis**.
+---
 
-The GUI provides:
-- **Overview** — pLIN system description, threshold table, analysis parameters
-- **Results** — Interactive table with pLIN codes, Inc group, mobility, AMR data
-- **Cladogram** — 4 visualization types (rectangular, circular, heatmap, AMR-annotated)
-- **AMR Analysis** — Gene prevalence, drug class breakdown, critical gene alerts
-- **Epidemiology** — Mobility prediction, outbreak detection, dissemination risk
-- **Export** — Download TSV, PNG, PDF, ZIP bundle
+### macOS Installation (Step-by-Step)
 
-### Docker (Self-Hosted)
-
+#### Step 1: Install Homebrew (if not installed)
 ```bash
-# Build and run with Docker
-docker build -t plin .
-docker run -p 8501:8501 plin
-
-# Or use Docker Compose
-docker compose up
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Then open `http://localhost:8501` in your browser.
-
-### Streamlit Community Cloud (Public Web App)
-
-The app can be deployed directly from the GitHub repository to [Streamlit Community Cloud](https://share.streamlit.io) for free:
-
-1. Go to [share.streamlit.io](https://share.streamlit.io)
-2. Sign in with GitHub
-3. Click **New app** → select `pLIN-plasmid-classification` → set main file to `plin_app.py`
-4. Click **Deploy**
-
-The app will be available at a public URL (e.g., `https://plin-classifier.streamlit.app`).
-
-### Command-Line Pipeline
-
+#### Step 2: Install Python and Conda
 ```bash
-# Setup
-bash setup.sh                      # Creates venv, installs deps
+# Option A: Install Miniconda (recommended)
+brew install --cask miniconda
+conda init zsh  # or: conda init bash
+# Restart your terminal after this
 
-# Add FASTA files to plasmid_sequences_for_training/{IncFII,IncN,IncX1}/fastas/
-
-# Run full pipeline
-bash run_all.sh
-
-# Or individual steps:
-source .venv/bin/activate
-python assign_pLIN.py              # Assign pLIN codes
-bash run_amrfinder_all.sh          # Run AMRFinderPlus
-python integrate_pLIN_AMR.py       # Integrate pLIN + AMR
-python generate_figures.py         # Generate figures
+# Option B: Install Python directly
+brew install python@3.11
 ```
 
-### Requirements
-
-- Python >= 3.10
-- AMRFinderPlus (optional, for AMR gene detection):
-  ```bash
-  conda install -c bioconda -c conda-forge ncbi-amrfinderplus
-  amrfinder -u  # update database
-  ```
-- Prodigal (optional, for full gene annotation):
-  ```bash
-  conda install -c bioconda prodigal
-  ```
-
-Python packages (installed automatically):
-```
-numpy, pandas, scipy, biopython, scikit-learn, matplotlib, seaborn, streamlit, plotly
-```
-
-## pLIN Code Format
-
-Each plasmid receives a six-position code: `A.B.C.D.E.F`
-
-| Position | Level | Distance Threshold | ANI Equivalent |
-|----------|-------|-------------------|----------------|
-| A | Family | d ≤ 0.150 | ~85% |
-| B | Subfamily | d ≤ 0.100 | ~90% |
-| C | Cluster | d ≤ 0.050 | ~95% |
-| D | Subcluster | d ≤ 0.020 | ~98% |
-| E | Clone complex | d ≤ 0.010 | ~99% |
-| F | Strain | d ≤ 0.001 | ~99.9% |
-
-Example: pLIN `1.1.1.7.30.567` = Family 1, Subfamily 1, Cluster 1, Subcluster 7, Clone 30, Strain 567
-
-## Advanced Features
-
-### Inc Group Auto-Detection
-A KNN classifier (k=5, cosine distance, distance-weighted) trained on 6,346 plasmids predicts Inc group membership from 4-mer composition with 96.1% cross-validation accuracy. No replicon gene BLAST required.
-
-### Adaptive Thresholds
-Calibrates pLIN distance thresholds per Inc group using quantile-based analysis of within-group distance distributions. Addresses the limitation that fixed thresholds may not optimally separate lineages across diverse Inc groups.
-
-### Mobility Prediction
-Scans AMRFinderPlus output for conjugation (tra/trb) and mobilization (mob) gene markers to classify each plasmid as:
-- **Conjugative** — has transfer genes, can self-transfer (highest risk)
-- **Mobilizable** — has mob genes, needs helper plasmid
-- **Non-mobilizable** — no detectable transfer machinery
-
-### Outbreak Detection
-Automatically flags groups of plasmids sharing identical pLIN strain codes (F-level) AND the same AMR resistance profile, indicating potential clonal spread. Risk levels: HIGH (3+ shared AMR genes) / MODERATE (1-2).
-
-### Multi-Linkage Clustering
-Supports single (default), complete, average, and weighted linkage methods. Complete linkage produces tighter clusters and reduces the chaining artifact inherent to single linkage.
-
-### Nucleotide Transformer LLM (Optional)
-Optional integration with [InstaDeep's Nucleotide Transformer](https://github.com/instadeepai/nucleotide-transformer), a genomic foundation model pre-trained on DNA sequences. When enabled, the NT model provides an independent LLM-based prediction of Inc group and AMR drug classes alongside the traditional KNN classifier.
-
-**How it works:**
-1. Plasmid sequences are split into overlapping 5,000 bp chunks
-2. Each chunk is embedded by the NT model (6-mer tokenization, transformer encoding)
-3. Chunk embeddings are mean-pooled to produce a single vector per plasmid
-4. Linear probes (trained on your data) predict Inc group and AMR classes
-
-**Setup:**
+#### Step 3: Create Conda Environment
 ```bash
-# Install optional dependencies
-pip install transformers torch
-
-# Train probes from your labeled training data (one-time)
-python train_nt_classifier.py --model 50m
+conda create -n pLIN_tools python=3.11 -y
+conda activate pLIN_tools
 ```
 
-Then enable "Use Nucleotide Transformer (LLM)" in the GUI. Model variants: 50M (fast), 100M, 250M, 500M parameters. CPU and GPU (CUDA/MPS) supported.
-
-### Prodigal Gene Annotation (Optional)
-Full ORF prediction using [Prodigal](https://github.com/hyattpd/Prodigal) in metagenomic mode. While AMRFinderPlus focuses on clinically relevant genes (AMR, stress, virulence), Prodigal annotates **all** open reading frames on the plasmid.
-
-**Output includes:**
-- **Total gene count** per plasmid
-- **Coding density** (percentage of sequence in coding regions)
-- **Average gene length** (amino acids)
-- **Complete vs partial genes** (genes truncated at contig edges)
-- **Full gene table** with coordinates, strand, and length
-
-**Why use Prodigal?**
-- Get a complete picture of plasmid gene content (not just AMR genes)
-- Identify replication, partitioning, and other backbone genes
-- Calculate coding density as a quality metric
-- Compare gene counts across plasmid families
-
-**Setup:**
+#### Step 4: Install Python Dependencies
 ```bash
-conda install -c bioconda prodigal
+pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
 ```
 
-Then enable "Run Prodigal annotation" in the GUI.
-
-### Bacterial Buddy — AI Assistant (Optional)
-An integrated AI chatbot powered by [Ollama](https://ollama.ai) that can answer questions about your analysis results and plasmid biology in general. Runs completely locally — no API keys needed, no data leaves your machine.
-
-**Features:**
-- **Context-aware responses** — understands your analysis results and can answer specific questions
-- **Streaming chat** — real-time responses for a smooth experience
-- **Multiple models** — choose from llama3.2, mistral, mixtral, and more
-- **Suggested questions** — get started quickly with pre-written prompts
-- **Privacy-focused** — everything runs locally via Ollama
-
-**Example questions:**
-- "Summarize my analysis results"
-- "Which plasmids should I be most concerned about?"
-- "Explain the Inc groups detected in my samples"
-- "What is the clinical significance of conjugative plasmids?"
-- "How does pLIN classification work?"
-
-**Setup:**
+#### Step 5: Install Optional Bioinformatics Tools
 ```bash
-# 1. Install Ollama (https://ollama.ai)
-# macOS/Linux:
-curl -fsSL https://ollama.ai/install.sh | sh
+# AMRFinderPlus (AMR gene detection)
+conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
+amrfinder --update  # Download latest database
 
-# 2. Pull a model (llama3.2 recommended for speed)
+# MOBsuite (mobility typing)
+pip install mob_suite
+
+# Mash (MinHash ANI estimation)
+conda install -c bioconda mash -y
+
+# FastANI (true ANI computation)
+conda install -c bioconda fastani -y
+
+# minimap2 (SNP sub-typing)
+conda install -c bioconda minimap2 -y
+
+# MinCED (CRISPR spacer extraction)
+conda install -c bioconda minced -y
+
+# BLAST+ (CRISPR host inference)
+conda install -c bioconda blast -y
+
+# Prodigal (gene annotation)
+conda install -c bioconda prodigal -y
+
+# Ollama (AI chatbot — optional)
+brew install ollama
 ollama pull llama3.2
-
-# 3. Start Ollama server (if not auto-started)
-ollama serve
 ```
 
-Then open the "🦠 Bacterial Buddy" tab in the GUI.
+#### Step 6: Launch pLIN
+```bash
+conda activate pLIN_tools
+streamlit run plin_app.py
+```
+The app will open automatically at `http://localhost:8501`.
 
-## Plasmid Sequences
+---
 
-FASTA sequences (695 MB total) are not included in this repository due to size. All plasmid sequences were obtained from NCBI RefSeq and can be downloaded using the accession numbers listed in `output/pLIN_assignments.tsv`.
+### Linux Installation (Ubuntu/Debian — Step-by-Step)
 
-## Citation (MANDATORY)
-
-**Any use of this software, its algorithms, outputs, or derivative works in publications, presentations, reports, theses, or other academic/commercial work REQUIRES citation.** This is a binding condition of the license.
-
-> Xavier, B. (2025). **pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance.** GitHub: https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
-
-### BibTeX
-
-```bibtex
-@software{xavier2025plin,
-  author       = {Britto, Basil Xavier},
-  title        = {{pLIN: A Plasmid Life Identification Number System for
-                   Hierarchical, Permanent Classification of Bacterial
-                   Plasmids Integrated with Antimicrobial Resistance Gene
-                   Surveillance}},
-  year         = {2025},
-  url          = {https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification},
-  version      = {1.0.0},
-}
+#### Step 1: Install System Dependencies
+```bash
+sudo apt update
+sudo apt install -y python3 python3-pip python3-venv git wget curl
 ```
 
-### Citation Requirements
+#### Step 2: Install Miniconda
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda3
+eval "$($HOME/miniconda3/bin/conda shell.bash hook)"
+conda init bash
+# Restart your terminal
+```
 
-1. **Publications**: Any journal article, conference paper, preprint, thesis, dissertation, poster, or presentation that uses pLIN MUST include the citation above.
-2. **Derivative works**: Any software, tool, or pipeline incorporating pLIN code or algorithms MUST include attribution: *"Based on pLIN by Basil Xavier Britto (2025)"* with a link to this repository.
-3. **Generated data**: Any publicly distributed dataset or results produced using pLIN MUST acknowledge the tool and cite the reference.
-4. **No exception**: Failure to cite constitutes a violation of the license terms.
+#### Step 3: Create Conda Environment
+```bash
+conda create -n pLIN_tools python=3.11 -y
+conda activate pLIN_tools
+```
 
-## Copyright
+#### Step 4: Install Python Dependencies
+```bash
+pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
+```
 
-Copyright (C) 2025 Basil Xavier Britto. All rights reserved.
+#### Step 5: Install Optional Bioinformatics Tools
+```bash
+# AMRFinderPlus
+conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
+amrfinder --update
+
+# MOBsuite
+pip install mob_suite
+
+# Mash, FastANI, minimap2, MinCED, BLAST+, Prodigal
+conda install -c bioconda mash fastani minimap2 minced blast prodigal -y
+
+# Ollama (AI chatbot — optional)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
+```
+
+#### Step 6: Launch pLIN
+```bash
+conda activate pLIN_tools
+streamlit run plin_app.py
+```
+
+---
+
+### Windows Installation (Step-by-Step)
+
+#### Step 1: Install Miniconda
+1. Download Miniconda from: https://docs.conda.io/en/latest/miniconda.html
+2. Run the installer (`Miniconda3-latest-Windows-x86_64.exe`)
+3. Check "Add Miniconda3 to my PATH" during installation
+4. Open **Anaconda Prompt** from the Start Menu
+
+#### Step 2: Create Conda Environment
+```cmd
+conda create -n pLIN_tools python=3.11 -y
+conda activate pLIN_tools
+```
+
+#### Step 3: Install Python Dependencies
+```cmd
+pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
+```
+
+#### Step 4: Install Optional Bioinformatics Tools
+```cmd
+:: AMRFinderPlus
+conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
+amrfinder --update
+
+:: Mash, FastANI, minimap2 (via conda)
+conda install -c bioconda mash fastani minimap2 minced blast prodigal -y
+
+:: MOBsuite
+pip install mob_suite
+
+:: Ollama (download from https://ollama.com/download/windows)
+:: After installing, run: ollama pull llama3.2
+```
+
+#### Step 5: Launch pLIN
+```cmd
+conda activate pLIN_tools
+streamlit run plin_app.py
+```
+
+> **Note:** Some bioinformatics tools (AMRFinderPlus, MOBsuite) have limited Windows support. For full functionality, consider using **WSL2** (Windows Subsystem for Linux) and following the Linux instructions.
+
+---
+
+### Docker Installation (All Platforms)
+
+```bash
+# Build the Docker image
+docker build -t plin .
+
+# Run the container
+docker run -p 8501:8501 -v $(pwd)/data:/app/data plin
+
+# Access at http://localhost:8501
+```
+
+---
+
+## Usage Guide
+
+### Basic Workflow
+
+1. **Launch the app:** `streamlit run plin_app.py`
+2. **Upload FASTA files:** Drag and drop plasmid sequences (.fasta, .fa, .fna)
+3. **Configure analysis:**
+   - Select Inc group (or use auto-detect)
+   - Enable/disable AMRFinderPlus, MOBsuite, Prodigal
+   - Upload metadata CSV (optional — for temporal outbreak analysis)
+   - Enable Mash ANI, FastANI, SNP sub-typing (optional)
+4. **Click "Run pLIN Analysis"**
+5. **Explore results** across 8 tabs
+
+### Application Tabs
+
+| Tab | Description |
+|-----|-------------|
+| **Overview** | pLIN system description, threshold table, sequence length warnings, metrics dashboard |
+| **Results** | Interactive data table with search/filter, pLIN distribution, Inc group breakdown |
+| **Cladogram** | Rectangular, circular, heatmap, and AMR-annotated cladograms |
+| **AMR Analysis** | Gene prevalence, drug class pie charts, critical gene alerts, heatmaps |
+| **Epidemiology** | Mobility prediction, outbreak detection, temporal clusters, Mash/FastANI, SNP sub-typing |
+| **CRISPR Host** | CRISPR spacer extraction, host-plasmid heatmap, probability ranking |
+| **Bacterial Buddy** | AI chatbot (Ollama LLM) for context-aware Q&A about your analysis |
+| **Export** | Download TSV tables, PNG/PDF figures, ZIP bundle |
+
+### Uploading Metadata
+
+To enable temporal outbreak clustering and epidemiological analysis:
+
+1. Prepare a CSV or TSV file with columns such as:
+   - `plasmid_id` or `sample_id` (to match with FASTA files)
+   - `collection_date` (any standard date format)
+   - `location`, `hospital`, `ward` (optional)
+2. Upload via the "Metadata CSV/TSV" uploader in the sidebar
+3. Date columns are auto-detected and parsed
+4. Metadata is merged into the integrated results table
+
+### Optional Tool Integration
+
+All external tools are **optional** — pLIN works without them but gains additional features when they are available:
+
+| Tool | Feature Enabled | Install Command |
+|------|----------------|-----------------|
+| AMRFinderPlus | AMR/stress/virulence gene detection | `conda install -c bioconda ncbi-amrfinderplus` |
+| MOBsuite | Relaxase family + MPF type classification | `pip install mob_suite` |
+| Mash | Fast MinHash ANI estimation | `conda install -c bioconda mash` |
+| FastANI | True average nucleotide identity | `conda install -c bioconda fastani` |
+| minimap2 | SNP sub-typing within L6 clusters | `conda install -c bioconda minimap2` |
+| MinCED | CRISPR spacer extraction | `conda install -c bioconda minced` |
+| BLAST+ | CRISPR host inference | `conda install -c bioconda blast` |
+| Prodigal | Gene/ORF annotation | `conda install -c bioconda prodigal` |
+| Ollama | AI chatbot (Bacterial Buddy) | See platform-specific instructions |
+
+---
+
+## pLIN Classification System
+
+### Hierarchical Levels
+
+| Level | Bin | Cosine Distance (d) | ANI Equivalent | Biological Meaning |
+|-------|-----|---------------------|----------------|-------------------|
+| L1 | A | d <= 0.150 | ~85% | Broad plasmid family |
+| L2 | B | d <= 0.100 | ~90% | Subfamily |
+| L3 | C | d <= 0.050 | ~95% | Cluster (species-level) |
+| L4 | D | d <= 0.020 | ~98% | Subcluster |
+| L5 | E | d <= 0.010 | ~99% | Clone complex |
+| L6 | F | d <= 0.001 | ~99.9% | Strain / Outbreak |
+
+### Example pLIN Code
+```
+1.1.3.5.12.45
+| | | | |  +-- L6: Strain-level cluster (d <= 0.001)
+| | | | +---- L5: Clone complex (d <= 0.010)
+| | | +------ L4: Subcluster (d <= 0.020)
+| | +-------- L3: Cluster (d <= 0.050)
+| +---------- L2: Subfamily (d <= 0.100)
++------------ L1: Family (d <= 0.150)
+```
+
+---
+
+## Project Structure
+
+```
+pLIN-plasmid-classification/
+├── plin_app.py                    # Main Streamlit GUI application
+├── assign_pLIN.py                 # Batch pLIN assignment script
+├── build_inc_centroids.py         # Train Inc group classifier
+├── create_architecture_pptx.py    # Generate architecture PowerPoint
+├── install_pLIN.sh                # macOS/Linux install script
+├── install_pLIN.bat               # Windows install script
+├── launch_pLIN.command            # macOS double-click launcher
+├── launch_pLIN.sh                 # Linux launcher
+├── launch_pLIN.bat                # Windows launcher
+├── requirements.txt               # Python dependencies
+├── Dockerfile                     # Docker deployment
+├── LICENSE                        # GPL-3.0 license
+├── CITATION.cff                   # Citation metadata
+├── data/
+│   ├── inc_classifier.npz         # Trained KNN classifier (20 groups, 6,998 samples)
+│   └── inc_centroids.npz          # Inc group centroids
+├── plasmid_sequences_for_training/
+│   ├── ColE/fastas/               # Training FASTAs per Inc group
+│   ├── IncFII/fastas/
+│   ├── IncN/fastas/
+│   ├── IncX1/fastas/
+│   └── ... (20 groups total)
+├── reference/
+│   └── (72,556 individual plasmid FASTAs for CRISPR host inference)
+├── test_plasmids/
+│   └── IncX/ (22 test FASTA files)
+└── output/
+    ├── pLIN_assignments.tsv
+    ├── pLIN_Tool_Architecture.pptx
+    └── ...
+```
+
+---
+
+## Inc Groups Supported (20)
+
+ColE, ColRNAI, IncA, IncAC2, IncC, IncF, IncFIB, IncFIBK, IncFIC, IncFII, IncHI1, IncHI2, IncI, IncI1, IncI2, IncN, IncR, IncX1, IncX3, IncX4
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError` | Activate conda env: `conda activate pLIN_tools` |
+| AMRFinderPlus not found | Install: `conda install -c bioconda ncbi-amrfinderplus` then `amrfinder --update` |
+| Streamlit won't start | Check port: `streamlit run plin_app.py --server.port 8502` |
+| Memory error (large dataset) | Reduce number of input files or increase system RAM |
+| Mash/FastANI not detected | Install via conda and ensure PATH is set |
+| Ollama connection error | Start Ollama: `ollama serve` then `ollama pull llama3.2` |
+
+### Checking Tool Availability
+
+The pLIN app auto-detects all optional tools at startup. Check the sidebar for tool status indicators.
+
+---
+
+## Citation
+
+If you use pLIN in your research, you **must** cite:
+
+> Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance. https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
+
+---
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0** with an **additional mandatory citation clause** under Section 7 of the GPL.
-
-This means:
-- You **may** use, modify, and redistribute this software
-- You **must** cite the original work in any publication or derivative work
-- Any modified version **must** also be open-source under GPL-3.0
-- The citation requirement and copyright notices **must not** be removed
-
-See [LICENSE](LICENSE) for full terms.
+This project is licensed under **GPL-3.0** with a mandatory citation clause. See [LICENSE](LICENSE) and [CITATION.cff](CITATION.cff) for details.

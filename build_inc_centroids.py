@@ -93,11 +93,27 @@ def main():
 
     # Cross-validation accuracy check
     from sklearn.neighbors import KNeighborsClassifier
-    from sklearn.model_selection import cross_val_score
+    from sklearn.model_selection import StratifiedKFold, cross_val_predict
+    from sklearn.metrics import classification_report
 
-    knn = KNeighborsClassifier(n_neighbors=5, metric="cosine", weights="distance")
-    scores = cross_val_score(knn, X, y, cv=5, scoring="accuracy")
-    print(f"\n5-fold CV accuracy: {scores.mean():.4f} ± {scores.std():.4f}")
+    # Dynamic k: ensure k < smallest class size
+    min_class_size = min(np.bincount(y))
+    k = min(5, max(1, min_class_size - 1))
+    print(f"\nSmallest class has {min_class_size} samples → using k={k}")
+
+    knn = KNeighborsClassifier(n_neighbors=k, metric="cosine", weights="distance")
+
+    # Stratified CV for balanced evaluation across all Inc groups
+    n_splits = min(5, min_class_size)
+    if n_splits < 2:
+        print("WARNING: Some classes too small for cross-validation, skipping CV")
+    else:
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+        y_pred = cross_val_predict(knn, X, y, cv=cv)
+        print(f"\n{n_splits}-fold Stratified CV — Per-class metrics:")
+        print(classification_report(y, y_pred, target_names=group_names, digits=4))
+
+    print("Training set composition:")
     for i, name in enumerate(group_names):
         mask = y == i
         print(f"  {name}: {mask.sum()} samples")
