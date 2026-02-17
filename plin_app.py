@@ -774,12 +774,12 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
 
 
 @st.cache_data(show_spinner=False)
-def compute_kmer_vectors(_sequences, k=4):
+def compute_kmer_vectors(sequences, k=4):
     """Compute normalised tetranucleotide frequency vectors."""
     bases = "ACGT"
     all_kmers = ["".join(p) for p in iter_product(bases, repeat=k)]
-    vectors = np.zeros((len(_sequences), len(all_kmers)), dtype=np.float64)
-    for idx, seq in enumerate(_sequences):
+    vectors = np.zeros((len(sequences), len(all_kmers)), dtype=np.float64)
+    for idx, seq in enumerate(sequences):
         s = seq.upper()
         total = max(len(s) - k + 1, 1)
         for ki, kmer in enumerate(all_kmers):
@@ -1803,10 +1803,13 @@ def run_minced_on_genomes(genome_files, minced_binary, progress_callback=None):
             with open(fasta_path, "wb") as f:
                 f.write(uf.getvalue())
 
+            txt_path = os.path.join(tmpdir, f"{uf.name}.txt")
             gff_path = os.path.join(tmpdir, f"{uf.name}.gff")
+            # MinCED auto-creates spacers as <txt_basename>_spacers.fa
             spacers_path = os.path.join(tmpdir, f"{uf.name}_spacers.fa")
 
-            cmd = [minced_binary, fasta_path, gff_path, "-spacers", spacers_path]
+            # MinCED syntax: minced [options] sequence.fa [outputFile] [outputGFF]
+            cmd = [minced_binary, "-spacers", "-gffFull", fasta_path, txt_path, gff_path]
 
             try:
                 subprocess.run(cmd, capture_output=True, timeout=600)

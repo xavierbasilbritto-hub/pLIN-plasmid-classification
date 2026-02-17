@@ -8,14 +8,16 @@ plasmid_sequences_for_training/
 reference/
 sequences.fasta
 
-# Large output files
+# Large binary files (>50MB — not suitable for GitHub)
+output/reference_kmer_vectors.npz
 output/mash/
-output/amrfinder/
+
+# CRISPR evaluation intermediate files
+output/crispr_evaluation/
 
 # Temporary/lock files
 ~$*
 *.lock
-pyproject\ *.toml
 
 # macOS
 .DS_Store
@@ -30,3 +32,58 @@ pyproject\ *.toml
 
 # Claude Code
 .claude/
+
+# ── Manuscripts, figures, presentations (not part of the tool) ──
+# Manuscripts
+manuscript_complete.md
+manuscript_results.md
+output/manuscript_*.md
+output/manuscript_*.docx
+output/cover_letter_*
+output/pLIN_Manuscript.docx
+output/pLIN_Figure_Legends.md
+output/pLIN_Manuscript_Tables.xlsx
+output/Manuscript*.docx
+FIGURE_MAPPING_ANALYSIS.md
+pLIN_v1_prefinal.doc
+
+# Figures (generated for manuscripts)
+output/figures/
+
+# Presentations
+output/pLIN_Tool_Architecture.pptx
+pLIN_Pyramid_Presentation.pptx
+
+# Tables/appendix workbooks (generated for manuscripts)
+output/lancet_microbe_v2_tables_appendix/
+
+# Manuscript/figure/presentation generation scripts
+create_manuscript_tables_figures.py
+create_tables_excel.py
+create_architecture_pptx.py
+create_pyramid_pptx.py
+create_logo.py
+create_gui_screenshot.py
+add_supplementary_tables.py
+generate_figures.py
+generate_manuscript_figures.py
+manuscript_draft.py
+evaluate_crispr_host.py
+
+# One-off utility scripts (not part of the tool)
+expand_inc_training.py
+train_nt_classifier.py
+run_amrfinder_new.py
+run_amrfinder_all.sh
+test_cladogram.py
+test_integrate_and_cladogram.py
+
+# Test output figures (generated, not source)
+output/test/*.pdf
+output/test/*.png
+
+# Duplicate/temp pyproject files
+pyproject\ *.toml
+
+# Executed notebooks (keep source .ipynb only)
+pLIN_executed.ipynb

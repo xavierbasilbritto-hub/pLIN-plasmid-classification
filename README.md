@@ -1,16 +1,32 @@
-# pLIN — Plasmid Life Identification Number
+<p align="center">
+  <img src="assets/pLIN_banner.png" alt="pLIN Banner" width="100%">
+</p>
 
-A hierarchical, reference-free classification system for bacterial plasmid genomes with integrated antimicrobial resistance (AMR) gene surveillance.
+<p align="center">
+  <img src="assets/pLIN_logo.png" alt="pLIN Logo" width="180">
+</p>
 
-**Author:** Basil Xavier Britto
-**License:** GPL-3.0 with mandatory citation clause
-**Citation Required:** See CITATION.cff
+<h1 align="center">pLIN — Plasmid Life Identification Number</h1>
+
+<p align="center">
+A hierarchical, reference-free classification system for bacterial plasmid genomes<br>with integrated antimicrobial resistance (AMR) gene surveillance.
+</p>
+
+<p align="center">
+  <strong>Author:</strong> Basil Xavier Britto &nbsp;|&nbsp;
+  <strong>License:</strong> GPL-3.0 &nbsp;|&nbsp;
+  <strong>Citation Required:</strong> See <a href="CITATION.cff">CITATION.cff</a>
+</p>
 
 ---
 
 ## Overview
 
 pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.12.45`) based on tetranucleotide (4-mer) composition distances and single-linkage clustering at six biologically calibrated thresholds. The system spans from broad family-level (~85% ANI) to strain-level (~99.9% ANI) resolution.
+
+<p align="center">
+  <img src="assets/pLIN_gui_screenshot.png" alt="pLIN GUI" width="90%">
+</p>
 
 ### Key Features
 
@@ -21,7 +37,7 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 | **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI true ANI, minimap2 SNP sub-typing within L6 clusters |
 | **Epidemiology** | Plasmid mobility prediction (MOBsuite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
 | **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+), reference DB (72,556 plasmids) |
-| **AI/ML** | Nucleotide Transformer LLM (optional), DRAGNOME Buddy AI chatbot (Ollama), adaptive per-Inc thresholds |
+| **AI/ML** | Nucleotide Transformer LLM (optional), Bacterial Buddy AI chatbot (Ollama), adaptive per-Inc thresholds |
 | **Visualization** | Interactive Streamlit GUI (8 tabs), cladograms, heatmaps, Plotly charts |
 | **Deployment** | Cross-platform (macOS/Windows/Linux), Docker support, one-click launchers |
 
@@ -30,7 +46,9 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 - **Simpson's Diversity Index:** 0.979
 - **Inc Detection Accuracy:** 92.2% (5-fold CV, 20 groups)
 - **Training Dataset:** 6,998 plasmids across 20 Inc groups
-- **Unique pLIN Codes:** 2,232 strain-level codes
+- **Reference Database:** 78,902 plasmids (6,998 training + 71,904 NCBI RefSeq)
+- **Unique pLIN Codes:** 33,143 strain-level codes (across 78,902 plasmids)
+- **Processing Time:** <30 minutes on a standard laptop
 
 ---
 
@@ -334,8 +352,9 @@ All external tools are **optional** — pLIN works without them but gains additi
 pLIN-plasmid-classification/
 ├── plin_app.py                    # Main Streamlit GUI application
 ├── assign_pLIN.py                 # Batch pLIN assignment script
+├── assign_pLIN_reference.py       # Reference database pLIN assignment
 ├── build_inc_centroids.py         # Train Inc group classifier
-├── create_architecture_pptx.py    # Generate architecture PowerPoint
+├── integrate_pLIN_AMR.py          # Merge pLIN + AMRFinderPlus results
 ├── install_pLIN.sh                # macOS/Linux install script
 ├── install_pLIN.bat               # Windows install script
 ├── launch_pLIN.command            # macOS double-click launcher
@@ -345,23 +364,24 @@ pLIN-plasmid-classification/
 ├── Dockerfile                     # Docker deployment
 ├── LICENSE                        # GPL-3.0 license
 ├── CITATION.cff                   # Citation metadata
+├── assets/
+│   ├── pLIN_logo.png              # Project logo
+│   ├── pLIN_banner.png            # README banner
+│   └── pLIN_gui_screenshot.png    # GUI screenshot
 ├── data/
 │   ├── inc_classifier.npz         # Trained KNN classifier (20 groups, 6,998 samples)
 │   └── inc_centroids.npz          # Inc group centroids
-├── plasmid_sequences_for_training/
-│   ├── ColE/fastas/               # Training FASTAs per Inc group
-│   ├── IncFII/fastas/
-│   ├── IncN/fastas/
-│   ├── IncX1/fastas/
-│   └── ... (20 groups total)
-├── reference/
-│   └── (72,556 individual plasmid FASTAs for CRISPR host inference)
 ├── test_plasmids/
 │   └── IncX/ (22 test FASTA files)
 └── output/
-    ├── pLIN_assignments.tsv
-    ├── pLIN_Tool_Architecture.pptx
-    └── ...
+    ├── pLIN_assignments.tsv              # 6,998 training plasmid assignments
+    ├── pLIN_reference_assignments.tsv     # 78,902 full reference database assignments
+    ├── reference_inc_classifications.tsv  # KNN Inc type classifications
+    ├── integrated/
+    │   ├── pLIN_AMR_integrated.tsv       # pLIN + AMRFinderPlus merged table
+    │   └── pLIN_lineage_AMR_summary.tsv  # Lineage-level AMR summaries
+    └── amrfinder/
+        └── amrfinder_all_plasmids.tsv    # Raw AMRFinderPlus output (64,891 detections)
 ```
 
 ---
