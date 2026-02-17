@@ -1,32 +1,14 @@
-<p align="center">
-  <img src="assets/pLIN_banner.png" alt="pLIN Banner" width="100%">
-</p>
+# pLIN — Plasmid Life Identification Number
 
-<p align="center">
-  <img src="assets/pLIN_logo.png" alt="pLIN Logo" width="180">
-</p>
+A hierarchical, reference-free classification system for bacterial plasmid genomes with integrated antimicrobial resistance (AMR) gene surveillance.
 
-<h1 align="center">pLIN — Plasmid Life Identification Number</h1>
-
-<p align="center">
-A hierarchical, reference-free classification system for bacterial plasmid genomes<br>with integrated antimicrobial resistance (AMR) gene surveillance.
-</p>
-
-<p align="center">
-  <strong>Author:</strong> Basil Xavier Britto &nbsp;|&nbsp;
-  <strong>License:</strong> GPL-3.0 &nbsp;|&nbsp;
-  <strong>Citation Required:</strong> See <a href="CITATION.cff">CITATION.cff</a>
-</p>
+**Author:** Basil Xavier Britto | **License:** GPL-3.0 with mandatory citation clause | **Citation Required:** See [CITATION.cff](CITATION.cff)
 
 ---
 
 ## Overview
 
 pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.12.45`) based on tetranucleotide (4-mer) composition distances and single-linkage clustering at six biologically calibrated thresholds. The system spans from broad family-level (~85% ANI) to strain-level (~99.9% ANI) resolution.
-
-<p align="center">
-  <img src="assets/pLIN_gui_screenshot.png" alt="pLIN GUI" width="90%">
-</p>
 
 ### Key Features
 
@@ -364,10 +346,6 @@ pLIN-plasmid-classification/
 ├── Dockerfile                     # Docker deployment
 ├── LICENSE                        # GPL-3.0 license
 ├── CITATION.cff                   # Citation metadata
-├── assets/
-│   ├── pLIN_logo.png              # Project logo
-│   ├── pLIN_banner.png            # README banner
-│   └── pLIN_gui_screenshot.png    # GUI screenshot
 ├── data/
 │   ├── inc_classifier.npz         # Trained KNN classifier (20 groups, 6,998 samples)
 │   └── inc_centroids.npz          # Inc group centroids

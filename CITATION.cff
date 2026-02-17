@@ -18,10 +18,11 @@ abstract: >-
   surveillance. It assigns each plasmid a six-position code
   (A.B.C.D.E.F) based on tetranucleotide composition distances
   and hierarchical clustering. Features include automatic Inc
-  group detection (96.1% accuracy), plasmid mobility prediction,
-  outbreak clone detection, adaptive threshold calibration,
-  multi-linkage clustering, and an interactive Streamlit web GUI
-  with AMRFinderPlus integration.
+  group detection (92.2% accuracy, 20 Inc groups), plasmid mobility
+  prediction, outbreak detection with clinical risk stratification,
+  CRISPR spacer-based host inference, and an interactive Streamlit
+  web GUI with AMRFinderPlus integration. Reference database of
+  78,902 plasmids with 33,143 unique pLIN codes.
 keywords:
   - plasmid classification
   - antimicrobial resistance
@@ -34,8 +35,8 @@ keywords:
   - plasmid typing
   - epidemiology
 license: GPL-3.0-or-later
-version: "1.0.0"
-date-released: "2025-02-03"
+version: "2.1.0"
+date-released: "2025-02-13"
 preferred-citation:
   type: software
   title: "pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance"

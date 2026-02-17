@@ -46,17 +46,14 @@ echo   Setup Complete!
 echo ============================================================
 echo.
 echo   Next steps:
-echo   1. Place your FASTA files in:
-echo        plasmid_sequences_for_training\IncFII\fastas\
-echo        plasmid_sequences_for_training\IncN\fastas\
-echo        plasmid_sequences_for_training\IncX1\fastas\
+echo   1. Launch the GUI:
+echo        streamlit run plin_app.py
 echo.
-echo   2. Run the full pipeline:
+echo   2. Or run the CLI pipeline:
 echo        run_all.bat
 echo.
 echo   NOTE: AMRFinderPlus is not natively available on Windows.
-echo   Use WSL (Windows Subsystem for Linux) for AMRFinderPlus:
-echo     wsl conda install -c bioconda ncbi-amrfinderplus
+echo   For full functionality, use WSL (Windows Subsystem for Linux).
 echo.
 echo ============================================================
 pause

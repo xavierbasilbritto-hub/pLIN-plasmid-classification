@@ -27,7 +27,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY plin_app.py .
-COPY train_nt_classifier.py .
+COPY assign_pLIN.py .
+COPY assign_pLIN_reference.py .
+COPY build_inc_centroids.py .
+COPY integrate_pLIN_AMR.py .
+COPY test_pLIN.py .
 COPY .streamlit/ .streamlit/
 
 # Copy data directory (classifier models)

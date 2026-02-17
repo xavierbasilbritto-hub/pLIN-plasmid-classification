@@ -1,23 +1,28 @@
 [project]
-name = "Plasmid_LIN"
-version = "0.1.0"
-description = "Add your description here"
+name = "pLIN"
+version = "2.1.0"
+description = "Plasmid Life Identification Number — hierarchical classification system for bacterial plasmid genomes with integrated AMR surveillance"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "ipykernel>=7.1.0",
-    "jupyter-contrib-nbextensions>=0.7.0",
-    "lightgbm>=4.6.0",
-    "matplotlib>=3.10.8",
-    "mlflow>=3.8.1",
-    "numpy>=2.4.0",
-    "optuna>=4.6.0",
-    "optuna-integration>=4.6.0",
-    "pandas>=2.3.3",
-    "scikit-learn>=1.8.0",
-    "scipy>=1.16.3",
-    "seaborn>=0.12.0",
-    "biopython>=1.84",
-    "statsmodels>=0.14.6",
-    "xgboost>=3.1.2",
+license = {text = "GPL-3.0-or-later"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Basil Xavier Britto"},
 ]
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.0",
+    "scipy>=1.12",
+    "biopython>=1.80",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "streamlit>=1.31.0",
+    "plotly>=5.18.0",
+    "python-pptx>=0.6.21",
+    "requests>=2.31.0",
+    "joblib>=1.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
+Repository = "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"

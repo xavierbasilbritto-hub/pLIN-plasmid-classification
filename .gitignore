@@ -85,5 +85,8 @@ output/test/*.png
 # Duplicate/temp pyproject files
 pyproject\ *.toml
 
+# Generated assets (logos, screenshots)
+assets/
+
 # Executed notebooks (keep source .ipynb only)
 pLIN_executed.ipynb
