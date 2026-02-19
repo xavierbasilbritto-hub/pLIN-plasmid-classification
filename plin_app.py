@@ -37,7 +37,7 @@ from matplotlib.colors import ListedColormap
 import plotly.graph_objects as go
 import plotly.express as px
 from itertools import product as iter_product
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Bio import SeqIO
 from sklearn.neighbors import KNeighborsClassifier
@@ -810,6 +810,96 @@ def assign_plin_codes(vectors, linkage_method="single", thresholds=None):
         plin_codes.append(".".join(parts))
 
     return plin_codes, cluster_assignments, Z, dist_condensed
+
+
+PLIN_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_assignments.tsv")
+
+
+@st.cache_data(show_spinner=False)
+def _load_reference_for_query():
+    """Load training vectors and pLIN codes for nearest-neighbour query mode."""
+    if not os.path.exists(CLASSIFIER_PATH) or not os.path.exists(PLIN_ASSIGNMENTS_PATH):
+        return None, None
+    ref_data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+    X_ref = ref_data["X"].astype(np.float64)  # (6998, 256)
+    plin_df = pd.read_csv(PLIN_ASSIGNMENTS_PATH, sep="\t")
+    return X_ref, plin_df
+
+
+def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
+    """Assign pLIN codes to query plasmids by nearest-neighbour lookup.
+
+    Implements the LIN nearest-neighbour assignment rule (Vinatzer et al. 2017):
+    for each query, find the nearest reference plasmid and inherit its pLIN code
+    at levels where distance <= threshold, creating new branch IDs where it diverges.
+
+    This is mathematically equivalent to single-linkage clustering — not an
+    approximation. A query Q belongs to cluster C at threshold t if and only if
+    its nearest neighbour N is in C and d(Q,N) <= t.
+
+    Returns:
+        plin_codes: list of pLIN code strings
+        cluster_assignments: dict {level: array} for compatibility with build_results_df
+        query_metadata: list of dicts with nn_plasmid, nn_distance, nn_inc_type
+    """
+    active_thresholds = thresholds if thresholds else PLIN_THRESHOLDS
+
+    X_ref, plin_df = _load_reference_for_query()
+    if X_ref is None:
+        raise FileNotFoundError(
+            "Reference data not found. Ensure data/inc_classifier.npz and "
+            "output/pLIN_assignments.tsv exist for query mode."
+        )
+
+    # Max existing cluster IDs at each level (for new branch allocation)
+    bin_labels = list(active_thresholds.keys())
+    max_ids = {}
+    for level in bin_labels:
+        max_ids[level] = int(plin_df[f"bin_{level}"].max())
+
+    # Compute cosine distances: each query vs all 6,998 references
+    dists = cdist(query_vectors, X_ref, metric="cosine")  # (n_query, 6998)
+
+    plin_codes = []
+    cluster_assignments = {b: [] for b in bin_labels}
+    query_metadata = []
+
+    thresholds_list = list(active_thresholds.values())
+
+    for i in range(len(query_records)):
+        nn_idx = np.argmin(dists[i])
+        nn_dist = float(dists[i, nn_idx])
+        nn_row = plin_df.iloc[nn_idx]
+
+        # Build pLIN code level by level
+        code_parts = []
+        diverged = False
+        for level, thresh in zip(bin_labels, thresholds_list):
+            if not diverged and nn_dist <= thresh:
+                # Inherit neighbour's code at this level
+                bin_val = int(nn_row[f"bin_{level}"])
+            else:
+                # New branch — assign new unique ID
+                diverged = True
+                max_ids[level] += 1
+                bin_val = max_ids[level]
+            code_parts.append(str(bin_val))
+            cluster_assignments[level].append(bin_val)
+
+        plin_codes.append(".".join(code_parts))
+
+        query_metadata.append({
+            "nn_plasmid": nn_row["plasmid_id"],
+            "nn_distance": round(nn_dist, 6),
+            "nn_inc_type": nn_row["inc_type"],
+            "nn_plin": nn_row["pLIN"],
+        })
+
+    # Convert lists to arrays for compatibility
+    for level in bin_labels:
+        cluster_assignments[level] = np.array(cluster_assignments[level])
+
+    return plin_codes, cluster_assignments, query_metadata
 
 
 def build_results_df(records, plin_codes, cluster_assignments):
@@ -2550,6 +2640,10 @@ for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
         st.session_state[key] = None
 if "analysis_done" not in st.session_state:
     st.session_state.analysis_done = False
+if "is_query_mode" not in st.session_state:
+    st.session_state.is_query_mode = False
+if "query_metadata" not in st.session_state:
+    st.session_state.query_metadata = None
 
 # DRAGNOME Buddy chat state
 if "buddy_messages" not in st.session_state:
@@ -2892,13 +2986,16 @@ if run_btn and uploaded_files:
                       else "Parsing FASTA files...")
     try:
         records = parse_uploaded_fastas(uploaded_files, inc_type)
-        if len(records) < 2:
-            st.error("Need at least 2 sequences for clustering.")
+        if len(records) < 1:
+            st.error("No valid sequences found in uploaded files.")
             st.stop()
         st.session_state.records = records
     except Exception as e:
         st.error(f"Failed to parse FASTA files: {e}")
         st.stop()
+
+    # Determine analysis mode
+    is_query_mode = len(records) == 1
 
     # Step 2: K-mer vectors
     progress.progress(15, text=f"Computing 4-mer vectors for {len(records)} plasmids...")
@@ -2929,18 +3026,53 @@ if run_btn and uploaded_files:
                 st.session_state._dominant_inc = dominant_inc
 
     # Step 3: Clustering & pLIN assignment
-    progress.progress(40, text=f"Clustering ({linkage_method} linkage) & assigning pLIN codes...")
-    plin_codes, cluster_assignments, Z, dist_condensed = assign_plin_codes(
-        vectors, linkage_method=linkage_method, thresholds=active_thresholds
-    )
+    if is_query_mode:
+        # Single-plasmid query mode: nearest-neighbour lookup against training DB
+        progress.progress(40, text="Assigning pLIN code via nearest-neighbour lookup...")
+        try:
+            plin_codes, cluster_assignments, query_metadata = assign_plin_query_mode(
+                vectors, records, thresholds=active_thresholds
+            )
+            Z = None
+            dist_condensed = None
+            st.session_state.query_metadata = query_metadata
+        except FileNotFoundError as e:
+            st.error(str(e))
+            st.stop()
+    else:
+        # Multi-plasmid mode: de novo pairwise clustering
+        progress.progress(40, text=f"Clustering ({linkage_method} linkage) & assigning pLIN codes...")
+        plin_codes, cluster_assignments, Z, dist_condensed = assign_plin_codes(
+            vectors, linkage_method=linkage_method, thresholds=active_thresholds
+        )
+        st.session_state.query_metadata = None
+
+        # Also run query mode for reference-based pLIN codes
+        try:
+            _, _, query_metadata = assign_plin_query_mode(
+                vectors, records, thresholds=active_thresholds
+            )
+            st.session_state.query_metadata = query_metadata
+        except FileNotFoundError:
+            pass  # Reference data not available; skip query mode
+
     strain_clusters = list(cluster_assignments["F"])
     st.session_state.linkage_method_used = linkage_method
+    st.session_state.is_query_mode = is_query_mode
 
     # Step 4: Build results
     progress.progress(55, text="Building results table...")
     plin_df = build_results_df(records, plin_codes, cluster_assignments)
     # Use plasmid_id for labels (unique per sequence) instead of source_file
     labels = [r["plasmid_id"] for r in records]
+
+    # Add query-mode metadata columns if available
+    if st.session_state.query_metadata:
+        qm = st.session_state.query_metadata
+        plin_df["nn_plasmid"] = [m["nn_plasmid"] for m in qm]
+        plin_df["nn_distance"] = [m["nn_distance"] for m in qm]
+        plin_df["nn_inc_type"] = [m["nn_inc_type"] for m in qm]
+        plin_df["nn_plin"] = [m["nn_plin"] for m in qm]
 
     st.session_state.plin_df = plin_df
     st.session_state.Z = Z
@@ -3196,7 +3328,10 @@ with tab_overview:
         """)
 
     if st.session_state.analysis_done:
-        st.success("Analysis complete!")
+        if st.session_state.get("is_query_mode"):
+            st.success("Query mode — pLIN assigned via nearest-neighbour lookup against 6,998-plasmid training database.")
+        else:
+            st.success("Analysis complete!")
         df = st.session_state.plin_df
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Plasmids", len(df))
@@ -3483,6 +3618,11 @@ with tab_results:
                 display_cols.append("mobility")
             display_cols += ["bin_A", "bin_B", "bin_C", "bin_D", "bin_E", "bin_F"]
 
+        # Add query-mode columns if available
+        if "nn_plasmid" in df.columns:
+            display_cols += [c for c in ["nn_plasmid", "nn_distance", "nn_inc_type", "nn_plin"]
+                            if c in df.columns and c not in display_cols]
+
         # Search filter
         search = st.text_input("🔍 Search plasmid ID, pLIN code, or Inc group", "")
         if search:
@@ -3556,6 +3696,41 @@ with tab_results:
 with tab_clado:
     if not st.session_state.analysis_done:
         st.info("Run analysis first to see cladograms.")
+    elif st.session_state.Z is None:
+        st.header("Cladogram Visualization")
+        st.info(
+            "Cladogram visualization requires 2 or more plasmids. "
+            "In single-plasmid query mode, pLIN codes are assigned by "
+            "nearest-neighbour lookup against the training database."
+        )
+        # Show query-mode summary instead
+        qm = st.session_state.get("query_metadata")
+        if qm:
+            m = qm[0]
+            st.markdown("### Query Mode Assignment Summary")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Nearest Neighbour", m["nn_plasmid"])
+            col2.metric("Cosine Distance", f"{m['nn_distance']:.6f}")
+            col3.metric("Neighbour Inc Type", m["nn_inc_type"])
+            st.markdown(f"**Neighbour pLIN:** `{m['nn_plin']}`")
+            st.markdown(f"**Assigned pLIN:** `{st.session_state.plin_codes[0]}`")
+
+            # Show threshold breakdown
+            thresholds = st.session_state.get("active_thresholds", PLIN_THRESHOLDS)
+            rows = []
+            nn_plin_parts = m["nn_plin"].split(".")
+            assigned_parts = st.session_state.plin_codes[0].split(".")
+            for idx, (level, thresh) in enumerate(thresholds.items()):
+                inherited = m["nn_distance"] <= thresh
+                rows.append({
+                    "Level": f"L{idx+1} (Bin {level})",
+                    "Threshold": f"d <= {thresh:.3f}",
+                    "Distance": f"{m['nn_distance']:.6f}",
+                    "Status": "Inherited" if inherited else "New branch",
+                    "Neighbour ID": nn_plin_parts[idx] if idx < len(nn_plin_parts) else "?",
+                    "Assigned ID": assigned_parts[idx] if idx < len(assigned_parts) else "?",
+                })
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     else:
         st.header("Cladogram Visualization")
 
@@ -4265,24 +4440,27 @@ with tab_export:
             plin_codes = st.session_state.plin_codes
             strain_clusters = st.session_state.strain_clusters
 
-            for name, func, args in [
-                ("Rectangular Cladogram", plot_rectangular_cladogram,
-                 (Z, labels, plin_codes, strain_clusters)),
-                ("Circular Cladogram", plot_circular_cladogram,
-                 (Z, labels, plin_codes, strain_clusters)),
-            ]:
-                fig = func(*args)
-                st.download_button(f"📥 {name} (PNG)", fig_to_bytes(fig),
-                                   f"{name.lower().replace(' ', '_')}.png", "image/png")
-                plt.close(fig)
+            if Z is not None:
+                for name, func, args in [
+                    ("Rectangular Cladogram", plot_rectangular_cladogram,
+                     (Z, labels, plin_codes, strain_clusters)),
+                    ("Circular Cladogram", plot_circular_cladogram,
+                     (Z, labels, plin_codes, strain_clusters)),
+                ]:
+                    fig = func(*args)
+                    st.download_button(f"📥 {name} (PNG)", fig_to_bytes(fig),
+                                       f"{name.lower().replace(' ', '_')}.png", "image/png")
+                    plt.close(fig)
 
-            # AMR cladogram if available
-            if st.session_state.amr_df is not None and len(st.session_state.amr_df) > 0:
-                fig = plot_cladogram_amr(Z, labels, plin_codes, strain_clusters,
-                                        st.session_state.amr_df, st.session_state.records)
-                st.download_button("📥 AMR Cladogram (PNG)", fig_to_bytes(fig),
-                                   "cladogram_amr.png", "image/png")
-                plt.close(fig)
+                # AMR cladogram if available
+                if st.session_state.amr_df is not None and len(st.session_state.amr_df) > 0:
+                    fig = plot_cladogram_amr(Z, labels, plin_codes, strain_clusters,
+                                            st.session_state.amr_df, st.session_state.records)
+                    st.download_button("📥 AMR Cladogram (PNG)", fig_to_bytes(fig),
+                                       "cladogram_amr.png", "image/png")
+                    plt.close(fig)
+            else:
+                st.info("Cladogram figures require 2+ plasmids.")
 
         st.divider()
 

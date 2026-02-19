@@ -1,10 +1,23 @@
-# pLIN — Docker Compose
-# Usage: docker compose up
-# Open:  http://localhost:8501
+# ============================================================
+#  pLIN — Docker Compose
+#  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+#
+#  Usage:
+#    docker compose up --build      # First run (builds image)
+#    docker compose up              # Subsequent runs
+#    docker compose down            # Stop
+#
+#  Open: http://localhost:8501
+# ============================================================
 
 services:
   plin:
-    build: .
+    build:
+      context: .
+      args:
+        INSTALL_BIOTOOLS: "true"
+    image: plin:2.1.0
+    container_name: plin-app
     ports:
       - "8501:8501"
     volumes:
@@ -13,3 +26,7 @@ services:
     restart: unless-stopped
     environment:
       - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=200
+    deploy:
+      resources:
+        limits:
+          memory: 4G
