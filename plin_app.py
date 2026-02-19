@@ -113,6 +113,7 @@ MULTI_INC_THRESHOLD = 0.25  # 25% minimum for secondary Inc types
 # Minimum sequence length for reliable 4-mer classification
 # Plasmids shorter than this have high stochastic variance in k-mer profiles
 SHORT_PLASMID_THRESHOLD = 5000  # 5 kb — warn users about unreliable pLIN codes
+CHROMOSOMAL_THRESHOLD = 500000  # 500 kb — likely chromosomal, not plasmid
 
 # Mobility/conjugation marker genes detectable from AMRFinderPlus output
 MOBILITY_GENES = {
@@ -3352,6 +3353,23 @@ with tab_overview:
             with st.expander(f"View short plasmids ({len(short_plasmids)})"):
                 st.dataframe(
                     short_plasmids[["plasmid_id", "length_bp", "pLIN", "inc_type"]],
+                    use_container_width=True, hide_index=True,
+                )
+
+        # Chromosomal sequence warning for large contigs (likely not plasmids)
+        large_contigs = df[df["length_bp"] > CHROMOSOMAL_THRESHOLD]
+        if len(large_contigs) > 0:
+            st.warning(
+                f"**{len(large_contigs)} sequence(s) larger than {CHROMOSOMAL_THRESHOLD/1000:.0f} kb detected** — "
+                f"sequences of this size are likely chromosomal rather than plasmid DNA. "
+                f"Chromosomal contigs will receive unreliable Inc-group classifications and spurious pLIN codes "
+                f"because the KNN classifier was trained exclusively on plasmid sequences. "
+                f"If you uploaded a whole-genome assembly, consider extracting plasmid contigs first "
+                f"(e.g., using PlasmidFinder, MOB-recon, or manual inspection) and re-uploading only the plasmid sequences."
+            )
+            with st.expander(f"View putative chromosomal sequences ({len(large_contigs)})"):
+                st.dataframe(
+                    large_contigs[["plasmid_id", "length_bp", "pLIN", "inc_type"]],
                     use_container_width=True, hide_index=True,
                 )
 
