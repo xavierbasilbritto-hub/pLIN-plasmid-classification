@@ -222,7 +222,7 @@ NT_STRIDE = 2500
 
 @st.cache_resource(show_spinner=False)
 def load_inc_classifier():
-    """Load precomputed Inc-group KNN classifier (96% CV accuracy)."""
+    """Load precomputed Inc-group KNN classifier (92.2% CV accuracy)."""
     if os.path.exists(CLASSIFIER_PATH):
         data = np.load(CLASSIFIER_PATH, allow_pickle=True)
         X_train = data["X"]
@@ -236,6 +236,33 @@ def load_inc_classifier():
         group_names = [str(g) for g in data["group_names"]]
         return group_names, data["centroids"]
     return None, None
+
+
+@st.cache_resource(show_spinner=False)
+def load_cv_metrics():
+    """Load per-Inc-group CV metrics from classifier data."""
+    import json as _json
+    if os.path.exists(CLASSIFIER_PATH):
+        data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+        cv_metrics = {}
+        if "cv_metrics" in data:
+            raw = str(data["cv_metrics"][0])
+            cv_metrics = _json.loads(raw)
+        cv_accuracy = float(data["cv_accuracy"][0]) if "cv_accuracy" in data else 0.0
+        confusion_pairs = []
+        if "confusion_pairs" in data:
+            for cp in data["confusion_pairs"]:
+                s = str(cp)
+                if "|" in s:
+                    parts = s.split("|")
+                    confusion_pairs.append({
+                        "inc_a": parts[0], "inc_b": parts[1],
+                        "errors": int(parts[2]),
+                        "pct_a": float(parts[3]), "pct_b": float(parts[4]),
+                    })
+        return {"per_class": cv_metrics, "accuracy": cv_accuracy,
+                "confusion_pairs": confusion_pairs}
+    return {"per_class": {}, "accuracy": 0.0, "confusion_pairs": []}
 
 
 def _kmer_vector_single(sequence):
@@ -253,6 +280,93 @@ def _kmer_vector_single(sequence):
     if total > 0:
         counts /= total
     return counts
+
+
+# ── Input Quality Validation ─────────────────────────────────────────────────
+
+def validate_sequence_quality(sequence, plasmid_id):
+    """Check input sequence quality before classification.
+
+    Returns list of dicts with keys: level, check, message, value.
+    Levels: 'error' (unreliable), 'warning' (interpret with caution), 'info'.
+    """
+    warnings = []
+    seq_upper = sequence.upper()
+    seq_len = len(seq_upper)
+    if seq_len == 0:
+        return [{"level": "error", "check": "empty",
+                 "message": f"{plasmid_id}: empty sequence", "value": 0}]
+
+    # 1. N-content check
+    n_count = seq_upper.count("N")
+    n_pct = 100.0 * n_count / seq_len
+    if n_pct > 20:
+        warnings.append({"level": "error", "check": "N-content",
+                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases — assembly too fragmented for reliable 4-mer profiling",
+                          "value": round(n_pct, 1)})
+    elif n_pct > 5:
+        warnings.append({"level": "warning", "check": "N-content",
+                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases — may reduce 4-mer accuracy",
+                          "value": round(n_pct, 1)})
+
+    # 2. GC-content check (Enterobacteriaceae plasmids typically 40–60%)
+    gc_count = seq_upper.count("G") + seq_upper.count("C")
+    valid_bases = sum(seq_upper.count(b) for b in "ACGT")
+    gc_pct = 100.0 * gc_count / valid_bases if valid_bases > 0 else 0
+    if gc_pct < 30 or gc_pct > 65:
+        warnings.append({"level": "warning", "check": "GC-content",
+                          "message": f"{plasmid_id}: GC = {gc_pct:.1f}% (expected 30–65% for Enterobacteriaceae plasmids)",
+                          "value": round(gc_pct, 1)})
+
+    # 3. Non-ACGTN characters
+    non_standard = sum(1 for c in seq_upper if c not in "ACGTN")
+    if non_standard > 0:
+        non_pct = 100.0 * non_standard / seq_len
+        warnings.append({"level": "warning", "check": "non-ACGTN",
+                          "message": f"{plasmid_id}: {non_standard} non-ACGTN characters ({non_pct:.2f}%)",
+                          "value": non_standard})
+
+    # 4. Low-complexity check (Shannon entropy of 4-mer distribution)
+    if seq_len >= 100:
+        vec = _kmer_vector_single(sequence)
+        nonzero = vec[vec > 0]
+        if len(nonzero) > 0:
+            entropy = -np.sum(nonzero * np.log2(nonzero))
+            # Max entropy for 256 bins = log2(256) = 8.0; typical plasmid > 6.0
+            if entropy < 3.5:
+                warnings.append({"level": "warning", "check": "low-complexity",
+                                  "message": f"{plasmid_id}: 4-mer entropy = {entropy:.2f} bits (very low — repetitive sequence)",
+                                  "value": round(entropy, 2)})
+            elif entropy < 5.0:
+                warnings.append({"level": "info", "check": "low-complexity",
+                                  "message": f"{plasmid_id}: 4-mer entropy = {entropy:.2f} bits (below average)",
+                                  "value": round(entropy, 2)})
+
+    return warnings
+
+
+def detect_duplicates(records):
+    """Detect identical or near-identical sequences among uploaded files.
+
+    Returns list of (plasmid_a, plasmid_b, cosine_distance) tuples.
+    """
+    if len(records) < 2:
+        return []
+    from scipy.spatial.distance import pdist, squareform
+    vecs = np.array([_kmer_vector_single(str(r["sequence"])) for r in records])
+    dists = squareform(pdist(vecs, metric="cosine"))
+    duplicates = []
+    seen = set()
+    for i in range(len(records)):
+        for j in range(i + 1, len(records)):
+            if dists[i, j] < 0.0001:
+                key = (records[i]["plasmid_id"], records[j]["plasmid_id"])
+                if key not in seen:
+                    duplicates.append((records[i]["plasmid_id"],
+                                       records[j]["plasmid_id"],
+                                       round(float(dists[i, j]), 8)))
+                    seen.add(key)
+    return duplicates
 
 
 def classify_inc_group(sequence, group_names, classifier):
@@ -306,6 +420,10 @@ def classify_inc_group(sequence, group_names, classifier):
             "multiple_inc_types": high_conf_incs if is_multiple_inc else [],
             "top5_candidates": sorted_candidates,
             "all_probabilities": proba_dict,
+            # CV-based quality metadata (populated by caller if available)
+            "cv_f1": None,
+            "is_confusion_pair": False,
+            "confusion_note": "",
         }
     else:
         # Centroid fallback — use cosine similarity as confidence
@@ -735,6 +853,7 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
     """Parse uploaded FASTA files. Auto-detects Inc group when inc_type='Auto-detect'."""
     auto_detect = (inc_type == "Auto-detect")
     group_names, classifier = None, None
+    cv_data = load_cv_metrics()
     if auto_detect:
         group_names, classifier = load_inc_classifier()
         if group_names is None:
@@ -765,8 +884,34 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
                     rec_dict["inc_multiple_types"] = result["multiple_inc_types"]
                     rec_dict["inc_top5_candidates"] = result["top5_candidates"]
                     rec_dict["inc_probabilities"] = result["all_probabilities"]
+                    # Enrich with CV metrics
+                    best = result["best_match"]
+                    if best in cv_data["per_class"]:
+                        rec_dict["inc_cv_f1"] = cv_data["per_class"][best]["f1"]
+                    else:
+                        rec_dict["inc_cv_f1"] = None
+                    # Check if top-2 are a known confusion pair
+                    top2 = result["top5_candidates"][:2]
+                    if len(top2) == 2:
+                        t2_set = {top2[0][0], top2[1][0]}
+                        for cp in cv_data["confusion_pairs"]:
+                            if {cp["inc_a"], cp["inc_b"]} == t2_set:
+                                rec_dict["inc_confusion_pair"] = True
+                                rec_dict["inc_confusion_note"] = (
+                                    f"{cp['inc_a']}/{cp['inc_b']} are a known confusion pair "
+                                    f"({cp['errors']} CV errors)")
+                                break
+                        else:
+                            rec_dict["inc_confusion_pair"] = False
+                            rec_dict["inc_confusion_note"] = ""
+                    else:
+                        rec_dict["inc_confusion_pair"] = False
+                        rec_dict["inc_confusion_note"] = ""
                 else:
                     rec_dict["inc_type"] = inc_type
+
+                # Run input quality validation
+                rec_dict["quality_warnings"] = validate_sequence_quality(seq, rec.id)
 
                 records.append(rec_dict)
         finally:
@@ -1404,6 +1549,80 @@ def run_mash_distances(uploaded_files, mash_binary, progress_callback=None):
     return pd.DataFrame(rows) if rows else pd.DataFrame()
 
 
+def check_ani_concordance(plin_df, mash_df):
+    """Cross-validate pLIN cosine NN distances against Mash ANI estimates.
+
+    For each plasmid pair in the Mash results, check if cosine distance
+    and Mash ANI agree. Discordant cases suggest the 4-mer composition
+    proxy may be unreliable for that pair.
+
+    Returns DataFrame with concordance status per plasmid.
+    """
+    if mash_df is None or len(mash_df) == 0 or plin_df is None:
+        return pd.DataFrame()
+
+    # Build a lookup of NN distance per plasmid from plin_df
+    nn_lookup = {}
+    if "nn_distance" in plin_df.columns and "nn_plasmid" in plin_df.columns:
+        for _, row in plin_df.iterrows():
+            nn_lookup[row["plasmid_id"]] = {
+                "nn_distance": row.get("nn_distance", None),
+                "nn_plasmid": row.get("nn_plasmid", ""),
+            }
+
+    # Build Mash ANI lookup for pairs
+    mash_pairs = {}
+    for _, row in mash_df.iterrows():
+        q, r = str(row["query"]), str(row["reference"])
+        ani = row.get("ani_estimate", 0)
+        # Store both directions
+        mash_pairs[(q, r)] = ani
+        mash_pairs[(r, q)] = ani
+
+    results = []
+    for pid, nn_info in nn_lookup.items():
+        nn_dist = nn_info["nn_distance"]
+        nn_id = nn_info["nn_plasmid"]
+        if nn_dist is None:
+            continue
+
+        # Try to find this pair in Mash results
+        mash_ani = mash_pairs.get((pid, nn_id))
+        if mash_ani is None:
+            # Try partial ID match (Mash may use filename-based IDs)
+            for (q, r), ani in mash_pairs.items():
+                if pid in q and nn_id in r:
+                    mash_ani = ani
+                    break
+
+        if mash_ani is not None:
+            # Concordance logic:
+            # Low distance + low ANI = discordant (composition similar but sequence divergent)
+            # High distance + high ANI = discordant (rare, but possible with rearrangements)
+            if nn_dist < 0.01 and mash_ani < 95:
+                status = "discordant"
+                note = f"Low cosine distance ({nn_dist:.4f}) but low ANI ({mash_ani:.1f}%)"
+            elif nn_dist > 0.02 and mash_ani > 98:
+                status = "discordant"
+                note = f"High cosine distance ({nn_dist:.4f}) but high ANI ({mash_ani:.1f}%)"
+            else:
+                status = "concordant"
+                note = ""
+        else:
+            status = "no_mash_data"
+            note = "No Mash pair data for this NN"
+
+        results.append({
+            "plasmid_id": pid,
+            "nn_distance": round(nn_dist, 6) if nn_dist else None,
+            "mash_ani": round(mash_ani, 1) if mash_ani else None,
+            "concordance": status,
+            "note": note,
+        })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  FASTANI INTEGRATION
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1838,6 +2057,227 @@ def detect_blastn():
                     break
 
     return blastn, makeblastdb
+
+
+# ── MLST chromosomal typing ──────────────────────────────────────────────────
+
+
+def detect_mlst():
+    """Auto-detect mlst (Torsten Seemann's MLST tool) binary."""
+    binary = None
+    try:
+        result = subprocess.run(["which", "mlst"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            binary = result.stdout.strip()
+    except Exception:
+        pass
+
+    if not binary:
+        home = os.path.expanduser("~")
+        for base in [
+            os.path.join(home, "miniconda3", "envs"),
+            os.path.join(home, "miniforge3", "envs"),
+            os.path.join(home, "anaconda3", "envs"),
+            os.path.join(home, "mambaforge", "envs"),
+        ]:
+            if os.path.isdir(base):
+                for env in sorted(os.listdir(base)):
+                    candidate = os.path.join(base, env, "bin", "mlst")
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        binary = candidate
+                        break
+            if binary:
+                break
+
+    if not binary:
+        home = os.path.expanduser("~")
+        for prefix in [
+            os.path.join(home, "miniforge3", "bin", "mlst"),
+            os.path.join(home, "miniconda3", "bin", "mlst"),
+        ]:
+            if os.path.isfile(prefix) and os.access(prefix, os.X_OK):
+                binary = prefix
+                break
+
+    return binary
+
+
+def _mlst_perl_env(binary):
+    """Build environment dict with correct PERL5LIB for mlst."""
+    env = os.environ.copy()
+    # mlst needs Perl libs from its conda env
+    bin_dir = os.path.dirname(binary)
+    env_root = os.path.dirname(bin_dir)
+    perl_lib = os.path.join(env_root, "lib", "perl5", "site_perl")
+    perl_lib2 = os.path.join(env_root, "lib", "perl5")
+    existing = env.get("PERL5LIB", "")
+    env["PERL5LIB"] = f"{perl_lib}:{perl_lib2}:{existing}" if existing else f"{perl_lib}:{perl_lib2}"
+    return env
+
+
+def run_mlst_on_genomes(genome_files, mlst_binary, progress_callback=None):
+    """Run MLST typing on host bacterial genome FASTA files.
+
+    Returns DataFrame with columns: genome_name, scheme, ST, alleles.
+    """
+    all_results = []
+    total = len(genome_files)
+    env = _mlst_perl_env(mlst_binary)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for idx, uf in enumerate(genome_files):
+            genome_name = uf.name
+            for ext in [".fasta", ".fa", ".fna"]:
+                genome_name = genome_name.replace(ext, "")
+            fasta_path = os.path.join(tmpdir, uf.name)
+            with open(fasta_path, "wb") as f:
+                f.write(uf.getvalue())
+
+            try:
+                result = subprocess.run(
+                    [mlst_binary, fasta_path],
+                    capture_output=True, text=True, timeout=300, env=env,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    parts = result.stdout.strip().split("\t")
+                    scheme = parts[1] if len(parts) > 1 else "-"
+                    st_type = parts[2] if len(parts) > 2 else "-"
+                    alleles = ";".join(parts[3:]) if len(parts) > 3 else ""
+                    all_results.append({
+                        "genome_name": genome_name,
+                        "scheme": scheme,
+                        "ST": st_type,
+                        "alleles": alleles,
+                    })
+                else:
+                    all_results.append({
+                        "genome_name": genome_name,
+                        "scheme": "-",
+                        "ST": "-",
+                        "alleles": "",
+                    })
+            except Exception:
+                all_results.append({
+                    "genome_name": genome_name,
+                    "scheme": "-",
+                    "ST": "-",
+                    "alleles": "",
+                })
+
+            if progress_callback:
+                progress_callback((idx + 1) / total)
+
+    return pd.DataFrame(all_results) if all_results else pd.DataFrame()
+
+
+def build_genome_plasmid_mapping(genome_files, plasmid_ids, metadata_df=None):
+    """Link genome files to plasmid IDs via filename prefix matching or metadata.
+
+    Strategy: (1) shared filename tokens, (2) metadata CSV with genome column.
+    Returns DataFrame with genome_name, plasmid_id columns.
+    """
+    mappings = []
+
+    def _clean(name):
+        for ext in [".fasta", ".fa", ".fna"]:
+            name = name.replace(ext, "")
+        return name
+
+    genome_names = [_clean(gf.name) for gf in genome_files]
+    plasmid_clean = {_clean(pid): pid for pid in plasmid_ids}
+
+    # Strategy 1: shared filename tokens
+    for gn in genome_names:
+        gn_parts = set(gn.replace("-", "_").split("_")) - {
+            "genome", "chromosome", "chr", "contig", "assembly",
+        }
+        for pc, pid_orig in plasmid_clean.items():
+            pc_parts = set(pc.replace("-", "_").split("_")) - {
+                "plasmid", "plas", "contig",
+            }
+            shared = gn_parts & pc_parts
+            if shared and len(shared) >= 1:
+                mappings.append({"genome_name": gn, "plasmid_id": pid_orig})
+
+    # Strategy 2: metadata-based
+    if not mappings and metadata_df is not None:
+        genome_col = None
+        for col in metadata_df.columns:
+            if any(kw in col.lower() for kw in ["genome", "chromosome", "host_genome"]):
+                genome_col = col
+                break
+        if genome_col and "plasmid_id" in metadata_df.columns:
+            for _, row in metadata_df.iterrows():
+                gname = _clean(str(row[genome_col]))
+                pid = str(row["plasmid_id"])
+                if gname in genome_names:
+                    mappings.append({"genome_name": gname, "plasmid_id": pid})
+
+    return pd.DataFrame(mappings) if mappings else pd.DataFrame(columns=["genome_name", "plasmid_id"])
+
+
+def classify_transmission_mode(mlst_df, plin_df, genome_plasmid_mapping):
+    """Classify pairwise transmission as clonal spread, HGT, or independent.
+
+    Returns (pairs_df, summary_dict).
+    """
+    merged = genome_plasmid_mapping.merge(mlst_df, on="genome_name", how="left")
+    plin_cols = ["plasmid_id"]
+    if "pLIN" in plin_df.columns:
+        plin_cols.append("pLIN")
+    if "bin_F" in plin_df.columns:
+        plin_cols.append("bin_F")
+    if "inc_type" in plin_df.columns:
+        plin_cols.append("inc_type")
+    merged = merged.merge(plin_df[plin_cols], on="plasmid_id", how="left")
+
+    pairs = []
+    samples = merged.to_dict("records")
+    for i in range(len(samples)):
+        for j in range(i + 1, len(samples)):
+            a, b = samples[i], samples[j]
+            st_a = str(a.get("ST", "-"))
+            st_b = str(b.get("ST", "-"))
+            same_st = st_a == st_b and st_a not in ["-", "", "0", "None"]
+            bin_a = a.get("bin_F", "")
+            bin_b = b.get("bin_F", "")
+            same_plin = bin_a == bin_b and bin_a not in ["", None]
+
+            if same_st and same_plin:
+                mode = "Clonal spread"
+            elif not same_st and same_plin:
+                mode = "Horizontal plasmid transfer"
+            elif same_st and not same_plin:
+                mode = "Same strain, different plasmids"
+            else:
+                mode = "Independent"
+
+            pairs.append({
+                "genome_A": a.get("genome_name", ""),
+                "genome_B": b.get("genome_name", ""),
+                "ST_A": st_a,
+                "ST_B": st_b,
+                "plasmid_A": a.get("plasmid_id", ""),
+                "plasmid_B": b.get("plasmid_id", ""),
+                "pLIN_A": a.get("pLIN", ""),
+                "pLIN_B": b.get("pLIN", ""),
+                "same_ST": same_st,
+                "same_pLIN_L6": same_plin,
+                "transmission_mode": mode,
+            })
+
+    pairs_df = pd.DataFrame(pairs) if pairs else pd.DataFrame()
+    summary = {}
+    if len(pairs_df) > 0:
+        mc = pairs_df["transmission_mode"].value_counts()
+        summary = {
+            "total_pairs": len(pairs_df),
+            "clonal_spread": int(mc.get("Clonal spread", 0)),
+            "horizontal_transfer": int(mc.get("Horizontal plasmid transfer", 0)),
+            "same_strain_diff_plasmid": int(mc.get("Same strain, different plasmids", 0)),
+            "independent": int(mc.get("Independent", 0)),
+        }
+    return pairs_df, summary
 
 
 def _enrich_spacers_from_gff(spacers_list, gff_path, genome_name):
@@ -2636,7 +3076,9 @@ for key in ["records", "plin_df", "amr_df", "integrated_df", "Z", "labels",
             "mobility_results", "outbreak_clusters", "active_thresholds",
             "linkage_method_used", "nt_results", "prodigal_genes_df", "prodigal_summary_df",
             "mobsuite_df", "crispr_spacers_df", "crispr_spacer_summary_df",
-            "crispr_host_probs_df", "crispr_host_summary_df", "crispr_filtered_hits_df"]:
+            "crispr_host_probs_df", "crispr_host_summary_df", "crispr_filtered_hits_df",
+            "mlst_df", "mlst_genome_plasmid_map", "transmission_pairs_df",
+            "transmission_summary"]:
     if key not in st.session_state:
         st.session_state[key] = None
 if "analysis_done" not in st.session_state:
@@ -2681,6 +3123,9 @@ minimap2_binary = detect_minimap2()
 # CRISPR Host Inference tool detection
 minced_binary = detect_minced()
 blastn_binary, makeblastdb_binary = detect_blastn()
+
+# MLST chromosomal typing detection
+mlst_binary = detect_mlst()
 
 # Ollama detection for DRAGNOME Buddy
 ollama_available, ollama_models = detect_ollama()
@@ -2824,6 +3269,39 @@ if not st.session_state.analysis_done:
                 f"CRISPR Host Inference requires: {', '.join(missing)}. "
                 f"Install: `conda install -c bioconda {' '.join(missing)}`",
                 icon="🧫",
+            )
+
+        # ── Chromosomal Typing (MLST) ────────────────────────────────
+        st.divider()
+        st.markdown("**Chromosomal Typing (MLST)**")
+        if mlst_binary:
+            run_mlst = st.checkbox(
+                "Run MLST typing",
+                value=False,
+                help="Type host bacterial genomes using MLST (Torsten Seemann's mlst tool). "
+                     "Combines with pLIN to distinguish clonal vs horizontal plasmid spread. "
+                     "Uses the same host genome FASTAs as CRISPR analysis if available.",
+            )
+            if run_mlst:
+                if crispr_tools_ok and run_crispr and crispr_host_files:
+                    mlst_genome_files = crispr_host_files
+                    st.caption(f"Using {len(mlst_genome_files)} genome(s) from CRISPR uploader")
+                else:
+                    mlst_genome_files = st.file_uploader(
+                        "Upload host bacterial genome FASTAs",
+                        type=["fasta", "fa", "fna"],
+                        accept_multiple_files=True,
+                        help="Upload assembled bacterial genome FASTAs for MLST typing.",
+                        key="mlst_genome_uploader",
+                    )
+            else:
+                mlst_genome_files = None
+        else:
+            run_mlst = False
+            mlst_genome_files = None
+            st.info(
+                "mlst not found. Install: `conda install -c bioconda mlst`",
+                icon="🧬",
             )
 
         # Nucleotide Transformer (optional LLM)
@@ -2991,6 +3469,11 @@ if run_btn and uploaded_files:
             st.error("No valid sequences found in uploaded files.")
             st.stop()
         st.session_state.records = records
+        # Run duplicate detection on loaded records
+        if len(records) >= 2:
+            st.session_state.duplicate_pairs = detect_duplicates(records)
+        else:
+            st.session_state.duplicate_pairs = []
     except Exception as e:
         st.error(f"Failed to parse FASTA files: {e}")
         st.stop()
@@ -3208,6 +3691,31 @@ if run_btn and uploaded_files:
         else:
             st.info("No CRISPR spacers were extracted from the uploaded host genomes.")
 
+    # Step 5e: MLST chromosomal typing (optional)
+    if run_mlst and mlst_genome_files:
+        progress.progress(93, text="Running MLST on host genomes...")
+
+        def mlst_cb(pct):
+            progress.progress(int(93 + pct * 1), text=f"MLST typing: {int(pct * 100)}%")
+
+        mlst_df = run_mlst_on_genomes(mlst_genome_files, mlst_binary, mlst_cb)
+        st.session_state.mlst_df = mlst_df
+
+        if len(mlst_df) > 0:
+            plasmid_ids = plin_df["plasmid_id"].tolist()
+            genome_plasmid_map = build_genome_plasmid_mapping(
+                mlst_genome_files, plasmid_ids,
+                metadata_df=st.session_state.get("metadata_df"),
+            )
+            st.session_state.mlst_genome_plasmid_map = genome_plasmid_map
+
+            if len(genome_plasmid_map) > 0:
+                transmission_pairs_df, transmission_summary = classify_transmission_mode(
+                    mlst_df, plin_df, genome_plasmid_map,
+                )
+                st.session_state.transmission_pairs_df = transmission_pairs_df
+                st.session_state.transmission_summary = transmission_summary
+
     # Step 6: Integration
     progress.progress(94, text="Integrating results...")
     integrated_df = integrate_plin_amr(plin_df, amr_df)
@@ -3266,8 +3774,11 @@ if run_btn and uploaded_files:
         progress.progress(94, text="Running Mash ANI estimation...")
         mash_df = run_mash_distances(uploaded_files, mash_binary)
         st.session_state.mash_df = mash_df
+        # ANI concordance check — cross-validate pLIN cosine distances vs Mash ANI
+        st.session_state.concordance_df = check_ani_concordance(plin_df, mash_df)
     else:
         st.session_state.mash_df = None
+        st.session_state.concordance_df = pd.DataFrame()
 
     # Step 10: FastANI (optional)
     if run_fastani and fastani_binary:
@@ -3340,6 +3851,53 @@ with tab_overview:
         c3.metric("L6 Clusters (F)", df["bin_F"].nunique())
         amr_count = st.session_state.integrated_df["AMR_count"].sum() if st.session_state.integrated_df is not None else 0
         c4.metric("AMR Detections", int(amr_count))
+
+        # ── Input Sequence Quality Report ─────────────────────────────────
+        records = st.session_state.get("records", [])
+        all_quality_warnings = []
+        for rec in records:
+            for w in rec.get("quality_warnings", []):
+                all_quality_warnings.append(w)
+
+        n_errors = sum(1 for w in all_quality_warnings if w["level"] == "error")
+        n_warnings = sum(1 for w in all_quality_warnings if w["level"] == "warning")
+        n_clean = len(records) - len({w["message"].split(":")[0] for w in all_quality_warnings if w["level"] in ("error", "warning")})
+
+        if all_quality_warnings:
+            st.subheader("Input Sequence Quality")
+            qc1, qc2, qc3 = st.columns(3)
+            qc1.metric("Passed", n_clean, delta=None)
+            qc2.metric("Warnings", n_warnings, delta=None)
+            qc3.metric("Errors", n_errors, delta=None)
+
+            if n_errors > 0:
+                error_msgs = [w for w in all_quality_warnings if w["level"] == "error"]
+                st.error(f"**{n_errors} sequence quality error(s)** — results for these sequences are unreliable.")
+                with st.expander(f"View errors ({n_errors})"):
+                    st.dataframe(
+                        pd.DataFrame(error_msgs)[["check", "message", "value"]],
+                        use_container_width=True, hide_index=True,
+                    )
+
+            if n_warnings > 0:
+                warn_msgs = [w for w in all_quality_warnings if w["level"] == "warning"]
+                st.warning(f"**{n_warnings} sequence quality warning(s)** — interpret flagged assignments with caution.")
+                with st.expander(f"View warnings ({n_warnings})"):
+                    st.dataframe(
+                        pd.DataFrame(warn_msgs)[["check", "message", "value"]],
+                        use_container_width=True, hide_index=True,
+                    )
+
+            # Duplicate detection
+            duplicate_pairs = st.session_state.get("duplicate_pairs", [])
+            if duplicate_pairs:
+                st.info(f"**{len(duplicate_pairs)} near-identical sequence pair(s) detected** — these may be the same plasmid uploaded twice.")
+                with st.expander(f"View duplicate pairs ({len(duplicate_pairs)})"):
+                    dup_df = pd.DataFrame(duplicate_pairs, columns=["Plasmid A", "Plasmid B", "Cosine Distance"])
+                    st.dataframe(dup_df, use_container_width=True, hide_index=True)
+        else:
+            if len(records) > 0:
+                st.success(f"All {len(records)} sequences passed input quality checks.")
 
         # Sequence length warning for short plasmids
         short_plasmids = df[df["length_bp"] < SHORT_PLASMID_THRESHOLD]
@@ -3708,6 +4266,55 @@ with tab_results:
 
                 st.dataframe(inc_detail, use_container_width=True, hide_index=True)
 
+        # ── Classification Quality Report (from CV metrics) ───────────────
+        cv_data = load_cv_metrics()
+        if cv_data["accuracy"] > 0:
+            with st.expander("Classification Quality (Cross-Validation Metrics)"):
+                st.markdown(
+                    f"**Overall KNN accuracy:** {cv_data['accuracy']*100:.1f}% "
+                    f"(5-fold stratified cross-validation on 6,998 training plasmids)")
+
+                # Per-Inc-group table
+                if cv_data["per_class"]:
+                    rows = []
+                    for inc, m in sorted(cv_data["per_class"].items()):
+                        rows.append({
+                            "Inc Group": inc,
+                            "Precision": f"{m['precision']*100:.1f}%",
+                            "Recall": f"{m['recall']*100:.1f}%",
+                            "F1 Score": f"{m['f1']*100:.1f}%",
+                            "Training Samples": m["support"],
+                        })
+                    cv_df = pd.DataFrame(rows)
+                    st.dataframe(cv_df, use_container_width=True, hide_index=True)
+
+                # Confusion pair warnings for current batch
+                records = st.session_state.get("records", [])
+                confusion_count = sum(1 for r in records if r.get("inc_confusion_pair"))
+                if confusion_count > 0:
+                    st.warning(
+                        f"**{confusion_count} classification(s) involve known confusion pairs** — "
+                        f"the top-2 Inc candidates for these plasmids are known to be frequently "
+                        f"confused by the KNN classifier. Consider these assignments with lower confidence.")
+                    confused = [{"Plasmid": r["plasmid_id"],
+                                 "Predicted": r.get("inc_best_match", "?"),
+                                 "Note": r.get("inc_confusion_note", "")}
+                                for r in records if r.get("inc_confusion_pair")]
+                    st.dataframe(pd.DataFrame(confused), use_container_width=True, hide_index=True)
+
+                # Summary of confusion pairs in training
+                if cv_data["confusion_pairs"]:
+                    st.markdown(f"**{len(cv_data['confusion_pairs'])} known confusion pairs** "
+                                f"(>5% misclassification rate between pair):")
+                    top_pairs = sorted(cv_data["confusion_pairs"],
+                                       key=lambda x: x["errors"], reverse=True)[:10]
+                    cp_rows = [{"Pair": f"{cp['inc_a']} ↔ {cp['inc_b']}",
+                                "CV Errors": cp["errors"],
+                                "% of A": f"{cp['pct_a']:.1f}%",
+                                "% of B": f"{cp['pct_b']:.1f}%"}
+                               for cp in top_pairs]
+                    st.dataframe(pd.DataFrame(cp_rows), use_container_width=True, hide_index=True)
+
 
 # ── TAB 3: Cladogram ────────────────────────────────────────────────────────
 
@@ -4052,6 +4659,94 @@ with tab_epi:
                     "within 7 days — strongly suggestive of active clonal transmission."
                 )
 
+        # ─── Pathogen-Plasmid Integration (MLST + pLIN) ───
+        mlst_df = st.session_state.get("mlst_df")
+        transmission_pairs = st.session_state.get("transmission_pairs_df")
+        transmission_summary = st.session_state.get("transmission_summary")
+
+        if mlst_df is not None and len(mlst_df) > 0:
+            st.divider()
+            st.subheader("Pathogen-Plasmid Integration (MLST + pLIN)")
+            st.caption(
+                "Combined chromosomal typing (MLST) and plasmid typing (pLIN) "
+                "to distinguish clonal vs horizontal plasmid spread"
+            )
+
+            with st.expander(f"MLST Typing Results ({len(mlst_df)} genomes)", expanded=True):
+                mc1, mc2, mc3 = st.columns(3)
+                mc1.metric("Genomes Typed", len(mlst_df))
+                valid_st = mlst_df[mlst_df["ST"].astype(str).str.match(r"^\d+$")]
+                mc2.metric("Unique STs", valid_st["ST"].nunique() if len(valid_st) > 0 else 0)
+                mc3.metric("Schemes Detected", mlst_df[mlst_df["scheme"] != "-"]["scheme"].nunique())
+                st.dataframe(mlst_df, use_container_width=True, hide_index=True)
+
+            if transmission_pairs is not None and len(transmission_pairs) > 0 and transmission_summary:
+                with st.expander("Transmission Mode Analysis", expanded=True):
+                    tc1, tc2, tc3, tc4 = st.columns(4)
+                    tc1.metric(
+                        "Clonal Spread",
+                        transmission_summary.get("clonal_spread", 0),
+                        help="Same ST + same pLIN = vertical transmission",
+                    )
+                    tc2.metric(
+                        "Horizontal Transfer",
+                        transmission_summary.get("horizontal_transfer", 0),
+                        help="Different STs + same pLIN = HGT",
+                    )
+                    tc3.metric(
+                        "Same Strain, Diff Plasmid",
+                        transmission_summary.get("same_strain_diff_plasmid", 0),
+                    )
+                    tc4.metric(
+                        "Independent",
+                        transmission_summary.get("independent", 0),
+                    )
+
+                    # Pie chart
+                    mode_counts = transmission_pairs["transmission_mode"].value_counts()
+                    if len(mode_counts) > 0:
+                        mode_colors = {
+                            "Clonal spread": "#E53935",
+                            "Horizontal plasmid transfer": "#FB8C00",
+                            "Same strain, different plasmids": "#1E88E5",
+                            "Independent": "#43A047",
+                        }
+                        fig_trans = px.pie(
+                            values=mode_counts.values,
+                            names=mode_counts.index,
+                            title="Transmission Mode Distribution",
+                            color=mode_counts.index,
+                            color_discrete_map=mode_colors,
+                        )
+                        fig_trans.update_layout(height=350)
+                        st.plotly_chart(fig_trans, use_container_width=True)
+
+                    st.dataframe(
+                        transmission_pairs[[
+                            "genome_A", "genome_B", "ST_A", "ST_B",
+                            "plasmid_A", "plasmid_B", "pLIN_A", "pLIN_B",
+                            "transmission_mode",
+                        ]],
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    hgt_count = transmission_summary.get("horizontal_transfer", 0)
+                    if hgt_count > 0:
+                        st.warning(
+                            f"**{hgt_count} horizontal plasmid transfer event(s) detected.** "
+                            "Different bacterial strains carry the same plasmid (same pLIN L6), "
+                            "indicating active plasmid dissemination requiring enhanced infection "
+                            "control measures beyond standard contact precautions."
+                        )
+                    clonal_count = transmission_summary.get("clonal_spread", 0)
+                    if clonal_count > 0:
+                        st.error(
+                            f"**{clonal_count} clonal spread event(s) detected.** "
+                            "Same bacterial strain (MLST ST) carrying the same plasmid (pLIN), "
+                            "indicating direct person-to-person transmission."
+                        )
+
         # ─── ANI Validation Results ───
         mash_df = st.session_state.get("mash_df")
         fastani_df = st.session_state.get("fastani_df")
@@ -4073,6 +4768,27 @@ with tab_epi:
                     mash_df[["query", "reference", "mash_distance", "ani_estimate", "p_value"]].sort_values("ani_estimate", ascending=False),
                     use_container_width=True, hide_index=True,
                 )
+
+        # ANI Concordance Check (cross-validates cosine distance vs Mash ANI)
+        concordance_df = st.session_state.get("concordance_df")
+        if concordance_df is not None and len(concordance_df) > 0:
+            n_concordant = (concordance_df["concordance"] == "concordant").sum()
+            n_discordant = (concordance_df["concordance"] == "discordant").sum()
+            n_total = n_concordant + n_discordant
+            if n_total > 0:
+                with st.expander(f"Cosine-ANI Concordance Check ({n_concordant}/{n_total} concordant)"):
+                    if n_discordant > 0:
+                        st.warning(
+                            f"**{n_discordant} discordant assignment(s)** — cosine distance and Mash ANI "
+                            f"disagree for these plasmids. The 4-mer composition proxy may be unreliable "
+                            f"for these specific sequences. Verify with FastANI or minimap2 alignment.")
+                        disc = concordance_df[concordance_df["concordance"] == "discordant"]
+                        st.dataframe(disc[["plasmid_id", "nn_distance", "mash_ani", "note"]],
+                                     use_container_width=True, hide_index=True)
+                    else:
+                        st.success(
+                            f"All {n_total} pLIN assignments are concordant with Mash ANI estimates — "
+                            f"4-mer cosine distances correlate with sequence-level similarity.")
 
         if fastani_df is not None and len(fastani_df) > 0:
             with st.expander(f"FastANI True ANI ({len(fastani_df)} pairs)"):
@@ -4451,6 +5167,18 @@ with tab_export:
                 st.download_button("📥 CRISPR Host Summary (TSV)", crispr_summ_csv,
                                    "crispr_host_summary.tsv", "text/tab-separated-values")
 
+            # MLST & Transmission Mode exports
+            mlst_results = st.session_state.get("mlst_df")
+            if mlst_results is not None and len(mlst_results) > 0:
+                mlst_csv = mlst_results.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 MLST Results (TSV)", mlst_csv,
+                                   "mlst_results.tsv", "text/tab-separated-values")
+            trans_pairs = st.session_state.get("transmission_pairs_df")
+            if trans_pairs is not None and len(trans_pairs) > 0:
+                tp_csv = trans_pairs.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Transmission Mode Analysis (TSV)", tp_csv,
+                                   "transmission_mode_analysis.tsv", "text/tab-separated-values")
+
         with col2:
             st.subheader("Figures")
             Z = st.session_state.Z
@@ -4537,6 +5265,15 @@ with tab_export:
                     if crispr_hs is not None and len(crispr_hs) > 0:
                         zf.writestr("crispr_host_summary.tsv",
                                     crispr_hs.to_csv(sep="\t", index=False))
+                    # MLST & Transmission Mode
+                    mlst_res = st.session_state.get("mlst_df")
+                    if mlst_res is not None and len(mlst_res) > 0:
+                        zf.writestr("mlst_results.tsv",
+                                    mlst_res.to_csv(sep="\t", index=False))
+                    trans_p = st.session_state.get("transmission_pairs_df")
+                    if trans_p is not None and len(trans_p) > 0:
+                        zf.writestr("transmission_mode_analysis.tsv",
+                                    trans_p.to_csv(sep="\t", index=False))
                     for name, func, args in [
                         ("cladogram_rectangular", plot_rectangular_cladogram,
                          (Z, labels, plin_codes, strain_clusters)),
