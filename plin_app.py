@@ -345,6 +345,148 @@ def validate_sequence_quality(sequence, plasmid_id):
     return warnings
 
 
+# ── Plasmid vs Chromosome Contig Classification ─────────────────────────────
+
+def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
+    """Classify each contig as 'plasmid' or 'chromosome' using multiple signals.
+
+    Uses a scoring system combining:
+      - Sequence length (chromosomes are typically >500 kb)
+      - KNN distance to plasmid training data (chromosomes are distant)
+      - Plasmid-typical gene markers in FASTA headers
+      - 4-mer profile similarity to known plasmid groups
+
+    Parameters:
+        records: list of dicts with 'sequence', 'plasmid_id', 'length', etc.
+        vectors: precomputed 4-mer vectors (n_records, 256); computed if None.
+
+    Returns:
+        list of dicts with keys:
+            plasmid_id, length_bp, classification ('plasmid'/'chromosome'),
+            confidence (0-100), reason (explanation string),
+            score (raw score, higher = more likely plasmid)
+    """
+    if not records:
+        return []
+
+    # Load training data for distance-based classification
+    try:
+        ref_data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+        X_train = ref_data["X"].astype(np.float64)
+        centroids = ref_data["centroids"]
+        group_names = list(ref_data["group_names"])
+    except Exception:
+        X_train = None
+        centroids = None
+        group_names = []
+
+    # Compute 4-mer vectors if not provided
+    if vectors is None:
+        seqs = [r["sequence"] for r in records]
+        vectors = compute_kmer_vectors(tuple(seqs), k=4)
+
+    results = []
+    for i, rec in enumerate(records):
+        seq_len = rec["length"]
+        plasmid_id = rec["plasmid_id"]
+        header = rec.get("plasmid_id", "").lower()
+        score = 0      # positive = plasmid, negative = chromosome
+        reasons = []
+
+        # ── Signal 1: Sequence length ────────────────────────────────────
+        if seq_len > 1_000_000:
+            score -= 50
+            reasons.append(f"Very large ({seq_len/1e6:.1f} Mb)")
+        elif seq_len > CHROMOSOMAL_THRESHOLD:
+            score -= 30
+            reasons.append(f"Large ({seq_len/1000:.0f} kb, >{CHROMOSOMAL_THRESHOLD/1000:.0f} kb)")
+        elif seq_len > 350_000:
+            score -= 10
+            reasons.append(f"Borderline size ({seq_len/1000:.0f} kb)")
+        elif seq_len < 300_000:
+            score += 20
+            reasons.append(f"Plasmid-range size ({seq_len/1000:.0f} kb)")
+        if seq_len < 20_000:
+            score += 10
+            reasons.append("Small sequence (likely plasmid)")
+
+        # ── Signal 2: Distance to nearest plasmid training vector ────────
+        if X_train is not None:
+            from scipy.spatial.distance import cdist
+            query_vec = vectors[i:i+1]
+            dists = cdist(query_vec, X_train, metric="cosine")[0]
+            nn_dist = float(np.min(dists))
+            mean_dist = float(np.mean(dists))
+
+            # Also compute distance to nearest centroid
+            centroid_dists = cdist(query_vec, centroids, metric="cosine")[0]
+            min_centroid_dist = float(np.min(centroid_dists))
+
+            if nn_dist < 0.02:
+                score += 30
+                reasons.append(f"Very close to known plasmid (d={nn_dist:.4f})")
+            elif nn_dist < 0.05:
+                score += 20
+                reasons.append(f"Close to known plasmid (d={nn_dist:.4f})")
+            elif nn_dist < 0.10:
+                score += 5
+                reasons.append(f"Moderate distance to plasmid DB (d={nn_dist:.4f})")
+            elif nn_dist < 0.20:
+                score -= 10
+                reasons.append(f"Distant from plasmid DB (d={nn_dist:.4f})")
+            else:
+                score -= 25
+                reasons.append(f"Very distant from all plasmids (d={nn_dist:.4f})")
+
+            # Centroid distance — chromosomes tend to be far from all centroids
+            if min_centroid_dist > 0.25:
+                score -= 15
+                reasons.append(f"Far from all Inc centroids (d={min_centroid_dist:.4f})")
+
+        # ── Signal 3: FASTA header keywords ──────────────────────────────
+        plasmid_keywords = ["plasmid", "unnamed", "p0", "plas"]
+        chromo_keywords = ["chromosome", "chr ", "chr1", "chr2", "complete genome",
+                           "whole genome", "genomic"]
+        if any(kw in header for kw in plasmid_keywords):
+            score += 15
+            reasons.append("Header suggests plasmid")
+        if any(kw in header for kw in chromo_keywords):
+            score -= 20
+            reasons.append("Header suggests chromosome")
+
+        # ── Signal 4: Inc group confidence ───────────────────────────────
+        inc_conf = rec.get("inc_confidence", 0)
+        if inc_conf and inc_conf > 60:
+            score += 15
+            reasons.append(f"Strong Inc group match ({inc_conf:.0f}%)")
+        elif inc_conf and inc_conf < 30:
+            score -= 5
+            reasons.append(f"Weak Inc group match ({inc_conf:.0f}%)")
+
+        # ── Final classification ─────────────────────────────────────────
+        if score >= 10:
+            classification = "plasmid"
+            confidence = min(95, 50 + score)
+        elif score <= -10:
+            classification = "chromosome"
+            confidence = min(95, 50 + abs(score))
+        else:
+            # Borderline — default to plasmid (conservative)
+            classification = "plasmid"
+            confidence = 50 + abs(score)
+
+        results.append({
+            "plasmid_id": plasmid_id,
+            "length_bp": seq_len,
+            "classification": classification,
+            "confidence": round(confidence, 1),
+            "score": score,
+            "reason": "; ".join(reasons),
+        })
+
+    return results
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  L3: ASSEMBLY COMPLETENESS ASSESSMENT
 # ══════════════════════════════════════════════════════════════════════════════
@@ -4042,6 +4184,14 @@ if not st.session_state.analysis_done:
             value=True,
             help="Calibrate pLIN thresholds per Inc group from training data distance distributions (recommended). Uncheck to use fixed universal thresholds.",
         )
+        auto_filter_plasmids = st.checkbox(
+            "Auto-detect plasmid contigs",
+            value=True,
+            help="Automatically identify and separate plasmid contigs from chromosomal sequences before pLIN assignment. "
+                 "Uses sequence length, 4-mer distance to plasmid training data, and FASTA header analysis. "
+                 "Chromosomal contigs are excluded from pLIN classification and shown separately. "
+                 "Recommended when uploading whole-genome assemblies.",
+        )
         if amr_binary:
             run_amr = st.checkbox("Run AMRFinderPlus", value=True,
                                   help="Detect AMR, stress, and virulence genes using NCBI's AMRFinderPlus")
@@ -4226,6 +4376,7 @@ else:
     inc_type = st.session_state.get("_inc_type", INC_GROUPS[0])
     linkage_method = st.session_state.get("_linkage_method", "single")
     use_adaptive = st.session_state.get("_use_adaptive", False)
+    auto_filter_plasmids = st.session_state.get("_auto_filter_plasmids", True)
     use_nt = st.session_state.get("_use_nt", False)
     nt_model_choice = st.session_state.get("_nt_model_choice", None)
     nt_device = st.session_state.get("_nt_device", "cpu")
@@ -4305,6 +4456,7 @@ if run_btn and uploaded_files:
     st.session_state._inc_type = inc_type
     st.session_state._linkage_method = linkage_method
     st.session_state._use_adaptive = use_adaptive
+    st.session_state._auto_filter_plasmids = auto_filter_plasmids
     st.session_state._use_nt = use_nt
     st.session_state._nt_model_choice = nt_model_choice
     st.session_state._nt_device = nt_device
@@ -4355,11 +4507,8 @@ if run_btn and uploaded_files:
         st.error(f"Failed to parse FASTA files: {e}")
         st.stop()
 
-    # Determine analysis mode
-    is_query_mode = len(records) == 1
-
     # Step 2: K-mer vectors
-    progress.progress(15, text=f"Computing 4-mer vectors for {len(records)} plasmids...")
+    progress.progress(15, text=f"Computing 4-mer vectors for {len(records)} sequences...")
     sequences = [r["sequence"] for r in records]
     vectors = compute_kmer_vectors(tuple(sequences), k=4)
 
@@ -4370,6 +4519,49 @@ if run_btn and uploaded_files:
             "This is likely a caching issue. Please refresh the page (Ctrl+R / Cmd+R) and try again."
         )
         st.stop()
+
+    # Step 2a: Automatic plasmid vs chromosome classification
+    if auto_filter_plasmids:
+        progress.progress(20, text="Classifying contigs: plasmid vs chromosome...")
+        contig_classes = classify_contigs_plasmid_vs_chromosome(records, vectors)
+        st.session_state.contig_classification = contig_classes
+
+        # Separate plasmid and chromosomal contigs
+        plasmid_indices = [i for i, c in enumerate(contig_classes) if c["classification"] == "plasmid"]
+        chromo_indices = [i for i, c in enumerate(contig_classes) if c["classification"] == "chromosome"]
+
+        if chromo_indices:
+            chromo_ids = [contig_classes[i]["plasmid_id"] for i in chromo_indices]
+            chromo_df = pd.DataFrame([contig_classes[i] for i in chromo_indices])
+            st.session_state.excluded_chromosomes = chromo_df
+
+            st.info(
+                f"**Auto-detected {len(chromo_indices)} chromosomal contig(s)** — "
+                f"excluded from pLIN classification: {', '.join(chromo_ids[:5])}"
+                f"{'...' if len(chromo_ids) > 5 else ''}. "
+                f"These sequences are too distant from known plasmid groups or too large to be plasmids. "
+                f"Uncheck 'Auto-detect plasmid contigs' in the sidebar to include all sequences.",
+                icon="🧬",
+            )
+
+        if not plasmid_indices:
+            st.error(
+                "No plasmid contigs detected. All uploaded sequences appear to be chromosomal. "
+                "If this is incorrect, uncheck 'Auto-detect plasmid contigs' in the sidebar "
+                "to force pLIN assignment on all sequences."
+            )
+            st.stop()
+
+        # Filter to plasmid contigs only
+        records = [records[i] for i in plasmid_indices]
+        vectors = vectors[plasmid_indices]
+        st.session_state.records = records
+    else:
+        st.session_state.contig_classification = None
+        st.session_state.excluded_chromosomes = None
+
+    # Determine analysis mode
+    is_query_mode = len(records) == 1
 
     # Step 2b: Adaptive threshold calibration (if enabled)
     active_thresholds = PLIN_THRESHOLDS
@@ -4850,16 +5042,27 @@ with tab_overview:
                     use_container_width=True, hide_index=True,
                 )
 
-        # Chromosomal sequence warning for large contigs (likely not plasmids)
+        # Show excluded chromosomal contigs (from auto-detection)
+        excluded_chromo = st.session_state.get("excluded_chromosomes")
+        if excluded_chromo is not None and len(excluded_chromo) > 0:
+            st.success(
+                f"**{len(excluded_chromo)} chromosomal contig(s) auto-detected and excluded** — "
+                f"only plasmid sequences were assigned pLIN codes."
+            )
+            with st.expander(f"View excluded chromosomal contigs ({len(excluded_chromo)})"):
+                st.dataframe(
+                    excluded_chromo[["plasmid_id", "length_bp", "confidence", "reason"]],
+                    use_container_width=True, hide_index=True,
+                )
+
+        # Chromosomal sequence warning for large contigs still in results
+        # (shown when auto-filter is OFF)
         large_contigs = df[df["length_bp"] > CHROMOSOMAL_THRESHOLD]
         if len(large_contigs) > 0:
             st.warning(
-                f"**{len(large_contigs)} sequence(s) larger than {CHROMOSOMAL_THRESHOLD/1000:.0f} kb detected** — "
-                f"sequences of this size are likely chromosomal rather than plasmid DNA. "
-                f"Chromosomal contigs will receive unreliable Inc-group classifications and spurious pLIN codes "
-                f"because the KNN classifier was trained exclusively on plasmid sequences. "
-                f"If you uploaded a whole-genome assembly, consider extracting plasmid contigs first "
-                f"(e.g., using PlasmidFinder, MOB-recon, or manual inspection) and re-uploading only the plasmid sequences."
+                f"**{len(large_contigs)} sequence(s) larger than {CHROMOSOMAL_THRESHOLD/1000:.0f} kb in results** — "
+                f"these are likely chromosomal. Enable 'Auto-detect plasmid contigs' in the sidebar "
+                f"to automatically exclude chromosomal sequences before pLIN assignment."
             )
             with st.expander(f"View putative chromosomal sequences ({len(large_contigs)})"):
                 st.dataframe(
@@ -6250,6 +6453,21 @@ with tab_export:
                 st.download_button("📥 Transmission Mode Analysis (TSV)", tp_csv,
                                    "transmission_mode_analysis.tsv", "text/tab-separated-values")
 
+            # Contig classification (plasmid vs chromosome)
+            contig_cls = st.session_state.get("contig_classification")
+            if contig_cls and len(contig_cls) > 0:
+                contig_cls_df = pd.DataFrame(contig_cls)
+                contig_csv = contig_cls_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Contig Classification (TSV)", contig_csv,
+                                   "contig_classification.tsv", "text/tab-separated-values")
+
+            # Excluded chromosomes
+            excl_chr = st.session_state.get("excluded_chromosomes")
+            if excl_chr is not None and len(excl_chr) > 0:
+                excl_csv = excl_chr.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Excluded Chromosomes (TSV)", excl_csv,
+                                   "excluded_chromosomes.tsv", "text/tab-separated-values")
+
             # Assembly completeness
             compl_df = st.session_state.get("completeness_df")
             if compl_df is not None and len(compl_df) > 0:
@@ -6401,6 +6619,15 @@ with tab_export:
                     if trans_p is not None and len(trans_p) > 0:
                         zf.writestr("transmission_mode_analysis.tsv",
                                     trans_p.to_csv(sep="\t", index=False))
+                    # Contig classification export
+                    contig_cls = st.session_state.get("contig_classification")
+                    if contig_cls and len(contig_cls) > 0:
+                        zf.writestr("contig_classification.tsv",
+                                    pd.DataFrame(contig_cls).to_csv(sep="\t", index=False))
+                    excl_chr = st.session_state.get("excluded_chromosomes")
+                    if excl_chr is not None and len(excl_chr) > 0:
+                        zf.writestr("excluded_chromosomes.tsv",
+                                    excl_chr.to_csv(sep="\t", index=False))
                     # New analyses exports
                     for key, fname in [
                         ("completeness_df", "assembly_completeness.tsv"),
