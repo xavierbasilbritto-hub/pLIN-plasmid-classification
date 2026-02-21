@@ -1776,8 +1776,8 @@ def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
     for level in bin_labels:
         max_ids[level] = int(plin_df[f"bin_{level}"].max())
 
-    # Compute cosine distances: each query vs all 6,998 references
-    dists = cdist(query_vectors, X_ref, metric="cosine")  # (n_query, 6998)
+    # Compute cosine distances: each query vs all training references
+    dists = cdist(query_vectors, X_ref, metric="cosine")  # (n_query, n_train)
 
     plin_codes = []
     cluster_assignments = {b: [] for b in bin_labels}
@@ -4289,7 +4289,7 @@ if not st.session_state.analysis_done:
             if run_crispr:
                 crispr_source = st.radio(
                     "Plasmid database source",
-                    ["Uploaded plasmids", "Reference DB (72,556 plasmids)"],
+                    ["Uploaded plasmids", "Reference DB (72,959 plasmids)"],
                     index=0,
                     help="Match spacers against your uploaded plasmids or the built-in reference database.",
                     horizontal=True,
@@ -4790,7 +4790,7 @@ if run_btn and uploaded_files:
             # 5d-ii: Build or load BLAST DB
             progress.progress(90, text="Building BLAST database for spacer matching...")
             tmpdir_handle = None
-            if crispr_source == "Reference DB (72,556 plasmids)":
+            if crispr_source == "Reference DB (72,959 plasmids)":
                 db_path = get_or_build_reference_blastdb(makeblastdb_binary)
             else:
                 db_path, tmpdir_handle = build_blast_db(uploaded_files, makeblastdb_binary)
@@ -5039,7 +5039,7 @@ with tab_overview:
 
     if st.session_state.analysis_done:
         if st.session_state.get("is_query_mode"):
-            st.success("Query mode — pLIN assigned via nearest-neighbour lookup against 6,998-plasmid training database.")
+            st.success(f"Query mode — pLIN assigned via nearest-neighbour lookup against {len(st.session_state.get('X_ref', []))}-plasmid training database.")
         else:
             st.success("Analysis complete!")
         df = st.session_state.plin_df
@@ -5496,7 +5496,8 @@ with tab_results:
             with st.expander("Classification Quality (Cross-Validation Metrics)"):
                 st.markdown(
                     f"**Overall KNN accuracy:** {cv_data['accuracy']*100:.1f}% "
-                    f"(5-fold stratified cross-validation on 6,998 training plasmids)")
+                    f"(5-fold stratified cross-validation on {len(INC_GROUPS)}-group, "
+                    f"8,077-plasmid training set)")
 
                 # Per-Inc-group table
                 if cv_data["per_class"]:

@@ -14,22 +14,22 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 
 | Category | Features |
 |----------|----------|
-| **Classification** | 6-level hierarchical pLIN codes (L1-L6), KNN Inc group detection (92.2% accuracy, 20 groups), Unknown/Novel Inc flagging |
+| **Classification** | 6-level hierarchical pLIN codes (L1-L6), KNN Inc/Rep group detection (91.1% accuracy, 28 groups), Unknown/Novel flagging |
 | **AMR Surveillance** | AMRFinderPlus integration (AMR + stress + virulence genes), critical gene alerts, drug class analysis |
 | **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI true ANI, minimap2 SNP sub-typing within L6 clusters |
 | **Epidemiology** | Plasmid mobility prediction (MOBsuite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
-| **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+), reference DB (72,556 plasmids) |
+| **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+), reference DB (72,959 plasmids) |
 | **AI/ML** | Nucleotide Transformer LLM (optional), Bacterial Buddy AI chatbot (Ollama), adaptive per-Inc thresholds |
 | **Visualization** | Interactive Streamlit GUI (8 tabs), cladograms, heatmaps, Plotly charts |
 | **Deployment** | Cross-platform (macOS/Windows/Linux), Docker support, one-click launchers |
 
 ### Performance Metrics
 
-- **Simpson's Diversity Index:** 0.979
-- **Inc Detection Accuracy:** 92.2% (5-fold CV, 20 groups)
-- **Training Dataset:** 6,998 plasmids across 20 Inc groups
-- **Reference Database:** 78,902 plasmids (6,998 training + 71,904 NCBI RefSeq)
-- **Unique pLIN Codes:** 33,143 strain-level codes (across 78,902 plasmids)
+- **Simpson's Diversity Index:** 0.982
+- **Inc/Rep Detection Accuracy:** 91.1% (5-fold CV, 28 groups)
+- **Training Dataset:** 8,077 plasmid sequences across 28 Inc/Rep groups (8,056 unique plasmids)
+- **Reference Database:** 79,305 plasmids (8,056 training + 71,249 PLSDB/NCBI RefSeq)
+- **Unique pLIN Codes:** 57,886 strain-level codes (across 79,305 plasmids)
 - **Processing Time:** <30 minutes on a standard laptop
 
 ---
@@ -347,13 +347,13 @@ pLIN-plasmid-classification/
 ├── LICENSE                        # GPL-3.0 license
 ├── CITATION.cff                   # Citation metadata
 ├── data/
-│   ├── inc_classifier.npz         # Trained KNN classifier (20 groups, 6,998 samples)
+│   ├── inc_classifier.npz         # Trained KNN classifier (28 groups, 8,077 samples)
 │   └── inc_centroids.npz          # Inc group centroids
 ├── test_plasmids/
 │   └── IncX/ (22 test FASTA files)
 └── output/
-    ├── pLIN_assignments.tsv              # 6,998 training plasmid assignments
-    ├── pLIN_reference_assignments.tsv     # 78,902 full reference database assignments
+    ├── pLIN_assignments.tsv              # 8,056 training plasmid assignments
+    ├── pLIN_reference_assignments.tsv     # 79,305 full reference database assignments
     ├── reference_inc_classifications.tsv  # KNN Inc type classifications
     ├── integrated/
     │   ├── pLIN_AMR_integrated.tsv       # pLIN + AMRFinderPlus merged table
