@@ -3,7 +3,7 @@
 
  Copyright (C) 2025 Basil Xavier Britto
 
- pLIN: Plasmid Life Identification Number System
+ pLIN: Plasmid Lineage Identification Number System
  A hierarchical, permanent, reference-free classification system for
  bacterial plasmid genomes with antimicrobial resistance surveillance.
 
@@ -33,7 +33,7 @@
     presentation) that uses this software, its algorithms, its outputs,
     or any derivative work MUST cite the following reference:
 
-    Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System
+    Xavier, B. (2025). pLIN: A Plasmid Lineage Identification Number System
     for Hierarchical, Permanent Classification of Bacterial Plasmids
     Integrated with Antimicrobial Resistance Gene Surveillance.
     GitHub: https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification

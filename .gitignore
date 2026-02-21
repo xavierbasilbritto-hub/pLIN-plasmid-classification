@@ -67,12 +67,15 @@ create_gui_screenshot.py
 add_supplementary_tables.py
 generate_figures.py
 generate_manuscript_figures.py
+generate_figure20_contig_classification.py
 manuscript_draft.py
 evaluate_crispr_host.py
 
 # One-off utility scripts (not part of the tool)
 expand_inc_training.py
 train_nt_classifier.py
+download_acinetobacter_pseudomonas_training.py
+download_gram_positive_training.py
 run_amrfinder_new.py
 run_amrfinder_all.sh
 test_cladogram.py

@@ -1,4 +1,4 @@
-# pLIN — Plasmid Life Identification Number
+# pLIN — Plasmid Lineage Identification Number
 
 A hierarchical, reference-free classification system for bacterial plasmid genomes with integrated antimicrobial resistance (AMR) gene surveillance.
 
@@ -393,7 +393,7 @@ The pLIN app auto-detects all optional tools at startup. Check the sidebar for t
 
 If you use pLIN in your research, you **must** cite:
 
-> Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance. https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
+> Xavier, B. (2025). pLIN: A Plasmid Lineage Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance. https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
 
 ---
 

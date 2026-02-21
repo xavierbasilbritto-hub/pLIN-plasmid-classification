@@ -1,7 +1,7 @@
 [project]
 name = "pLIN"
 version = "2.1.0"
-description = "Plasmid Life Identification Number — hierarchical classification system for bacterial plasmid genomes with integrated AMR surveillance"
+description = "Plasmid Lineage Identification Number — hierarchical classification system for bacterial plasmid genomes with integrated AMR surveillance"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.10"

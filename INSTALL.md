@@ -1,6 +1,6 @@
 # pLIN Installation Guide
 
-**pLIN v2.1.0 — Plasmid Life Identification Number System**
+**pLIN v2.1.0 — Plasmid Lineage Identification Number System**
 
 Three installation methods are available. Choose based on your preference:
 

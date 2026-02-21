@@ -81,7 +81,7 @@ class C:
 def banner():
     print(f"""
 {C.CYAN}{'='*60}
-  {C.BOLD}pLIN: Plasmid Life Identification Number System{C.RESET}{C.CYAN}
+  {C.BOLD}pLIN: Plasmid Lineage Identification Number System{C.RESET}{C.CYAN}
   Version {APP_VERSION} — Cross-Platform Setup
   Hierarchical Plasmid Classification + AMR Surveillance
 {'='*60}{C.RESET}

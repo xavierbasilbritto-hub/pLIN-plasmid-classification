@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 pLIN Classifier — Streamlit GUI Application
-Plasmid Life Identification Number system with AMRFinderPlus integration.
+Plasmid Lineage Identification Number system with AMRFinderPlus integration.
 Run: streamlit run plin_app.py
 
 Copyright (C) 2025 Basil Xavier Britto
@@ -10,7 +10,7 @@ See LICENSE and CITATION.cff for details.
 
 CITATION REQUIRED: Any use of this software in publications or derivative
 works must cite:
-    Xavier, B. (2025). pLIN: A Plasmid Life Identification Number System
+    Xavier, B. (2025). pLIN: A Plasmid Lineage Identification Number System
     for Hierarchical, Permanent Classification of Bacterial Plasmids
     Integrated with Antimicrobial Resistance Gene Surveillance.
     https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
@@ -225,7 +225,7 @@ NT_STRIDE = 2500
 
 @st.cache_resource(show_spinner=False)
 def load_inc_classifier():
-    """Load precomputed Inc-group KNN classifier (92.2% CV accuracy)."""
+    """Load precomputed Inc-group KNN classifier (91.1% CV accuracy, 28 groups)."""
     if os.path.exists(CLASSIFIER_PATH):
         data = np.load(CLASSIFIER_PATH, allow_pickle=True)
         X_train = data["X"]
@@ -467,16 +467,20 @@ def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
             reasons.append(f"Weak Inc group match ({inc_conf:.0f}%)")
 
         # ── Final classification ─────────────────────────────────────────
-        if score >= 10:
-            classification = "plasmid"
-            confidence = min(95, 50 + score)
-        elif score <= -10:
+        # Three categories:
+        #   1. "plasmid" (confidence >= 95%) — gets pLIN code + all modules
+        #   2. "incomplete_plasmid" (plasmid-like but <95% conf) — no pLIN,
+        #      but AMR/mobility/other modules still run
+        #   3. "chromosome" — excluded entirely
+        confidence = min(99, 50 + abs(score))
+
+        if score <= -10:
             classification = "chromosome"
-            confidence = min(95, 50 + abs(score))
-        else:
-            # Borderline — default to plasmid (conservative)
+        elif score >= 10 and confidence >= 95:
             classification = "plasmid"
-            confidence = 50 + abs(score)
+        else:
+            # Borderline or moderate plasmid signal — flag as incomplete
+            classification = "incomplete_plasmid"
 
         results.append({
             "plasmid_id": plasmid_id,
@@ -3593,7 +3597,7 @@ def compute_host_probabilities(filtered_hits_df, spacer_summary_df, temperature=
 OLLAMA_DEFAULT_URL = "http://localhost:11434"
 OLLAMA_MODELS = ["llama3.2", "llama3.1", "llama3", "mistral", "mixtral", "gemma2", "phi3"]
 
-BACTERIAL_BUDDY_SYSTEM_PROMPT = """You are DRAGNOME Buddy, a friendly and knowledgeable AI assistant specialized in plasmid biology and antimicrobial resistance. You help researchers understand their plasmid analysis results from the pLIN (Plasmid Life Identification Number) classification tool.
+BACTERIAL_BUDDY_SYSTEM_PROMPT = """You are DRAGNOME Buddy, a friendly and knowledgeable AI assistant specialized in plasmid biology and antimicrobial resistance. You help researchers understand their plasmid analysis results from the pLIN (Plasmid Lineage Identification Number) classification tool.
 
 Your personality:
 - Friendly, approachable, and enthusiastic about microbiology
@@ -4131,12 +4135,12 @@ if os.path.exists(_logo_path):
         st.markdown(
             "<h1 style='margin-bottom:0; padding-top:18px;'>pLIN Classifier</h1>"
             "<p style='color:#3B6FA0; margin-top:0;'>"
-            "Plasmid Life Identification Number System &mdash; Upload FASTA files to begin</p>",
+            "Plasmid Lineage Identification Number System &mdash; Upload FASTA files to begin</p>",
             unsafe_allow_html=True,
         )
 else:
     st.title("pLIN Classifier")
-    st.caption("Plasmid Life Identification Number System — Upload FASTA files to begin")
+    st.caption("Plasmid Lineage Identification Number System — Upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
 amr_binary, amr_db = detect_amrfinder()
@@ -4413,7 +4417,7 @@ with st.sidebar:
         st.image(_logo_path, width=120)
     else:
         st.title("pLIN")
-    st.caption("Plasmid Life Identification Number")
+    st.caption("Plasmid Lineage Identification Number")
     st.divider()
 
     if st.session_state.analysis_done:
@@ -4546,25 +4550,51 @@ if run_btn and uploaded_files:
         contig_classes = classify_contigs_plasmid_vs_chromosome(records, vectors)
         st.session_state.contig_classification = contig_classes
 
-        # Separate plasmid and chromosomal contigs
+        # Three-way split: plasmid (>=95% conf), incomplete_plasmid, chromosome
         plasmid_indices = [i for i, c in enumerate(contig_classes) if c["classification"] == "plasmid"]
+        incomplete_indices = [i for i, c in enumerate(contig_classes) if c["classification"] == "incomplete_plasmid"]
         chromo_indices = [i for i, c in enumerate(contig_classes) if c["classification"] == "chromosome"]
 
+        # Store excluded chromosomes
         if chromo_indices:
             chromo_ids = [contig_classes[i]["plasmid_id"] for i in chromo_indices]
             chromo_df = pd.DataFrame([contig_classes[i] for i in chromo_indices])
             st.session_state.excluded_chromosomes = chromo_df
-
             st.info(
-                f"**Auto-detected {len(chromo_indices)} chromosomal contig(s)** — "
-                f"excluded from pLIN classification: {', '.join(chromo_ids[:5])}"
-                f"{'...' if len(chromo_ids) > 5 else ''}. "
-                f"These sequences are too distant from known plasmid groups or too large to be plasmids. "
-                f"Uncheck 'Auto-detect plasmid contigs' in the sidebar to include all sequences.",
+                f"**Excluded {len(chromo_indices)} chromosomal contig(s)**: "
+                f"{', '.join(chromo_ids[:5])}{'...' if len(chromo_ids) > 5 else ''}. "
+                f"These are too distant from known plasmid groups or too large to be plasmids.",
                 icon="🧬",
             )
+        else:
+            st.session_state.excluded_chromosomes = None
 
-        if not plasmid_indices:
+        # Store incomplete plasmids — these get AMR/mobility/other modules
+        # but NOT pLIN code assignment
+        if incomplete_indices:
+            incomplete_ids = [contig_classes[i]["plasmid_id"] for i in incomplete_indices]
+            incomplete_df = pd.DataFrame([contig_classes[i] for i in incomplete_indices])
+            st.session_state.incomplete_plasmids = incomplete_df
+            # Keep incomplete plasmids in records for AMR/mobility analysis
+            # but mark them so pLIN assignment is skipped
+            for idx in incomplete_indices:
+                records[idx]["_skip_plin"] = True
+            st.warning(
+                f"**{len(incomplete_indices)} contig(s) classified as incomplete/uncertain plasmid** "
+                f"(confidence <95%): {', '.join(incomplete_ids[:5])}"
+                f"{'...' if len(incomplete_ids) > 5 else ''}. "
+                f"These will be analysed for AMR genes, mobility, and other features "
+                f"but will **not** receive pLIN code assignment.",
+                icon="⚠️",
+            )
+        else:
+            st.session_state.incomplete_plasmids = None
+
+        # Only truly chromosomal contigs are removed entirely
+        non_chromo_indices = plasmid_indices + incomplete_indices
+        non_chromo_indices.sort()
+
+        if not non_chromo_indices:
             st.error(
                 "No plasmid contigs detected. All uploaded sequences appear to be chromosomal. "
                 "If this is incorrect, uncheck 'Auto-detect plasmid contigs' in the sidebar "
@@ -4572,13 +4602,20 @@ if run_btn and uploaded_files:
             )
             st.stop()
 
-        # Filter to plasmid contigs only
-        records = [records[i] for i in plasmid_indices]
-        vectors = vectors[plasmid_indices]
+        # Keep both plasmid and incomplete_plasmid contigs for downstream analysis
+        records = [records[i] for i in non_chromo_indices]
+        vectors = vectors[non_chromo_indices]
         st.session_state.records = records
+
+        # Track which contigs should get pLIN codes
+        st.session_state._plin_eligible_ids = set(
+            contig_classes[i]["plasmid_id"] for i in plasmid_indices
+        )
     else:
         st.session_state.contig_classification = None
         st.session_state.excluded_chromosomes = None
+        st.session_state.incomplete_plasmids = None
+        st.session_state._plin_eligible_ids = None
 
     # Determine analysis mode
     is_query_mode = len(records) == 1
@@ -4646,6 +4683,19 @@ if run_btn and uploaded_files:
         plin_df["nn_distance"] = [m["nn_distance"] for m in qm]
         plin_df["nn_inc_type"] = [m["nn_inc_type"] for m in qm]
         plin_df["nn_plin"] = [m["nn_plin"] for m in qm]
+
+    # Mark incomplete plasmids — they keep AMR/mobility results but no pLIN code
+    plin_eligible = st.session_state.get("_plin_eligible_ids")
+    if plin_eligible is not None:
+        for idx, row in plin_df.iterrows():
+            pid = row.get("plasmid_id", row.get("Plasmid", ""))
+            if pid not in plin_eligible:
+                plin_df.at[idx, "pLIN"] = "N/A (incomplete plasmid)"
+                plin_df.at[idx, "inc_type"] = plin_df.at[idx, "inc_type"] + " *"
+                # Blank out hierarchical level assignments
+                for lvl in ["A", "B", "C", "D", "E", "F"]:
+                    if lvl in plin_df.columns:
+                        plin_df.at[idx, lvl] = "—"
 
     st.session_state.plin_df = plin_df
     st.session_state.Z = Z
@@ -4961,7 +5011,7 @@ tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_crispr, tab_buddy, t
 # ── TAB 1: Overview ──────────────────────────────────────────────────────────
 
 with tab_overview:
-    st.header("pLIN — Plasmid Life Identification Number")
+    st.header("pLIN — Plasmid Lineage Identification Number")
     st.markdown("""
     **pLIN** assigns each plasmid a six-position hierarchical code (`L1.L2.L3.L4.L5.L6`)
     based on tetranucleotide (4-mer) composition distances and single-linkage clustering.
@@ -5072,6 +5122,21 @@ with tab_overview:
             with st.expander(f"View excluded chromosomal contigs ({len(excluded_chromo)})"):
                 st.dataframe(
                     excluded_chromo[["plasmid_id", "length_bp", "confidence", "reason"]],
+                    use_container_width=True, hide_index=True,
+                )
+
+        # Show incomplete plasmids (included for AMR/mobility but no pLIN)
+        incomplete_plasm = st.session_state.get("incomplete_plasmids")
+        if incomplete_plasm is not None and len(incomplete_plasm) > 0:
+            st.warning(
+                f"**{len(incomplete_plasm)} incomplete/uncertain plasmid contig(s)** — "
+                f"analysed for AMR genes, mobility, and other features but "
+                f"**not** assigned pLIN codes (confidence <95%). "
+                f"These appear in results as 'N/A (incomplete plasmid)'."
+            )
+            with st.expander(f"View incomplete plasmid contigs ({len(incomplete_plasm)})"):
+                st.dataframe(
+                    incomplete_plasm[["plasmid_id", "length_bp", "confidence", "reason"]],
                     use_container_width=True, hide_index=True,
                 )
 
@@ -6488,6 +6553,13 @@ with tab_export:
                 st.download_button("📥 Excluded Chromosomes (TSV)", excl_csv,
                                    "excluded_chromosomes.tsv", "text/tab-separated-values")
 
+            # Incomplete plasmids
+            inc_plasm = st.session_state.get("incomplete_plasmids")
+            if inc_plasm is not None and len(inc_plasm) > 0:
+                inc_csv = inc_plasm.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Incomplete Plasmids (TSV)", inc_csv,
+                                   "incomplete_plasmids.tsv", "text/tab-separated-values")
+
             # Assembly completeness
             compl_df = st.session_state.get("completeness_df")
             if compl_df is not None and len(compl_df) > 0:
@@ -6648,6 +6720,10 @@ with tab_export:
                     if excl_chr is not None and len(excl_chr) > 0:
                         zf.writestr("excluded_chromosomes.tsv",
                                     excl_chr.to_csv(sep="\t", index=False))
+                    inc_plasm = st.session_state.get("incomplete_plasmids")
+                    if inc_plasm is not None and len(inc_plasm) > 0:
+                        zf.writestr("incomplete_plasmids.tsv",
+                                    inc_plasm.to_csv(sep="\t", index=False))
                     # New analyses exports
                     for key, fname in [
                         ("completeness_df", "assembly_completeness.tsv"),

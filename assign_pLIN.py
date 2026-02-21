@@ -3,7 +3,7 @@
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 pLIN Assignment Script
-Assigns plasmid Life Identification Numbers to all sequences in the training folders.
+Assigns plasmid Lineage Identification Numbers to all sequences in the training folders.
 Uses tetranucleotide (4-mer) composition-based cosine distance + single-linkage clustering.
 """
 
@@ -150,7 +150,7 @@ def build_results(records, plin_codes, cluster_assignments):
 
 def main():
     print("=" * 70)
-    print("pLIN Assignment — Plasmid Life Identification Numbers")
+    print("pLIN Assignment — Plasmid Lineage Identification Numbers")
     print("=" * 70)
 
     print("\n[1/4] Loading sequences ...")

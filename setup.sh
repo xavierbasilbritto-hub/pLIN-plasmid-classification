@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "============================================================"
-echo "  pLIN — Plasmid Life Identification Number System"
+echo "  pLIN — Plasmid Lineage Identification Number System"
 echo "  Setup Script (macOS / Linux)"
 echo "============================================================"
 echo ""

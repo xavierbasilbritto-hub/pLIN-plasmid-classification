@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "pLIN: Plasmid Life Identification Number System"
+title: "pLIN: Plasmid Lineage Identification Number System"
 message: >-
   If you use this software, you MUST cite it using the
   metadata from this file. Citation is a mandatory
@@ -12,13 +12,13 @@ authors:
 repository-code: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 url: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 abstract: >-
-  pLIN (plasmid Life Identification Number) is a hierarchical,
+  pLIN (plasmid Lineage Identification Number) is a hierarchical,
   permanent, reference-free classification system for bacterial
   plasmid genomes integrated with antimicrobial resistance gene
   surveillance. It assigns each plasmid a six-position code
   (A.B.C.D.E.F) based on tetranucleotide composition distances
   and hierarchical clustering. Features include automatic Inc
-  group detection (92.2% accuracy, 20 Inc groups), plasmid mobility
+  group detection (91.1% accuracy, 28 Inc/Rep groups), plasmid mobility
   prediction, outbreak detection with clinical risk stratification,
   CRISPR spacer-based host inference, and an interactive Streamlit
   web GUI with AMRFinderPlus integration. Reference database of
@@ -39,7 +39,7 @@ version: "2.1.0"
 date-released: "2025-02-13"
 preferred-citation:
   type: software
-  title: "pLIN: A Plasmid Life Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance"
+  title: "pLIN: A Plasmid Lineage Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance"
   authors:
     - given-names: Basil Xavier
       family-names: Britto

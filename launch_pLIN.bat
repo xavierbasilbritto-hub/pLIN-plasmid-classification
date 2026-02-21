@@ -4,10 +4,10 @@ REM  pLIN Launcher for Windows
 REM  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
 REM  Double-click this file to install dependencies and launch pLIN
 REM ============================================================
-title pLIN - Plasmid Life Identification Number System
+title pLIN - Plasmid Lineage Identification Number System
 echo.
 echo  ============================================
-echo   pLIN: Plasmid Life Identification Number
+echo   pLIN: Plasmid Lineage Identification Number
 echo   Hierarchical Plasmid Classification System
 echo  ============================================
 echo.

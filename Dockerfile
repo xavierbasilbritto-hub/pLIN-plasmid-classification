@@ -1,5 +1,5 @@
 # ============================================================
-#  pLIN — Plasmid Life Identification Number System
+#  pLIN — Plasmid Lineage Identification Number System
 #  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
 #
 #  Docker container with all bioinformatics tools pre-installed.
@@ -16,7 +16,7 @@
 FROM python:3.11-slim AS base
 
 LABEL maintainer="Basil Xavier Britto"
-LABEL description="pLIN: Plasmid Life Identification Number System"
+LABEL description="pLIN: Plasmid Lineage Identification Number System"
 LABEL version="2.1.0"
 
 # Build argument: set to "true" to install bioinformatics tools

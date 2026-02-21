@@ -8,7 +8,7 @@ set -e
 
 echo ""
 echo " ============================================"
-echo "  pLIN: Plasmid Life Identification Number"
+echo "  pLIN: Plasmid Lineage Identification Number"
 echo "  Hierarchical Plasmid Classification System"
 echo " ============================================"
 echo ""
