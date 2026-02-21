@@ -45,9 +45,12 @@ from collections import Counter
 
 # ── Page Configuration ────────────────────────────────────────────────────────
 
+_LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+_FAVICON = os.path.join(_LOGO_DIR, "pLIN_favicon.png")
+
 st.set_page_config(
     page_title="pLIN Classifier",
-    page_icon="🧬",
+    page_icon=_FAVICON if os.path.exists(_FAVICON) else "🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -4118,8 +4121,22 @@ if "buddy_model" not in st.session_state:
 #  MAIN HEADER & UPLOAD
 # ══════════════════════════════════════════════════════════════════════════════
 
-st.title("🧬 pLIN Classifier")
-st.caption("Plasmid Life Identification Number System — Upload FASTA files to begin")
+# ── Logo header ──────────────────────────────────────────────────────────────
+_logo_path = os.path.join(_LOGO_DIR, "pLIN_logo_transparent.png")
+if os.path.exists(_logo_path):
+    _logo_col, _title_col = st.columns([1, 4])
+    with _logo_col:
+        st.image(_logo_path, width=140)
+    with _title_col:
+        st.markdown(
+            "<h1 style='margin-bottom:0; padding-top:18px;'>pLIN Classifier</h1>"
+            "<p style='color:#3B6FA0; margin-top:0;'>"
+            "Plasmid Life Identification Number System &mdash; Upload FASTA files to begin</p>",
+            unsafe_allow_html=True,
+        )
+else:
+    st.title("pLIN Classifier")
+    st.caption("Plasmid Life Identification Number System — Upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
 amr_binary, amr_db = detect_amrfinder()
@@ -4392,7 +4409,10 @@ else:
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.title("🧬 pLIN")
+    if os.path.exists(_logo_path):
+        st.image(_logo_path, width=120)
+    else:
+        st.title("pLIN")
     st.caption("Plasmid Life Identification Number")
     st.divider()
 
