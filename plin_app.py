@@ -1507,13 +1507,17 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
             tmp.write(uf.getvalue())
             tmp_path = tmp.name
         try:
+            contig_count = 0
             for rec in SeqIO.parse(tmp_path, "fasta"):
                 seq = str(rec.seq)
+                contig_count += 1
                 rec_dict = {
                     "plasmid_id": rec.id,
                     "sequence": seq,
                     "length": len(seq),
                     "source_file": uf.name,
+                    "_strain_id": uf.name,       # Group contigs from same file
+                    "_contig_index": contig_count, # Position within the file
                 }
                 if auto_detect:
                     result = classify_inc_group(seq, group_names, classifier)
@@ -4545,6 +4549,7 @@ if run_btn and uploaded_files:
         st.stop()
 
     # Step 2a: Automatic plasmid vs chromosome classification
+    original_records = list(records)  # preserve pre-filter list for strain summary
     if auto_filter_plasmids:
         progress.progress(20, text="Classifying contigs: plasmid vs chromosome...")
         contig_classes = classify_contigs_plasmid_vs_chromosome(records, vectors)
@@ -4611,11 +4616,59 @@ if run_btn and uploaded_files:
         st.session_state._plin_eligible_ids = set(
             contig_classes[i]["plasmid_id"] for i in plasmid_indices
         )
+
+        # ── Strain-aware assembly summary ─────────────────────────────
+        # Build per-source-file contig summary for multi-contig uploads
+        source_files = {}
+        for idx, cc in enumerate(contig_classes):
+            src = original_records[idx].get("_strain_id", original_records[idx].get("source_file", "unknown"))
+            if src not in source_files:
+                source_files[src] = {"plasmid": [], "incomplete_plasmid": [], "chromosome": []}
+            source_files[src][cc["classification"]].append(cc)
+
+        # Only show assembly summary when any file has >1 contig
+        multi_contig_files = {sf: cats for sf, cats in source_files.items()
+                              if sum(len(v) for v in cats.values()) > 1}
+        if multi_contig_files:
+            summary_rows = []
+            for sf, cats in multi_contig_files.items():
+                n_plas = len(cats["plasmid"])
+                n_inc = len(cats["incomplete_plasmid"])
+                n_chr = len(cats["chromosome"])
+                n_total = n_plas + n_inc + n_chr
+                plas_ids = [c["plasmid_id"] for c in cats["plasmid"]]
+                chr_sizes = [f"{c['length_bp']/1e6:.1f} Mb" for c in cats["chromosome"]]
+                summary_rows.append({
+                    "Source File": sf,
+                    "Total Contigs": n_total,
+                    "Plasmid": n_plas,
+                    "Incomplete": n_inc,
+                    "Chromosome": n_chr,
+                    "Plasmid Contigs": ", ".join(plas_ids[:5]) + ("..." if len(plas_ids) > 5 else ""),
+                })
+                # Show per-file breakdown
+                parts = []
+                if n_plas:
+                    parts.append(f"**{n_plas}** plasmid contig(s)")
+                if n_inc:
+                    parts.append(f"**{n_inc}** incomplete")
+                if n_chr:
+                    parts.append(f"**{n_chr}** chromosome ({', '.join(chr_sizes)})")
+                st.info(
+                    f"**Assembly** `{sf}` ({n_total} contigs): {' | '.join(parts)}",
+                    icon="📋",
+                )
+
+            st.session_state.strain_contig_summary = pd.DataFrame(summary_rows)
+        else:
+            st.session_state.strain_contig_summary = None
+
     else:
         st.session_state.contig_classification = None
         st.session_state.excluded_chromosomes = None
         st.session_state.incomplete_plasmids = None
         st.session_state._plin_eligible_ids = None
+        st.session_state.strain_contig_summary = None
 
     # Determine analysis mode
     is_query_mode = len(records) == 1
@@ -5029,7 +5082,7 @@ with tab_overview:
         st.subheader("How it works")
         st.markdown("""
         1. **Upload** plasmid FASTA sequences
-        2. **Auto-detect** Inc group (KNN classifier, 96% accuracy)
+        2. **Auto-detect** Inc/Rep group (KNN classifier, 91.1% accuracy, 28 groups)
         3. **Compute** tetranucleotide frequency vectors (256 features)
         4. **Calculate** pairwise cosine distances
         5. **Cluster** using single-linkage hierarchical method
@@ -5137,6 +5190,21 @@ with tab_overview:
             with st.expander(f"View incomplete plasmid contigs ({len(incomplete_plasm)})"):
                 st.dataframe(
                     incomplete_plasm[["plasmid_id", "length_bp", "confidence", "reason"]],
+                    use_container_width=True, hide_index=True,
+                )
+
+        # ── Multi-Contig Assembly Summary ─────────────────────────────
+        strain_summary = st.session_state.get("strain_contig_summary")
+        if strain_summary is not None and len(strain_summary) > 0:
+            with st.expander(f"Multi-Contig Assembly Summary ({len(strain_summary)} assemblies)"):
+                st.markdown(
+                    "When uploading whole-genome assemblies containing both chromosomal and "
+                    "plasmid contigs, pLIN automatically identifies and separates plasmid "
+                    "sequences for classification. Only confirmed plasmid contigs receive "
+                    "pLIN codes."
+                )
+                st.dataframe(
+                    strain_summary,
                     use_container_width=True, hide_index=True,
                 )
 
