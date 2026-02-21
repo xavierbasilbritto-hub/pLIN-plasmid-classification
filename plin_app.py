@@ -1585,8 +1585,14 @@ def _load_reference_for_query():
     if not os.path.exists(CLASSIFIER_PATH) or not os.path.exists(PLIN_ASSIGNMENTS_PATH):
         return None, None
     ref_data = np.load(CLASSIFIER_PATH, allow_pickle=True)
-    X_ref = ref_data["X"].astype(np.float64)  # (6998, 256)
+    X_ref = ref_data["X"].astype(np.float64)
     plin_df = pd.read_csv(PLIN_ASSIGNMENTS_PATH, sep="\t")
+    # Ensure X_ref and plin_df have the same number of rows.
+    # After classifier expansion (e.g. Gram-positive groups), X_ref may have
+    # more rows than plin_df if assignments haven't been regenerated yet.
+    n_ref = min(len(X_ref), len(plin_df))
+    X_ref = X_ref[:n_ref]
+    plin_df = plin_df.iloc[:n_ref].reset_index(drop=True)
     return X_ref, plin_df
 
 
