@@ -309,13 +309,13 @@ def validate_sequence_quality(sequence, plasmid_id):
                           "message": f"{plasmid_id}: {n_pct:.1f}% N bases — may reduce 4-mer accuracy",
                           "value": round(n_pct, 1)})
 
-    # 2. GC-content check (Enterobacteriaceae plasmids typically 40–60%)
+    # 2. GC-content check (25–70% covers Enterobacterales + Gram-positive plasmids)
     gc_count = seq_upper.count("G") + seq_upper.count("C")
     valid_bases = sum(seq_upper.count(b) for b in "ACGT")
     gc_pct = 100.0 * gc_count / valid_bases if valid_bases > 0 else 0
-    if gc_pct < 30 or gc_pct > 65:
+    if gc_pct < 25 or gc_pct > 70:
         warnings.append({"level": "warning", "check": "GC-content",
-                          "message": f"{plasmid_id}: GC = {gc_pct:.1f}% (expected 30–65% for Enterobacteriaceae plasmids)",
+                          "message": f"{plasmid_id}: GC = {gc_pct:.1f}% (expected 25–70% for bacterial plasmids)",
                           "value": round(gc_pct, 1)})
 
     # 3. Non-ACGTN characters
@@ -343,6 +343,107 @@ def validate_sequence_quality(sequence, plasmid_id):
                                   "value": round(entropy, 2)})
 
     return warnings
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  L3: ASSEMBLY COMPLETENESS ASSESSMENT
+# ══════════════════════════════════════════════════════════════════════════════
+
+def assess_assembly_completeness(records, prodigal_summary_df=None):
+    """Assess assembly completeness for each plasmid.
+
+    Computes metrics: contig count, N50 ratio, circular topology signal,
+    coding density (if Prodigal available), and composite completeness score.
+
+    Returns DataFrame with completeness metrics per plasmid.
+    """
+    results = []
+    for rec in records:
+        seq = str(rec["sequence"]).upper()
+        total_len = len(seq)
+        pid = rec["plasmid_id"]
+
+        if total_len == 0:
+            results.append({"plasmid_id": pid, "total_length": 0,
+                            "n_contigs": 0, "n50_ratio": 0, "circular_signal": False,
+                            "coding_density_pct": 0, "n_gaps": 0,
+                            "completeness_score": 0, "completeness_status": "POOR"})
+            continue
+
+        # 1. Contig count — check for N-gaps (>=10 consecutive Ns = contig break)
+        import re
+        contigs = re.split(r'N{10,}', seq)
+        contigs = [c for c in contigs if len(c) > 0]
+        n_contigs = max(len(contigs), 1)
+        n_gaps = max(n_contigs - 1, 0)
+
+        # 2. N50 ratio
+        contig_lengths = sorted([len(c) for c in contigs], reverse=True)
+        cumsum = 0
+        n50 = contig_lengths[0]
+        half = total_len / 2
+        for cl in contig_lengths:
+            cumsum += cl
+            if cumsum >= half:
+                n50 = cl
+                break
+        n50_ratio = n50 / total_len if total_len > 0 else 0
+
+        # 3. Circular topology signal — check overlap between first and last 500bp
+        circular_signal = False
+        check_len = min(500, total_len // 4)
+        if check_len >= 50:
+            head = seq[:check_len]
+            tail = seq[-check_len:]
+            # Simple identity: count matching bases
+            matches = sum(1 for a, b in zip(head, tail) if a == b)
+            identity = matches / check_len
+            circular_signal = identity >= 0.90
+
+        # 4. Coding density (from Prodigal if available)
+        coding_density = 0.0
+        if prodigal_summary_df is not None and len(prodigal_summary_df) > 0:
+            match = prodigal_summary_df[
+                prodigal_summary_df["source_file"].str.contains(pid, na=False)
+            ]
+            if len(match) > 0:
+                coding_density = float(match.iloc[0].get("coding_density_pct", 0))
+
+        # 5. Composite completeness score (0-100)
+        score = 0
+        score += 40 if n_contigs == 1 else max(0, 40 - (n_contigs - 1) * 10)
+        score += 20 if n50_ratio > 0.9 else int(20 * n50_ratio)
+        score += 20 if circular_signal else 0
+        if coding_density > 0:
+            score += 10 if coding_density > 80 else int(10 * coding_density / 80)
+        else:
+            score += 5  # neutral if no Prodigal data
+        score += 10 if n_gaps == 0 else max(0, 10 - n_gaps * 2)
+        score = min(100, max(0, score))
+
+        # Status
+        if score >= 80:
+            status = "COMPLETE"
+        elif score >= 60:
+            status = "NEAR-COMPLETE"
+        elif score >= 40:
+            status = "FRAGMENTED"
+        else:
+            status = "POOR"
+
+        results.append({
+            "plasmid_id": pid,
+            "total_length": total_len,
+            "n_contigs": n_contigs,
+            "n50_ratio": round(n50_ratio, 3),
+            "circular_signal": circular_signal,
+            "coding_density_pct": round(coding_density, 1),
+            "n_gaps": n_gaps,
+            "completeness_score": score,
+            "completeness_status": status,
+        })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
 
 
 def detect_duplicates(records):
@@ -539,6 +640,199 @@ def calibrate_inc_thresholds():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  L4: DATABASE COVERAGE & NOVELTY DETECTION
+# ══════════════════════════════════════════════════════════════════════════════
+
+def assess_database_coverage(query_vectors, query_inc_types, query_nn_distances=None):
+    """Assess how well the reference database covers query plasmids.
+
+    Computes: NN distance percentile within Inc group, novelty flags,
+    database representation scores.
+
+    Returns DataFrame with coverage metrics per plasmid.
+    """
+    if not os.path.exists(CLASSIFIER_PATH):
+        return pd.DataFrame()
+
+    data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+    X_train = data["X"]
+    y_train = data["y"]
+    group_names = [str(g) for g in data["group_names"]]
+
+    # Pre-compute within-group distance distributions
+    from scipy.spatial.distance import cdist
+    group_stats = {}
+    for i, name in enumerate(group_names):
+        mask = y_train == i
+        n_samples = int(mask.sum())
+        group_stats[name] = {"n_training": n_samples}
+
+        if n_samples >= 10:
+            X_group = X_train[mask]
+            # Sample for efficiency
+            if n_samples > 200:
+                rng = np.random.default_rng(42)
+                idx = rng.choice(n_samples, 200, replace=False)
+                X_sub = X_group[idx]
+            else:
+                X_sub = X_group
+            dists = pdist(X_sub.astype(np.float64), metric="cosine")
+            group_stats[name]["p50"] = float(np.percentile(dists, 50))
+            group_stats[name]["p95"] = float(np.percentile(dists, 95))
+            group_stats[name]["p99"] = float(np.percentile(dists, 99))
+
+    # Compute centroid distances for each query
+    centroids = {}
+    for i, name in enumerate(group_names):
+        mask = y_train == i
+        if mask.sum() > 0:
+            centroids[name] = X_train[mask].mean(axis=0)
+
+    results = []
+    for j in range(len(query_inc_types)):
+        inc = query_inc_types[j] if j < len(query_inc_types) else "Unknown"
+        nn_dist = query_nn_distances[j] if query_nn_distances is not None and j < len(query_nn_distances) else None
+
+        stats = group_stats.get(inc, {})
+        n_training = stats.get("n_training", 0)
+
+        # Representation flag
+        if n_training >= 50:
+            representation = "Well-represented"
+        elif n_training >= 20:
+            representation = "Moderate"
+        elif n_training > 0:
+            representation = "Under-represented"
+        else:
+            representation = "Not in database"
+
+        # Novelty detection
+        novelty_flag = "None"
+        nn_percentile = None
+        centroid_dist = None
+
+        if inc in centroids and j < len(query_vectors):
+            cd = float(1 - np.dot(query_vectors[j], centroids[inc]) /
+                       (np.linalg.norm(query_vectors[j]) * np.linalg.norm(centroids[inc]) + 1e-10))
+            centroid_dist = round(cd, 6)
+
+        if nn_dist is not None:
+            if nn_dist > 0.050:
+                novelty_flag = "Potentially novel lineage"
+            elif nn_dist > 0.020:
+                novelty_flag = "Divergent"
+
+            # Percentile within group
+            p99 = stats.get("p99")
+            p95 = stats.get("p95")
+            p50 = stats.get("p50")
+            if p99 is not None:
+                if nn_dist > p99:
+                    nn_percentile = 99
+                elif nn_dist > p95:
+                    nn_percentile = 95
+                elif nn_dist > p50:
+                    nn_percentile = 75
+                else:
+                    nn_percentile = 50
+
+        # Traffic light
+        if novelty_flag == "Potentially novel lineage" or representation == "Not in database":
+            coverage_indicator = "RED"
+        elif novelty_flag == "Divergent" or representation == "Under-represented":
+            coverage_indicator = "YELLOW"
+        else:
+            coverage_indicator = "GREEN"
+
+        results.append({
+            "inc_type": inc,
+            "n_training_samples": n_training,
+            "representation": representation,
+            "nn_distance": round(nn_dist, 6) if nn_dist is not None else None,
+            "nn_percentile": nn_percentile,
+            "centroid_distance": centroid_dist,
+            "novelty_flag": novelty_flag,
+            "coverage_indicator": coverage_indicator,
+        })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  L6: NOVEL INC GROUP DISCOVERY
+# ══════════════════════════════════════════════════════════════════════════════
+
+def discover_novel_inc_groups(vectors, inc_predictions, confidence_scores, records):
+    """Cluster plasmids with Unknown/Novel Inc classification to discover
+    putative new Inc/rep type groups.
+
+    Returns DataFrame with novel group assignments and nearest known Inc group.
+    """
+    if not os.path.exists(CLASSIFIER_PATH):
+        return pd.DataFrame()
+
+    # Find novel plasmids (confidence < 40%)
+    novel_indices = [i for i, conf in enumerate(confidence_scores) if conf < 40]
+    if len(novel_indices) < 3:
+        return pd.DataFrame()
+
+    novel_vectors = vectors[novel_indices]
+    novel_ids = [records[i]["plasmid_id"] for i in novel_indices]
+
+    # Cluster novel plasmids
+    from scipy.cluster.hierarchy import linkage, fcluster
+    dist_matrix = pdist(novel_vectors.astype(np.float64), metric="cosine")
+    Z = linkage(dist_matrix, method="average")
+    clusters = fcluster(Z, t=0.050, criterion="distance")  # L3 threshold
+
+    # Load centroids for distance comparison
+    data = np.load(CLASSIFIER_PATH, allow_pickle=True)
+    group_names = [str(g) for g in data["group_names"]]
+    X_train = data["X"]
+    y_train = data["y"]
+
+    centroids = {}
+    for i, name in enumerate(group_names):
+        mask = y_train == i
+        if mask.sum() > 0:
+            centroids[name] = X_train[mask].mean(axis=0)
+
+    # Analyze each cluster
+    from collections import Counter
+    cluster_counts = Counter(clusters)
+    results = []
+
+    for idx, (novel_idx, cluster_id) in enumerate(zip(novel_indices, clusters)):
+        n_members = cluster_counts[cluster_id]
+        pid = novel_ids[idx]
+
+        # Find nearest known Inc group
+        nearest_inc = "Unknown"
+        nearest_dist = 1.0
+        query_vec = novel_vectors[idx]
+        for inc_name, centroid in centroids.items():
+            d = float(1 - np.dot(query_vec, centroid) /
+                      (np.linalg.norm(query_vec) * np.linalg.norm(centroid) + 1e-10))
+            if d < nearest_dist:
+                nearest_dist = d
+                nearest_inc = inc_name
+
+        is_putative_group = n_members >= 3
+
+        results.append({
+            "plasmid_id": pid,
+            "novel_cluster": int(cluster_id),
+            "cluster_size": n_members,
+            "is_putative_novel_group": is_putative_group,
+            "nearest_known_inc": nearest_inc,
+            "distance_to_nearest": round(nearest_dist, 4),
+            "confidence": round(confidence_scores[novel_indices[idx]], 1),
+        })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  MOBILITY PREDICTION
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -683,6 +977,204 @@ def classify_mobility(amr_df, source_file, mobsuite_df=None):
             "detail": "No transfer/mobilization genes detected",
             "source": "AMRFinderPlus", "relaxase_family": "", "mpf_type": "",
         }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  L10: MOBILE GENETIC ELEMENT BOUNDARY DETECTION
+# ══════════════════════════════════════════════════════════════════════════════
+
+# MGE marker gene patterns
+_MGE_PATTERNS = {
+    "IS_element": [
+        r'\bIS\d+', r'\bIS[A-Z][a-z]+\d*', r'\btnp[A-Z]?\b', r'\btransposase\b',
+        r'\bIS\b', r'\binsertion.sequence\b',
+    ],
+    "integrase": [
+        r'\bintegrase\b', r'\bintI\b', r'\bphage.integrase\b', r'\bsite.specific.recombinase\b',
+    ],
+    "recombinase": [
+        r'\brecombinase\b', r'\bresolvase\b', r'\binvertase\b',
+    ],
+    "excisionase": [
+        r'\bexcisionase\b', r'\bxis\b',
+    ],
+}
+
+_BACKBONE_PATTERNS = [
+    r'\brep[A-Z]?\b', r'\breplication\b', r'\bpar[A-Z]?\b', r'\bpartition\b',
+    r'\btoxin\b', r'\bantitoxin\b', r'\bstb[A-Z]?\b', r'\brelB\b', r'\brelE\b',
+    r'\bori[TV]?\b',
+]
+
+_RESISTANCE_PATTERNS = [
+    r'\bbla[A-Z]', r'\baac\b', r'\baph\b', r'\bant\b', r'\berm\b', r'\btet\b',
+    r'\bsul\b', r'\bdfr\b', r'\bmcr\b', r'\bqnr\b', r'\bcfr\b', r'\bfos\b',
+    r'\bvan[A-Z]\b', r'\bmef\b', r'\bmph\b',
+]
+
+_MOBILITY_PATTERNS = [
+    r'\btra[A-Z]\b', r'\btrb[A-Z]\b', r'\bmob[A-Z]\b', r'\bvirB\b',
+    r'\bnik[A-Z]\b', r'\brelaxase\b', r'\bconjugal\b', r'\bT4SS\b',
+]
+
+
+def detect_mge_boundaries(genes_df, amr_genes=None):
+    """Detect mobile genetic element boundaries from gene annotations.
+
+    Scans Prodigal gene names for IS elements, integrases, recombinases,
+    and identifies putative composite transposons (IS pairs flanking cargo).
+
+    Returns DataFrame with per-gene MGE classification and region annotations.
+    """
+    import re
+
+    if genes_df is None or len(genes_df) == 0:
+        return pd.DataFrame()
+
+    results = []
+    for _, gene in genes_df.iterrows():
+        gene_name = str(gene.get("gene_name", "")).lower()
+        gene_product = str(gene.get("product", "")).lower()
+        combined = f"{gene_name} {gene_product}"
+
+        # Classify gene type
+        gene_type = "hypothetical"
+        mge_subtype = None
+
+        # Check MGE patterns
+        for mge_type, patterns in _MGE_PATTERNS.items():
+            for pat in patterns:
+                if re.search(pat, combined, re.IGNORECASE):
+                    gene_type = "MGE"
+                    mge_subtype = mge_type
+                    break
+            if gene_type == "MGE":
+                break
+
+        # Check backbone
+        if gene_type == "hypothetical":
+            for pat in _BACKBONE_PATTERNS:
+                if re.search(pat, combined, re.IGNORECASE):
+                    gene_type = "backbone"
+                    break
+
+        # Check resistance
+        if gene_type == "hypothetical":
+            for pat in _RESISTANCE_PATTERNS:
+                if re.search(pat, combined, re.IGNORECASE):
+                    gene_type = "resistance"
+                    break
+
+        # Check mobility
+        if gene_type == "hypothetical":
+            for pat in _MOBILITY_PATTERNS:
+                if re.search(pat, combined, re.IGNORECASE):
+                    gene_type = "mobility"
+                    break
+
+        results.append({
+            "source_file": gene.get("source_file", ""),
+            "gene_id": gene.get("gene_id", ""),
+            "start": gene.get("start", 0),
+            "end": gene.get("end", 0),
+            "strand": gene.get("strand", "+"),
+            "gene_name": gene.get("gene_name", ""),
+            "gene_type": gene_type,
+            "mge_subtype": mge_subtype,
+        })
+
+    mge_df = pd.DataFrame(results)
+
+    # Detect composite transposons: IS elements flanking cargo genes
+    if len(mge_df) > 0:
+        for source, group in mge_df.groupby("source_file"):
+            is_positions = group[group["mge_subtype"] == "IS_element"].sort_values("start")
+            if len(is_positions) >= 2:
+                for i in range(len(is_positions) - 1):
+                    is1_end = is_positions.iloc[i]["end"]
+                    is2_start = is_positions.iloc[i + 1]["start"]
+                    # Check if there are cargo genes between IS elements
+                    cargo = group[(group["start"] >= is1_end) & (group["end"] <= is2_start)]
+                    has_resistance = (cargo["gene_type"] == "resistance").any()
+                    if len(cargo) > 0 and has_resistance:
+                        # Mark as composite transposon region
+                        mask = ((mge_df["source_file"] == source) &
+                                (mge_df["start"] >= is_positions.iloc[i]["start"]) &
+                                (mge_df["end"] <= is_positions.iloc[i + 1]["end"]))
+                        mge_df.loc[mask & (mge_df["gene_type"] == "hypothetical"), "gene_type"] = "MGE-cargo"
+
+    return mge_df
+
+
+def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
+    """Draw linear gene map with color-coded regions.
+
+    Returns matplotlib figure showing gene architecture with:
+    - Blue: backbone genes
+    - Red: resistance genes
+    - Green: mobility genes
+    - Yellow: IS/MGE elements
+    - Orange: MGE cargo
+    - Gray: hypothetical
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+
+    color_map = {
+        "backbone": "#1E88E5",
+        "resistance": "#E53935",
+        "mobility": "#43A047",
+        "MGE": "#FFC107",
+        "MGE-cargo": "#FB8C00",
+        "hypothetical": "#BDBDBD",
+    }
+
+    fig, ax = plt.subplots(1, 1, figsize=(14, 2.5))
+
+    # Draw backbone line
+    ax.plot([0, plasmid_length], [0, 0], color="#E0E0E0", linewidth=8, solid_capstyle="round")
+
+    # Draw genes as arrows
+    for _, gene in mge_df.iterrows():
+        start = gene["start"]
+        end = gene["end"]
+        strand = gene.get("strand", "+")
+        gene_type = gene["gene_type"]
+        color = color_map.get(gene_type, "#BDBDBD")
+
+        width = end - start
+        direction = 1 if strand == "+" else -1
+        height = 0.4
+
+        # Arrow glyph
+        if direction > 0:
+            arrow = mpatches.FancyArrow(start, 0, width, 0, width=height,
+                                         head_width=height * 1.3, head_length=min(width * 0.2, 500),
+                                         fc=color, ec="white", linewidth=0.5)
+        else:
+            arrow = mpatches.FancyArrow(end, 0, -width, 0, width=height,
+                                         head_width=height * 1.3, head_length=min(width * 0.2, 500),
+                                         fc=color, ec="white", linewidth=0.5)
+        ax.add_patch(arrow)
+
+    ax.set_xlim(-plasmid_length * 0.02, plasmid_length * 1.02)
+    ax.set_ylim(-1.2, 1.5)
+    ax.set_xlabel("Position (bp)", fontsize=9)
+    ax.set_title(f"{plasmid_id} — Gene Architecture ({plasmid_length:,} bp)", fontsize=11)
+    ax.set_yticks([])
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    # Legend
+    legend_patches = [mpatches.Patch(color=c, label=l.replace("MGE-cargo", "MGE cargo"))
+                      for l, c in color_map.items() if l != "MGE-cargo"]
+    legend_patches.append(mpatches.Patch(color=color_map["MGE-cargo"], label="MGE cargo"))
+    ax.legend(handles=legend_patches, loc="upper right", fontsize=7, ncol=3,
+              framealpha=0.8)
+
+    plt.tight_layout()
+    return fig
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -956,6 +1448,132 @@ def assign_plin_codes(vectors, linkage_method="single", thresholds=None):
         plin_codes.append(".".join(parts))
 
     return plin_codes, cluster_assignments, Z, dist_condensed
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  L8: CLUSTER STABILITY ASSESSMENT
+# ══════════════════════════════════════════════════════════════════════════════
+
+def assess_cluster_stability(vectors, plin_codes, thresholds=None, n_bootstrap=50):
+    """Assess cluster stability via bootstrap resampling.
+
+    Resamples the distance matrix n_bootstrap times, re-clusters, and
+    computes co-clustering frequency for each pair of plasmids.
+
+    Returns DataFrame with stability scores per cluster at each level.
+    """
+    active_thresholds = thresholds if thresholds else PLIN_THRESHOLDS
+    n = vectors.shape[0]
+    if n < 4:
+        return pd.DataFrame()
+
+    rng = np.random.default_rng(42)
+
+    # Track co-clustering at each level
+    level_names = list(active_thresholds.keys())
+    co_cluster = {level: np.zeros((n, n)) for level in level_names}
+
+    for _ in range(n_bootstrap):
+        # Bootstrap resample indices
+        boot_idx = rng.choice(n, n, replace=True)
+        boot_vectors = vectors[boot_idx]
+
+        boot_dist = pdist(boot_vectors.astype(np.float64), metric="cosine")
+        Z_boot = linkage(boot_dist, method="single")
+
+        for level, thresh in active_thresholds.items():
+            clusters_boot = fcluster(Z_boot, t=thresh, criterion="distance")
+            # Map back to original indices
+            for i in range(n):
+                for j in range(i + 1, n):
+                    orig_i = boot_idx[i]
+                    orig_j = boot_idx[j]
+                    if clusters_boot[i] == clusters_boot[j]:
+                        co_cluster[level][orig_i, orig_j] += 1
+                        co_cluster[level][orig_j, orig_i] += 1
+
+    # Compute stability per cluster at each level
+    # Parse pLIN codes to get cluster assignments
+    plin_parts = [code.split(".") for code in plin_codes]
+    results = []
+    for li, level in enumerate(level_names):
+        cluster_ids = [parts[li] for parts in plin_parts]
+        unique_clusters = set(cluster_ids)
+        for cl in unique_clusters:
+            members = [i for i, c in enumerate(cluster_ids) if c == cl]
+            if len(members) < 2:
+                results.append({"level": level, "cluster_id": cl,
+                                "n_members": 1, "stability_score": 100.0,
+                                "stability_status": "Stable"})
+                continue
+
+            # Min pairwise co-clustering %
+            min_support = 100.0
+            for i in range(len(members)):
+                for j in range(i + 1, len(members)):
+                    support = 100.0 * co_cluster[level][members[i], members[j]] / n_bootstrap
+                    min_support = min(min_support, support)
+
+            if min_support >= 80:
+                status = "Stable"
+            elif min_support >= 50:
+                status = "Moderate"
+            else:
+                status = "Unstable"
+
+            results.append({
+                "level": level,
+                "cluster_id": cl,
+                "n_members": len(members),
+                "stability_score": round(min_support, 1),
+                "stability_status": status,
+            })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
+
+
+def compare_linkage_methods(vectors, thresholds=None):
+    """Compare clustering results across linkage methods.
+
+    Runs clustering with single, complete, and average linkage and
+    computes Adjusted Rand Index between each pair.
+
+    Returns dict with ARI scores and cluster counts per method.
+    """
+    from sklearn.metrics import adjusted_rand_score
+    active_thresholds = thresholds if thresholds else PLIN_THRESHOLDS
+
+    dist_condensed = pdist(vectors.astype(np.float64), metric="cosine")
+
+    methods = ["single", "complete", "average"]
+    all_clusters = {}
+
+    for method in methods:
+        Z = linkage(dist_condensed, method=method)
+        clusters = {}
+        for level, thresh in active_thresholds.items():
+            clusters[level] = fcluster(Z, t=thresh, criterion="distance")
+        all_clusters[method] = clusters
+
+    # Compute ARI between methods at each level
+    results = {"level": [], "single_vs_complete": [], "single_vs_average": [],
+               "complete_vs_average": [], "n_clusters_single": [],
+               "n_clusters_complete": [], "n_clusters_average": []}
+
+    for level in active_thresholds:
+        s = all_clusters["single"][level]
+        c = all_clusters["complete"][level]
+        a = all_clusters["average"][level]
+
+        results["level"].append(level)
+        results["single_vs_complete"].append(round(adjusted_rand_score(s, c), 3))
+        results["single_vs_average"].append(round(adjusted_rand_score(s, a), 3))
+        results["complete_vs_average"].append(round(adjusted_rand_score(c, a), 3))
+        results["n_clusters_single"].append(len(set(s)))
+        results["n_clusters_complete"].append(len(set(c)))
+        results["n_clusters_average"].append(len(set(a)))
+
+    return pd.DataFrame(results)
 
 
 PLIN_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_assignments.tsv")
@@ -1851,6 +2469,152 @@ def run_snp_subtyping(records, cluster_assignments, minimap2_binary, progress_ca
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  L5: RECOMBINATION DETECTION
+# ══════════════════════════════════════════════════════════════════════════════
+
+def detect_recombination_signals(records, cluster_assignments, minimap2_binary,
+                                  progress_callback=None):
+    """Detect potential recombination events by analyzing alignment coverage patterns.
+
+    For each L6 cluster with >=2 members, runs minimap2 and analyzes:
+    - Alignment coverage (what fraction of query aligns to reference)
+    - Number of alignment blocks (fragmented = possible rearrangement)
+    - Largest unaligned region (putative recombination breakpoint)
+
+    Returns DataFrame with recombination flags per plasmid.
+    """
+    l6_clusters = {}
+    for i, rec in enumerate(records):
+        cl = int(cluster_assignments["F"][i])
+        l6_clusters.setdefault(cl, []).append(i)
+
+    multi_clusters = {k: v for k, v in l6_clusters.items() if len(v) >= 2}
+    if not multi_clusters:
+        return pd.DataFrame()
+
+    all_results = []
+    total = len(multi_clusters)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ci, (cluster_id, member_indices) in enumerate(multi_clusters.items()):
+            ref_idx = max(member_indices, key=lambda i: records[i]["length"])
+            ref_rec = records[ref_idx]
+            ref_len = ref_rec["length"]
+
+            ref_path = os.path.join(tmpdir, f"ref_c{cluster_id}.fasta")
+            with open(ref_path, "w") as f:
+                f.write(f">{ref_rec['plasmid_id']}\n{ref_rec['sequence']}\n")
+
+            for m_idx in member_indices:
+                if m_idx == ref_idx:
+                    all_results.append({
+                        "plasmid_id": ref_rec["plasmid_id"],
+                        "l6_cluster": cluster_id,
+                        "alignment_coverage_pct": 100.0,
+                        "n_alignment_blocks": 1,
+                        "largest_unaligned_bp": 0,
+                        "recombination_flag": "None",
+                    })
+                    continue
+
+                query_rec = records[m_idx]
+                query_len = query_rec["length"]
+                query_path = os.path.join(tmpdir, f"q_c{cluster_id}_{m_idx}.fasta")
+                with open(query_path, "w") as f:
+                    f.write(f">{query_rec['plasmid_id']}\n{query_rec['sequence']}\n")
+
+                try:
+                    result = subprocess.run(
+                        [minimap2_binary, "-cx", "asm5", ref_path, query_path],
+                        capture_output=True, text=True, timeout=120,
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        # Parse PAF: collect alignment blocks
+                        blocks = []
+                        for line in result.stdout.strip().split("\n"):
+                            fields = line.split("\t")
+                            if len(fields) >= 12:
+                                q_start = int(fields[2])
+                                q_end = int(fields[3])
+                                matches = int(fields[9])
+                                block_len = int(fields[10])
+                                blocks.append((q_start, q_end, matches, block_len))
+
+                        if blocks:
+                            # Merge overlapping blocks
+                            blocks.sort()
+                            merged = [blocks[0]]
+                            for b in blocks[1:]:
+                                if b[0] <= merged[-1][1]:
+                                    merged[-1] = (merged[-1][0], max(merged[-1][1], b[1]),
+                                                  merged[-1][2] + b[2], merged[-1][3] + b[3])
+                                else:
+                                    merged.append(b)
+
+                            total_aligned = sum(b[1] - b[0] for b in merged)
+                            coverage = 100.0 * total_aligned / query_len if query_len > 0 else 0
+
+                            # Find gaps between blocks
+                            gaps = []
+                            for k in range(1, len(merged)):
+                                gap = merged[k][0] - merged[k - 1][1]
+                                if gap > 100:
+                                    gaps.append(gap)
+                            largest_gap = max(gaps) if gaps else 0
+
+                            # Recombination flag
+                            if coverage < 50:
+                                flag = "High"
+                            elif coverage < 70 or largest_gap > 5000:
+                                flag = "Medium"
+                            elif len(merged) > 3 or largest_gap > 2000:
+                                flag = "Low"
+                            else:
+                                flag = "None"
+
+                            all_results.append({
+                                "plasmid_id": query_rec["plasmid_id"],
+                                "l6_cluster": cluster_id,
+                                "alignment_coverage_pct": round(coverage, 1),
+                                "n_alignment_blocks": len(merged),
+                                "largest_unaligned_bp": largest_gap,
+                                "recombination_flag": flag,
+                            })
+                        else:
+                            all_results.append({
+                                "plasmid_id": query_rec["plasmid_id"],
+                                "l6_cluster": cluster_id,
+                                "alignment_coverage_pct": 0.0,
+                                "n_alignment_blocks": 0,
+                                "largest_unaligned_bp": query_len,
+                                "recombination_flag": "High",
+                            })
+                    else:
+                        all_results.append({
+                            "plasmid_id": query_rec["plasmid_id"],
+                            "l6_cluster": cluster_id,
+                            "alignment_coverage_pct": 0.0,
+                            "n_alignment_blocks": 0,
+                            "largest_unaligned_bp": query_len,
+                            "recombination_flag": "High",
+                        })
+                except Exception:
+                    all_results.append({
+                        "plasmid_id": query_rec["plasmid_id"],
+                        "l6_cluster": cluster_id,
+                        "alignment_coverage_pct": 0.0,
+                        "n_alignment_blocks": 0,
+                        "largest_unaligned_bp": 0,
+                        "recombination_flag": "Unknown",
+                    })
+
+            if progress_callback:
+                progress_callback((ci + 1) / total)
+
+    return pd.DataFrame(all_results) if all_results else pd.DataFrame()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  TEMPORAL OUTBREAK CLUSTERING
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1951,6 +2715,113 @@ def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_
     clusters.sort(key=lambda c: (-{"CRITICAL": 3, "HIGH": 2, "MODERATE": 1}.get(c["risk_level"], 0),
                                   -c["n_amr_genes"], -c["n_plasmids"]))
     return clusters
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  L7: EVOLUTIONARY RATE ESTIMATION (MOLECULAR CLOCK)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def estimate_evolutionary_rate(snp_df, metadata_df, records):
+    """Estimate SNP accumulation rate (molecular clock) for L6 clusters.
+
+    Requires both SNP data (from run_snp_subtyping) and collection dates
+    from metadata. For each L6 cluster with >=3 dated members, fits a
+    linear regression of SNP count vs time difference.
+
+    Returns DataFrame with per-cluster rate estimates.
+    """
+    if snp_df is None or len(snp_df) == 0 or metadata_df is None:
+        return pd.DataFrame()
+
+    # Find date column
+    date_col = None
+    for col in metadata_df.columns:
+        if any(kw in col.lower() for kw in ["date", "collection_date", "sample_date"]):
+            date_col = col
+            break
+    if date_col is None:
+        return pd.DataFrame()
+
+    # Build date lookup
+    date_lookup = {}
+    for _, row in metadata_df.iterrows():
+        pid = str(row.get("plasmid_id", ""))
+        try:
+            dt = pd.to_datetime(row[date_col])
+            if pd.notna(dt):
+                date_lookup[pid] = dt
+        except Exception:
+            pass
+
+    if len(date_lookup) < 3:
+        return pd.DataFrame()
+
+    # Build plasmid length lookup
+    len_lookup = {r["plasmid_id"]: r["length"] for r in records}
+
+    # Group SNP data by L6 cluster
+    results = []
+    for cluster_id, group in snp_df.groupby("l6_cluster"):
+        # Get dated members
+        dated_members = []
+        for _, row in group.iterrows():
+            pid = row["plasmid_id"]
+            if pid in date_lookup and row["snp_count"] >= 0:
+                dated_members.append({
+                    "plasmid_id": pid,
+                    "snp_count": int(row["snp_count"]),
+                    "date": date_lookup[pid],
+                })
+
+        if len(dated_members) < 3:
+            continue
+
+        # Compute pairwise time differences and SNP differences
+        from scipy.stats import linregress
+        time_diffs = []
+        snp_diffs = []
+        for i in range(len(dated_members)):
+            for j in range(i + 1, len(dated_members)):
+                days = abs((dated_members[i]["date"] - dated_members[j]["date"]).days)
+                snps = abs(dated_members[i]["snp_count"] - dated_members[j]["snp_count"])
+                if days > 0:
+                    time_diffs.append(days)
+                    snp_diffs.append(snps)
+
+        if len(time_diffs) < 3:
+            continue
+
+        # Linear regression
+        slope, intercept, r_value, p_value, std_err = linregress(time_diffs, snp_diffs)
+        snps_per_year = slope * 365.25
+
+        # Normalize by plasmid length
+        ref_pid = dated_members[0]["plasmid_id"]
+        plasmid_len = len_lookup.get(ref_pid, 100000)
+        subs_per_site_per_year = snps_per_year / plasmid_len if plasmid_len > 0 else 0
+
+        # Interpretation
+        if subs_per_site_per_year > 1e-4:
+            interpretation = "Unusually high (possible recombination)"
+        elif subs_per_site_per_year > 1e-5:
+            interpretation = "Within expected range for plasmids"
+        elif subs_per_site_per_year > 1e-7:
+            interpretation = "Low (conserved backbone)"
+        else:
+            interpretation = "Very low (possible same-source)"
+
+        results.append({
+            "l6_cluster": int(cluster_id),
+            "n_dated_members": len(dated_members),
+            "n_pairwise_comparisons": len(time_diffs),
+            "snps_per_year": round(snps_per_year, 2),
+            "subs_per_site_per_year": f"{subs_per_site_per_year:.2e}",
+            "r_squared": round(r_value ** 2, 3),
+            "p_value": round(p_value, 4),
+            "interpretation": interpretation,
+        })
+
+    return pd.DataFrame(results) if results else pd.DataFrame()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -3790,11 +4661,70 @@ if run_btn and uploaded_files:
 
     # Step 11: SNP sub-typing within L6 clusters (optional)
     if run_snp_subtype and minimap2_binary:
-        progress.progress(98, text="SNP sub-typing within L6 clusters...")
+        progress.progress(97, text="SNP sub-typing within L6 clusters...")
         snp_df = run_snp_subtyping(records, cluster_assignments, minimap2_binary)
         st.session_state.snp_subtype_df = snp_df
+
+        # L5: Recombination detection (runs alongside SNP subtyping)
+        progress.progress(98, text="Detecting recombination signals...")
+        recom_df = detect_recombination_signals(records, cluster_assignments, minimap2_binary)
+        st.session_state.recombination_df = recom_df
+
+        # L7: Evolutionary rate estimation (needs SNP data + dates)
+        metadata_df = st.session_state.get("metadata_df")
+        if metadata_df is not None and snp_df is not None:
+            evo_df = estimate_evolutionary_rate(snp_df, metadata_df, records)
+            st.session_state.evo_rate_df = evo_df
+        else:
+            st.session_state.evo_rate_df = pd.DataFrame()
     else:
         st.session_state.snp_subtype_df = None
+        st.session_state.recombination_df = pd.DataFrame()
+        st.session_state.evo_rate_df = pd.DataFrame()
+
+    # L8: Cluster stability assessment (if >=4 plasmids and de novo mode)
+    if len(records) >= 4 and st.session_state.Z is not None:
+        progress.progress(98, text="Assessing cluster stability...")
+        stability_df = assess_cluster_stability(vectors, plin_codes, n_bootstrap=50)
+        st.session_state.stability_df = stability_df
+        linkage_df = compare_linkage_methods(vectors)
+        st.session_state.linkage_comparison_df = linkage_df
+    else:
+        st.session_state.stability_df = pd.DataFrame()
+        st.session_state.linkage_comparison_df = pd.DataFrame()
+
+    # ── L3: Assembly completeness assessment ────────────────────────────────
+    progress.progress(99, text="Assessing assembly completeness...")
+    completeness_df = assess_assembly_completeness(
+        records, prodigal_summary_df=prodigal_summary_df
+    )
+    st.session_state.completeness_df = completeness_df
+
+    # ── L4: Database coverage assessment ──────────────────────────────────
+    nn_dists = None
+    inc_types_list = plin_df["predicted_inc"].tolist() if "predicted_inc" in plin_df.columns else []
+    if "nn_distance" in plin_df.columns:
+        nn_dists = plin_df["nn_distance"].tolist()
+    if len(inc_types_list) > 0:
+        coverage_df = assess_database_coverage(vectors, inc_types_list, nn_dists)
+        st.session_state.coverage_df = coverage_df
+    else:
+        st.session_state.coverage_df = pd.DataFrame()
+
+    # ── L6: Novel Inc group discovery ─────────────────────────────────────
+    if "inc_confidence" in plin_df.columns:
+        conf_scores = plin_df["inc_confidence"].tolist()
+        novel_df = discover_novel_inc_groups(vectors, inc_types_list, conf_scores, records)
+        st.session_state.novel_inc_df = novel_df
+    else:
+        st.session_state.novel_inc_df = pd.DataFrame()
+
+    # ── L10: MGE boundary detection (if Prodigal results available) ───────
+    if len(prodigal_genes_df) > 0:
+        mge_df = detect_mge_boundaries(prodigal_genes_df)
+        st.session_state.mge_df = mge_df
+    else:
+        st.session_state.mge_df = pd.DataFrame()
 
     progress.progress(100, text="Analysis complete!")
     st.session_state.analysis_done = True
@@ -4315,6 +5245,95 @@ with tab_results:
                                for cp in top_pairs]
                     st.dataframe(pd.DataFrame(cp_rows), use_container_width=True, hide_index=True)
 
+        # ── L3: Assembly Completeness ─────────────────────────────────────
+        completeness_df = st.session_state.get("completeness_df")
+        if completeness_df is not None and len(completeness_df) > 0:
+            with st.expander("Assembly Completeness Assessment"):
+                n_complete = (completeness_df["completeness_status"] == "COMPLETE").sum()
+                n_near = (completeness_df["completeness_status"] == "NEAR-COMPLETE").sum()
+                n_frag = (completeness_df["completeness_status"] == "FRAGMENTED").sum()
+                n_poor = (completeness_df["completeness_status"] == "POOR").sum()
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Complete", n_complete)
+                c2.metric("Near-complete", n_near)
+                c3.metric("Fragmented", n_frag)
+                c4.metric("Poor", n_poor)
+                if n_frag + n_poor > 0:
+                    st.warning(f"{n_frag + n_poor} plasmid(s) may have fragmented assemblies. "
+                               "4-mer classification may be less reliable for these.")
+                st.dataframe(completeness_df, use_container_width=True, hide_index=True)
+
+        # ── L4: Database Coverage ─────────────────────────────────────────
+        coverage_df = st.session_state.get("coverage_df")
+        if coverage_df is not None and len(coverage_df) > 0:
+            with st.expander("Database Coverage & Novelty Assessment"):
+                n_green = (coverage_df["coverage_indicator"] == "GREEN").sum()
+                n_yellow = (coverage_df["coverage_indicator"] == "YELLOW").sum()
+                n_red = (coverage_df["coverage_indicator"] == "RED").sum()
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Well-covered", n_green)
+                c2.metric("Sparse coverage", n_yellow)
+                c3.metric("Potentially novel", n_red)
+                if n_red > 0:
+                    st.error(f"{n_red} plasmid(s) may represent lineages not well-covered "
+                             "by the reference database.")
+                st.dataframe(coverage_df, use_container_width=True, hide_index=True)
+
+        # ── L6: Novel Inc Group Discovery ─────────────────────────────────
+        novel_df = st.session_state.get("novel_inc_df")
+        if novel_df is not None and len(novel_df) > 0:
+            with st.expander("Novel Inc/Rep Group Discovery"):
+                putative = novel_df[novel_df["is_putative_novel_group"]]
+                if len(putative) > 0:
+                    n_groups = putative["novel_cluster"].nunique()
+                    st.success(f"Discovered {n_groups} putative novel Inc/Rep group(s) "
+                               f"from {len(putative)} plasmids with low-confidence classification.")
+                else:
+                    st.info("No putative novel groups found (requires >=3 unclassified plasmids "
+                            "clustering tightly together).")
+                st.dataframe(novel_df, use_container_width=True, hide_index=True)
+
+        # ── L10: Gene Architecture / MGE Boundaries ───────────────────────
+        mge_df = st.session_state.get("mge_df")
+        if mge_df is not None and len(mge_df) > 0:
+            with st.expander("Gene Architecture & MGE Boundaries"):
+                # Summary
+                n_is = (mge_df["mge_subtype"] == "IS_element").sum()
+                n_int = (mge_df["mge_subtype"] == "integrase").sum()
+                n_res = (mge_df["gene_type"] == "resistance").sum()
+                n_backbone = (mge_df["gene_type"] == "backbone").sum()
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("IS elements", n_is)
+                c2.metric("Integrases", n_int)
+                c3.metric("Resistance genes", n_res)
+                c4.metric("Backbone genes", n_backbone)
+
+                # Gene map for first plasmid
+                records = st.session_state.get("records", [])
+                source_files = mge_df["source_file"].unique()
+                if len(source_files) > 0 and len(records) > 0:
+                    selected_plasmid = st.selectbox(
+                        "Select plasmid for gene map:",
+                        source_files, key="mge_map_select"
+                    )
+                    plasmid_mge = mge_df[mge_df["source_file"] == selected_plasmid]
+                    # Find plasmid length
+                    p_len = 0
+                    for r in records:
+                        if selected_plasmid in r["plasmid_id"] or r["plasmid_id"] in selected_plasmid:
+                            p_len = r["length"]
+                            break
+                    if p_len > 0 and len(plasmid_mge) > 0:
+                        fig = draw_plasmid_gene_map(plasmid_mge, p_len, selected_plasmid)
+                        st.pyplot(fig)
+                        plt.close(fig)
+
+                st.dataframe(
+                    mge_df[["source_file", "gene_name", "start", "end", "strand",
+                            "gene_type", "mge_subtype"]],
+                    use_container_width=True, hide_index=True
+                )
+
 
 # ── TAB 3: Cladogram ────────────────────────────────────────────────────────
 
@@ -4825,6 +5844,52 @@ with tab_epi:
                     use_container_width=True, hide_index=True,
                 )
 
+        # ── L5: Recombination Signals ─────────────────────────────────────
+        recom_df = st.session_state.get("recombination_df")
+        if recom_df is not None and len(recom_df) > 0:
+            with st.expander("Recombination Signals"):
+                n_high = (recom_df["recombination_flag"] == "High").sum()
+                n_med = (recom_df["recombination_flag"] == "Medium").sum()
+                n_low = (recom_df["recombination_flag"] == "Low").sum()
+                c1, c2, c3 = st.columns(3)
+                c1.metric("High recombination", n_high)
+                c2.metric("Medium", n_med)
+                c3.metric("Low", n_low)
+                if n_high > 0:
+                    st.warning(f"{n_high} plasmid(s) show strong recombination signals "
+                               "(low alignment coverage to nearest neighbor). "
+                               "4-mer-based classification may be unreliable for these.")
+                st.dataframe(recom_df, use_container_width=True, hide_index=True)
+
+        # ── L7: Evolutionary Rate Estimation ──────────────────────────────
+        evo_rate_df = st.session_state.get("evo_rate_df")
+        if evo_rate_df is not None and len(evo_rate_df) > 0:
+            with st.expander("Evolutionary Rate Estimation (Molecular Clock)"):
+                st.markdown("SNP accumulation rates for L6 clusters with dated samples:")
+                st.dataframe(evo_rate_df, use_container_width=True, hide_index=True)
+
+        # ── L8: Cluster Stability Assessment ──────────────────────────────
+        stability_df = st.session_state.get("stability_df")
+        if stability_df is not None and len(stability_df) > 0:
+            with st.expander("Cluster Robustness (Bootstrap Stability)"):
+                n_stable = (stability_df["stability_status"] == "Stable").sum()
+                n_moderate = (stability_df["stability_status"] == "Moderate").sum()
+                n_unstable = (stability_df["stability_status"] == "Unstable").sum()
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Stable (>80%)", n_stable)
+                c2.metric("Moderate (50-80%)", n_moderate)
+                c3.metric("Unstable (<50%)", n_unstable)
+                if n_unstable > 0:
+                    st.warning(f"{n_unstable} cluster(s) have low bootstrap support. "
+                               "These assignments may change with additional data.")
+                st.dataframe(stability_df, use_container_width=True, hide_index=True)
+
+        linkage_df = st.session_state.get("linkage_comparison_df")
+        if linkage_df is not None and len(linkage_df) > 0:
+            with st.expander("Linkage Method Comparison"):
+                st.markdown("Adjusted Rand Index (ARI) between clustering methods:")
+                st.dataframe(linkage_df, use_container_width=True, hide_index=True)
+
 
 # ── TAB 6: CRISPR Host Inference ────────────────────────────────────────────
 
@@ -5179,6 +6244,62 @@ with tab_export:
                 st.download_button("📥 Transmission Mode Analysis (TSV)", tp_csv,
                                    "transmission_mode_analysis.tsv", "text/tab-separated-values")
 
+            # Assembly completeness
+            compl_df = st.session_state.get("completeness_df")
+            if compl_df is not None and len(compl_df) > 0:
+                compl_csv = compl_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Assembly Completeness (TSV)", compl_csv,
+                                   "assembly_completeness.tsv", "text/tab-separated-values")
+
+            # Database coverage
+            cov_df = st.session_state.get("coverage_df")
+            if cov_df is not None and len(cov_df) > 0:
+                cov_csv = cov_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Database Coverage (TSV)", cov_csv,
+                                   "database_coverage.tsv", "text/tab-separated-values")
+
+            # Novel Inc groups
+            novel_df = st.session_state.get("novel_inc_df")
+            if novel_df is not None and len(novel_df) > 0:
+                novel_csv = novel_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Novel Inc Groups (TSV)", novel_csv,
+                                   "novel_inc_groups.tsv", "text/tab-separated-values")
+
+            # MGE boundaries
+            mge_exp_df = st.session_state.get("mge_df")
+            if mge_exp_df is not None and len(mge_exp_df) > 0:
+                mge_csv = mge_exp_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 MGE Boundaries (TSV)", mge_csv,
+                                   "mge_boundaries.tsv", "text/tab-separated-values")
+
+            # Recombination signals
+            recom_exp_df = st.session_state.get("recombination_df")
+            if recom_exp_df is not None and len(recom_exp_df) > 0:
+                recom_csv = recom_exp_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Recombination Signals (TSV)", recom_csv,
+                                   "recombination_signals.tsv", "text/tab-separated-values")
+
+            # Evolutionary rate
+            evo_exp_df = st.session_state.get("evo_rate_df")
+            if evo_exp_df is not None and len(evo_exp_df) > 0:
+                evo_csv = evo_exp_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Evolutionary Rate (TSV)", evo_csv,
+                                   "evolutionary_rate.tsv", "text/tab-separated-values")
+
+            # Cluster stability
+            stab_exp_df = st.session_state.get("stability_df")
+            if stab_exp_df is not None and len(stab_exp_df) > 0:
+                stab_csv = stab_exp_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Cluster Stability (TSV)", stab_csv,
+                                   "cluster_stability.tsv", "text/tab-separated-values")
+
+            # Linkage comparison
+            link_exp_df = st.session_state.get("linkage_comparison_df")
+            if link_exp_df is not None and len(link_exp_df) > 0:
+                link_csv = link_exp_df.to_csv(sep="\t", index=False).encode()
+                st.download_button("📥 Linkage Comparison (TSV)", link_csv,
+                                   "linkage_comparison.tsv", "text/tab-separated-values")
+
         with col2:
             st.subheader("Figures")
             Z = st.session_state.Z
@@ -5274,6 +6395,20 @@ with tab_export:
                     if trans_p is not None and len(trans_p) > 0:
                         zf.writestr("transmission_mode_analysis.tsv",
                                     trans_p.to_csv(sep="\t", index=False))
+                    # New analyses exports
+                    for key, fname in [
+                        ("completeness_df", "assembly_completeness.tsv"),
+                        ("coverage_df", "database_coverage.tsv"),
+                        ("novel_inc_df", "novel_inc_groups.tsv"),
+                        ("mge_df", "mge_boundaries.tsv"),
+                        ("recombination_df", "recombination_signals.tsv"),
+                        ("evo_rate_df", "evolutionary_rate.tsv"),
+                        ("stability_df", "cluster_stability.tsv"),
+                        ("linkage_comparison_df", "linkage_comparison.tsv"),
+                    ]:
+                        zdf = st.session_state.get(key)
+                        if zdf is not None and len(zdf) > 0:
+                            zf.writestr(fname, zdf.to_csv(sep="\t", index=False))
                     for name, func, args in [
                         ("cladogram_rectangular", plot_rectangular_cladogram,
                          (Z, labels, plin_codes, strain_clusters)),
