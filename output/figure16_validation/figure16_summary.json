@@ -1,0 +1,19 @@
+{
+  "stability": {
+    "n_groups_assessed": 28,
+    "total_clusters_L3": 57,
+    "total_stable_L3": 46,
+    "total_moderate_L3": 3,
+    "total_unstable_L3": 8,
+    "overall_mean_stability": 93.6
+  },
+  "linkage": {
+    "n_groups_assessed": 28,
+    "L3_mean_ari_single_vs_complete": 0.303,
+    "L3_mean_ari_single_vs_average": 0.508,
+    "L3_mean_ari_complete_vs_average": 0.551,
+    "L3_mean_n_clusters_single": 2.0,
+    "L3_mean_n_clusters_complete": 5.8,
+    "L3_mean_n_clusters_average": 3.7
+  }
+}

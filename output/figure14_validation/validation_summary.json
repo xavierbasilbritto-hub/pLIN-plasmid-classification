@@ -1,0 +1,14 @@
+{
+  "n_samples": 8077,
+  "n_groups": 28,
+  "median_nn_dist": 0.0003,
+  "mean_nn_dist": 0.0018,
+  "p95_nn_dist": 0.0064,
+  "p99_nn_dist": 0.0246,
+  "n_green": 7969,
+  "n_yellow": 82,
+  "n_red": 26,
+  "pct_green": 98.7,
+  "pct_yellow": 1.0,
+  "pct_red": 0.3
+}

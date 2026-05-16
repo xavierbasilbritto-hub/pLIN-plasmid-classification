@@ -1,0 +1,70 @@
+{
+  "total_training_plasmids": 8077,
+  "plasmids_with_IS_elements": 5024,
+  "total_IS_hits": 22278,
+  "unique_IS_families_detected": 12,
+  "top_15_IS_families": [
+    {
+      "is_family": "IS26",
+      "total_hits": 18995,
+      "n_plasmids": 4511
+    },
+    {
+      "is_family": "IS1",
+      "total_hits": 911,
+      "n_plasmids": 885
+    },
+    {
+      "is_family": "ISEcp1",
+      "total_hits": 847,
+      "n_plasmids": 780
+    },
+    {
+      "is_family": "IS903",
+      "total_hits": 794,
+      "n_plasmids": 785
+    },
+    {
+      "is_family": "IS30",
+      "total_hits": 278,
+      "n_plasmids": 248
+    },
+    {
+      "is_family": "IS5",
+      "total_hits": 197,
+      "n_plasmids": 158
+    },
+    {
+      "is_family": "IS10",
+      "total_hits": 189,
+      "n_plasmids": 188
+    },
+    {
+      "is_family": "IS256",
+      "total_hits": 30,
+      "n_plasmids": 29
+    },
+    {
+      "is_family": "IS2",
+      "total_hits": 21,
+      "n_plasmids": 21
+    },
+    {
+      "is_family": "Tn916",
+      "total_hits": 8,
+      "n_plasmids": 8
+    },
+    {
+      "is_family": "ISKpn26",
+      "total_hits": 7,
+      "n_plasmids": 7
+    },
+    {
+      "is_family": "ISAba",
+      "total_hits": 1,
+      "n_plasmids": 1
+    }
+  ],
+  "composite_transposons_total": 176,
+  "sensitivity_note": "Detection based on blastn against curated IS reference sequences (\u226580% identity, \u226550% coverage)"
+}

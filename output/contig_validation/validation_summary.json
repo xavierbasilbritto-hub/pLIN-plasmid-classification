@@ -1,0 +1,284 @@
+{
+  "total_contigs": 614,
+  "n_plasmids_true": 600,
+  "n_chromosomes_true": 14,
+  "sensitivity": 1.0,
+  "specificity": 1.0,
+  "accuracy": 1.0,
+  "plasmid_score_median": 65.0,
+  "chromosome_score_median": -20.0,
+  "plasmid_score_mean": 58.2,
+  "chromosome_score_mean": -20.0,
+  "size_stratified": [
+    {
+      "size_bin": "< 50 kb",
+      "n_total": 134,
+      "n_plasmid_true": 134,
+      "n_chromosome_true": 0,
+      "accuracy": 1.0,
+      "sensitivity": 1.0,
+      "specificity": 0
+    },
+    {
+      "size_bin": "50-500 kb",
+      "n_total": 466,
+      "n_plasmid_true": 466,
+      "n_chromosome_true": 0,
+      "accuracy": 1.0,
+      "sensitivity": 1.0,
+      "specificity": 0
+    },
+    {
+      "size_bin": "> 500 kb",
+      "n_total": 14,
+      "n_plasmid_true": 0,
+      "n_chromosome_true": 14,
+      "accuracy": 1.0,
+      "sensitivity": 0,
+      "specificity": 1.0
+    }
+  ],
+  "threshold_analysis": [
+    {
+      "threshold": -50,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -45,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -40,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -35,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -30,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -25,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -20,
+      "sensitivity": 1.0,
+      "specificity": 0.0,
+      "tp": 600,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0
+    },
+    {
+      "threshold": -15,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": -10,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": -5,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 0,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 5,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 10,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 15,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 20,
+      "sensitivity": 1.0,
+      "specificity": 1.0,
+      "tp": 600,
+      "fp": 0,
+      "fn": 0,
+      "tn": 14
+    },
+    {
+      "threshold": 25,
+      "sensitivity": 0.9983,
+      "specificity": 1.0,
+      "tp": 599,
+      "fp": 0,
+      "fn": 1,
+      "tn": 14
+    },
+    {
+      "threshold": 30,
+      "sensitivity": 0.9983,
+      "specificity": 1.0,
+      "tp": 599,
+      "fp": 0,
+      "fn": 1,
+      "tn": 14
+    },
+    {
+      "threshold": 35,
+      "sensitivity": 0.995,
+      "specificity": 1.0,
+      "tp": 597,
+      "fp": 0,
+      "fn": 3,
+      "tn": 14
+    },
+    {
+      "threshold": 40,
+      "sensitivity": 0.9933,
+      "specificity": 1.0,
+      "tp": 596,
+      "fp": 0,
+      "fn": 4,
+      "tn": 14
+    },
+    {
+      "threshold": 45,
+      "sensitivity": 0.9933,
+      "specificity": 1.0,
+      "tp": 596,
+      "fp": 0,
+      "fn": 4,
+      "tn": 14
+    },
+    {
+      "threshold": 50,
+      "sensitivity": 0.9883,
+      "specificity": 1.0,
+      "tp": 593,
+      "fp": 0,
+      "fn": 7,
+      "tn": 14
+    },
+    {
+      "threshold": 55,
+      "sensitivity": 0.5467,
+      "specificity": 1.0,
+      "tp": 328,
+      "fp": 0,
+      "fn": 272,
+      "tn": 14
+    }
+  ],
+  "classification_breakdown": {
+    "plasmid": 596,
+    "incomplete_plasmid": 4,
+    "chromosome": 14
+  },
+  "kpn_example": [
+    {
+      "plasmid_id": "NC_016845.1",
+      "length_bp": 5333942,
+      "classification": "chromosome",
+      "confidence": 70,
+      "score": -20,
+      "reason": "Very large (5.3 Mb); Very close to known plasmid (d=0.0096)",
+      "true_label": "chromosome"
+    },
+    {
+      "plasmid_id": "NZ_CP064016.1",
+      "length_bp": 87657,
+      "classification": "plasmid",
+      "confidence": 99,
+      "score": 65,
+      "reason": "Plasmid-range size (88 kb); Very close to known plasmid (d=0.0021); Header suggests plasmid",
+      "true_label": "plasmid"
+    },
+    {
+      "plasmid_id": "NZ_CP135724.1",
+      "length_bp": 70302,
+      "classification": "plasmid",
+      "confidence": 99,
+      "score": 50,
+      "reason": "Plasmid-range size (70 kb); Very close to known plasmid (d=0.0018)",
+      "true_label": "plasmid"
+    },
+    {
+      "plasmid_id": "NZ_CP090306.1",
+      "length_bp": 85345,
+      "classification": "plasmid",
+      "confidence": 99,
+      "score": 65,
+      "reason": "Plasmid-range size (85 kb); Very close to known plasmid (d=0.0017); Header suggests plasmid",
+      "true_label": "plasmid"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 # Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
-Assign pLIN codes to ALL reference plasmid sequences (~72,556).
+Assign pLIN codes to ALL reference plasmid sequences (~72,959).
 
 Pipeline:
   Phase 1 — Compute 4-mer frequency vectors for all reference sequences
@@ -52,7 +52,7 @@ PLIN_THRESHOLDS = {
 
 # Inc classification thresholds (from plin_app.py)
 INC_CONFIDENCE_THRESHOLD = 0.40
-MULTI_INC_THRESHOLD = 0.25
+MULTI_INC_THRESHOLD = 0.15
 
 # 4-mer setup
 K = 4

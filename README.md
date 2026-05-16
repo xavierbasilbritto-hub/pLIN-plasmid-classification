@@ -25,7 +25,7 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 
 ### Performance Metrics
 
-- **Simpson's Diversity Index:** 0.982
+- **Simpson's Diversity Index:** 0.985
 - **Inc/Rep Detection Accuracy:** 91.1% (5-fold CV, 28 groups)
 - **Training Dataset:** 8,077 plasmid sequences across 28 Inc/Rep groups (8,056 unique plasmids)
 - **Reference Database:** 79,305 plasmids (8,056 training + 71,249 PLSDB/NCBI RefSeq)

@@ -1,0 +1,15 @@
+pLIN Outbreak Detection — LOOCV Benchmark Summary
+==================================================
+
+Total outbreak plasmids: 74
+LOOCV tested (with sequence): 57
+Pre-computed (no sequence): 17
+
+L6 pLIN concordance: 94.7% (54/57)
+L3 cluster concordance: 100.0% (57/57)
+Mean NN distance: 0.005084
+Mean confidence: 87.7%
+
+Ground truth clusters (≥2 plasmids): 13
+Clusters detected: 9
+Cluster detection recall: 69.2%

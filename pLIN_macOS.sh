@@ -290,6 +290,116 @@ setup_directories() {
     mkdir -p "$SCRIPT_DIR/output/crispr_evaluation"
     mkdir -p "$SCRIPT_DIR/output/figures"
     mkdir -p "$SCRIPT_DIR/output/manuscripts/docx"
+    mkdir -p "$SCRIPT_DIR/output/mge_detection"
+}
+
+# ── IS reference database setup ──────────────────────────────────────────────
+setup_is_database() {
+    local IS_DIR="$SCRIPT_DIR/output/mge_detection"
+    local IS_FASTA="$IS_DIR/is_reference_sequences.fasta"
+    local IS_DB="$IS_DIR/is_reference_sequences.fasta.ndb"
+
+    # Skip if database already exists
+    if [ -f "$IS_DB" ]; then
+        ok "IS reference BLAST database already exists"
+        return 0
+    fi
+
+    info "Setting up IS element reference database (25 IS families)..."
+
+    # Find python in conda env
+    local PY=""
+    if [ -n "${CONDA_ENV_PYTHON:-}" ] && [ -x "$CONDA_ENV_PYTHON" ]; then
+        PY="$CONDA_ENV_PYTHON"
+    elif [ -n "${PYTHON_BIN:-}" ]; then
+        PY="$PYTHON_BIN"
+    else
+        warn "Python not available — skipping IS database setup"
+        return 0
+    fi
+
+    # Download IS reference sequences from NCBI via BioPython
+    "$PY" -c "
+import sys, os
+try:
+    from Bio import Entrez, SeqIO
+except ImportError:
+    print('  [WARN] BioPython not available — skipping IS database download')
+    sys.exit(0)
+
+Entrez.email = 'plin_tool@example.com'
+accessions = {
+    'IS26': 'X00011.1', 'ISEcp1': 'AJ242809.1', 'IS1': 'J01730.1',
+    'IS903': 'M17148.1', 'IS6100': 'M95400.1', 'ISKpn26': 'KF914891.1',
+    'IS5': 'X02311.1', 'IS3': 'X02180.1', 'IS4321': 'AJ245418.1',
+    'IS15': 'X01840.1', 'IS10': 'J01830.1', 'IS2': 'J01733.1',
+    'IS4': 'V00029.1', 'IS30': 'X00792.1', 'IS66': 'X53365.1',
+    'IS110': 'M21395.1', 'ISPa': 'AF261825.1', 'ISAba': 'AY758396.1',
+    'IS256': 'M18086.1', 'IS257': 'U40412.1', 'IS16': 'AF053365.1',
+    'ISEnfa': 'AF162694.1', 'IS1216': 'L40841.1', 'IS1251': 'X83579.1',
+    'Tn916': 'U09422.1'
+}
+
+out_path = '$IS_FASTA'
+os.makedirs(os.path.dirname(out_path), exist_ok=True)
+downloaded = 0
+with open(out_path, 'w') as fh:
+    for name, acc in accessions.items():
+        try:
+            handle = Entrez.efetch(db='nucleotide', id=acc, rettype='fasta', retmode='text')
+            record = SeqIO.read(handle, 'fasta')
+            handle.close()
+            record.id = name
+            record.description = f'{name} ({acc})'
+            SeqIO.write(record, fh, 'fasta')
+            downloaded += 1
+        except Exception as e:
+            print(f'  [WARN] Could not download {name} ({acc}): {e}')
+
+print(f'  [OK]   Downloaded {downloaded}/25 IS reference sequences')
+" 2>/dev/null
+
+    if [ $? -ne 0 ]; then
+        warn "IS reference download failed (NCBI may be unreachable)"
+        return 0
+    fi
+
+    # Build BLAST database
+    if [ -f "$IS_FASTA" ] && command -v makeblastdb &>/dev/null; then
+        makeblastdb -in "$IS_FASTA" -dbtype nucl -parse_seqids \
+            -title "IS_reference_25families" -out "$IS_FASTA" &>/dev/null
+        if [ $? -eq 0 ]; then
+            ok "BLAST database built for IS references"
+        else
+            warn "makeblastdb failed — IS detection may not work"
+        fi
+    elif [ -f "$IS_FASTA" ]; then
+        warn "makeblastdb not found — BLAST database not built"
+        info "IS detection requires BLAST+ (installed via conda)"
+    fi
+}
+
+# ── Verify BLAST for contig classification and IS detection ──────────────────
+verify_blast() {
+    if command -v blastn &>/dev/null; then
+        local ver=$(blastn -version 2>&1 | head -1)
+        ok "BLAST+ available: $ver"
+    else
+        # Check conda env
+        local found=false
+        for base in "$HOME/miniconda3" "$HOME/miniforge3" "$HOME/anaconda3" "$HOME/mambaforge"; do
+            if [ -x "$base/envs/$ENV_NAME/bin/blastn" ]; then
+                local ver=$("$base/envs/$ENV_NAME/bin/blastn" -version 2>&1 | head -1)
+                ok "BLAST+ available (in conda env): $ver"
+                found=true
+                break
+            fi
+        done
+        if ! $found; then
+            warn "BLAST+ not found — IS element detection will not be available"
+            info "Contig classification (plasmid vs chromosome) works without BLAST"
+        fi
+    fi
 }
 
 # ── Docker mode ───────────────────────────────────────────────────────────────
@@ -411,25 +521,34 @@ check_mode() {
     detect_platform
     echo ""
 
-    step 1 4 "Checking Python..."
+    step 1 5 "Checking Python..."
     if find_python; then
         ok "Python $PYTHON_VER ($PYTHON_BIN)"
     else
         fail "Python $PYTHON_MIN+ not found"
     fi
 
-    step 2 4 "Checking required files..."
+    step 2 5 "Checking required files..."
     check_files || true
 
-    step 3 4 "Checking Python packages..."
+    step 3 5 "Checking Python packages..."
     if find_python; then
         check_packages
     else
         warn "Cannot check packages — Python not found"
     fi
 
-    step 4 4 "Checking bioinformatics tools..."
+    step 4 5 "Checking bioinformatics tools..."
     check_biotools
+
+    step 5 5 "Checking IS reference database + BLAST..."
+    local IS_DB="$SCRIPT_DIR/output/mge_detection/is_reference_sequences.fasta.ndb"
+    if [ -f "$IS_DB" ]; then
+        ok "IS reference BLAST database found"
+    else
+        warn "IS reference database not built (run --install to set up)"
+    fi
+    verify_blast
 
     # Summary
     echo ""
@@ -447,11 +566,26 @@ check_mode() {
 
 # ── Full install ──────────────────────────────────────────────────────────────
 full_install() {
-    local total_steps=5
+    local total_steps=6
 
     step 1 $total_steps "Checking environment..."
     detect_platform
     echo ""
+
+    # Check system dependencies
+    if ! xcode-select -p &>/dev/null; then
+        info "Installing Xcode Command Line Tools (needed for compilation)..."
+        xcode-select --install 2>/dev/null || warn "Xcode CLI tools not installed — run: xcode-select --install"
+    else
+        ok "Xcode Command Line Tools installed"
+    fi
+
+    if command -v java &>/dev/null; then
+        ok "Java available (needed for MinCED CRISPR detection)"
+    else
+        warn "Java not found — MinCED (CRISPR detection) will not work"
+        info "Install with: brew install --cask temurin"
+    fi
 
     if find_python; then
         ok "Python $PYTHON_VER"
@@ -475,6 +609,10 @@ full_install() {
     step 4 $total_steps "Setting up directories..."
     setup_directories
     ok "Output directories ready"
+
+    step 5 $total_steps "Setting up IS element reference database + BLAST verification..."
+    setup_is_database
+    verify_blast
 
     ok "Installation complete!"
 }
@@ -524,7 +662,7 @@ main() {
         *)
             banner
             full_install
-            launch_app 5 5
+            launch_app 6 6
             ;;
     esac
 }

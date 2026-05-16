@@ -5,7 +5,7 @@ Download Gram-positive plasmid sequences for pLIN classifier training.
 
 Expands the Inc group classifier from 20 Gram-negative groups to include
 S. aureus and E. faecium plasmid rep types, addressing limitations L4
-(database bias) and L6 (limited to 20 Inc groups).
+(database bias) and L6 (limited to 20 Gram-negative Inc groups).
 
 Rep type naming follows Lozano et al. 2012 (Staphylococcus) and
 Jensen et al. 2010 / Clewell 2011 (Enterococcus).

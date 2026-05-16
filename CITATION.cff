@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "pLIN: Plasmid Lineage Identification Number System"
+title: "Development and validation of the pLIN (plasmid Lineage Identification Number) permanent classification system: Tracking plasmid-mediated antimicrobial resistance at lineage-level resolution"
 message: >-
   If you use this software, you MUST cite it using the
   metadata from this file. Citation is a mandatory
@@ -22,7 +22,7 @@ abstract: >-
   prediction, outbreak detection with clinical risk stratification,
   CRISPR spacer-based host inference, and an interactive Streamlit
   web GUI with AMRFinderPlus integration. Reference database of
-  78,902 plasmids with 33,143 unique pLIN codes.
+  79,305 plasmids with 57,886 unique pLIN codes.
 keywords:
   - plasmid classification
   - antimicrobial resistance
@@ -39,7 +39,8 @@ version: "2.1.0"
 date-released: "2025-02-13"
 preferred-citation:
   type: software
-  title: "pLIN: A Plasmid Lineage Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance"
+  title: "Development and validation of the pLIN (plasmid Lineage Identification Number) permanent classification system: Tracking plasmid-mediated antimicrobial resistance at lineage-level resolution"
+  status: "under review"
   authors:
     - given-names: Basil Xavier
       family-names: Britto

@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
 # Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
 """
-Generate Figure 16: Addressed Limitations — Multi-panel overview.
+Generate Figures 14–17: Addressed Limitations — Multi-panel overview.
 
-Panels:
-  A) Gram-positive expansion: 24-group classifier composition (training samples per group)
-  B) Assembly completeness scoring demonstration (simulated distribution)
-  C) Database coverage & novelty detection (distance percentile concept)
-  D) Cluster stability via bootstrap (stability score distribution)
-  E) Confusion matrix heatmap for 24-group classifier
+Figure 14: Analytical module validation summary
+  A) Classifier training composition (28 Inc/Rep groups, training samples per group)
+  B) Per-class F1 scores (5-fold stratified CV)
+  C) Assembly completeness scoring demonstration (simulated distribution)
+  D) Database coverage & novelty detection (distance percentile concept)
+  E) Confusion matrix heatmap for 28-group classifier
   F) MGE boundary detection schematic (gene architecture)
+
+Figure 15: Novel Inc/rep group discovery and evolutionary rate estimation
+  (Gram-positive expansion, classification performance, centroid distances)
+
+Figure 16: Adaptive thresholds and cluster stability
+  A) Bootstrap stability assessment, B) Linkage method comparison
+
+Figure 17: Mobile genetic element boundary detection / Recombination
+  A) Recombination detection, B) Evolutionary rate estimation
 """
 
 import os
@@ -21,6 +30,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.colors import LinearSegmentedColormap
+import pandas as pd
 import seaborn as sns
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +80,7 @@ print(f"  Gram-positive: {len(gram_pos_groups)} groups")
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 16: Multi-panel Limitations Addressed
 # ══════════════════════════════════════════════════════════════════════════════
-print("\nGenerating Figure 16: Limitations Addressed ...")
+print("\nGenerating Figure 14: Analytical Module Validation Summary ...")
 
 fig = plt.figure(figsize=(20, 14))
 gs = fig.add_gridspec(2, 3, hspace=0.35, wspace=0.35)
@@ -79,12 +89,18 @@ gs = fig.add_gridspec(2, 3, hspace=0.35, wspace=0.35)
 GRAM_NEG_COLOR = "#3498db"
 GRAM_POS_SA_COLOR = "#e74c3c"
 GRAM_POS_EF_COLOR = "#2ecc71"
+ACINETOBACTER_COLOR = "#9b59b6"
+PSEUDOMONAS_COLOR = "#e67e22"
 
 def get_group_color(name):
     if name.startswith("repSA"):
         return GRAM_POS_SA_COLOR
     elif name.startswith("repEF"):
         return GRAM_POS_EF_COLOR
+    elif name.startswith("repAci"):
+        return ACINETOBACTER_COLOR
+    elif name.startswith("repPae"):
+        return PSEUDOMONAS_COLOR
     else:
         return GRAM_NEG_COLOR
 
@@ -101,9 +117,9 @@ sorted_colors = [get_group_color(n) for n in sorted_names]
 bars = ax_a.barh(range(n_groups), sorted_counts, color=sorted_colors, edgecolor="white",
                  linewidth=0.3, height=0.8)
 ax_a.set_yticks(range(n_groups))
-ax_a.set_yticklabels(sorted_names, fontsize=7)
+ax_a.set_yticklabels(sorted_names, fontsize=8)
 ax_a.set_xlabel("Training sequences")
-ax_a.set_title("A) Classifier Training Composition\n(24 Inc/Rep Groups)", fontweight="bold")
+ax_a.set_title(f"A) Classifier Training Composition\n({n_groups} Inc/Rep Groups)", fontweight="bold")
 
 # Add count labels
 for i, (cnt, bar) in enumerate(zip(sorted_counts, bars)):
@@ -113,13 +129,15 @@ for i, (cnt, bar) in enumerate(zip(sorted_counts, bars)):
     else:
         ax_a.text(cnt + 5, i, str(cnt), va="center", ha="left", fontsize=6)
 
-# Legend
+# Legend — all 5 organism categories
 legend_patches = [
     mpatches.Patch(color=GRAM_NEG_COLOR, label=f"Gram-negative ({len(gram_neg_groups)})"),
     mpatches.Patch(color=GRAM_POS_SA_COLOR, label=f"S. aureus ({sum(1 for g in gram_pos_groups if 'SA' in g)})"),
     mpatches.Patch(color=GRAM_POS_EF_COLOR, label=f"Enterococcus ({sum(1 for g in gram_pos_groups if 'EF' in g)})"),
+    mpatches.Patch(color=ACINETOBACTER_COLOR, label=f"Acinetobacter ({sum(1 for g in gram_pos_groups if 'Aci' in g)})"),
+    mpatches.Patch(color=PSEUDOMONAS_COLOR, label=f"Pseudomonas ({sum(1 for g in gram_pos_groups if 'Pae' in g)})"),
 ]
-ax_a.legend(handles=legend_patches, loc="lower right", fontsize=7, framealpha=0.9)
+ax_a.legend(handles=legend_patches, loc="lower right", fontsize=8, framealpha=0.9)
 ax_a.text(0.98, 0.02, f"Total: {sum(samples_per_group):,} sequences\nAccuracy: {cv_accuracy:.1%}",
           transform=ax_a.transAxes, ha="right", va="bottom", fontsize=7,
           bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.8))
@@ -137,7 +155,7 @@ sorted_f1_colors = [get_group_color(n) for n in sorted_f1_names]
 bars_b = ax_b.barh(range(n_groups), sorted_f1_vals, color=sorted_f1_colors,
                    edgecolor="white", linewidth=0.3, height=0.8)
 ax_b.set_yticks(range(n_groups))
-ax_b.set_yticklabels(sorted_f1_names, fontsize=7)
+ax_b.set_yticklabels(sorted_f1_names, fontsize=8)
 ax_b.set_xlabel("F1 Score")
 ax_b.set_xlim(0, 1.05)
 ax_b.axvline(x=0.8, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
@@ -154,79 +172,90 @@ ax_b.text(median_f1 + 0.02, n_groups - 1.5, f"Median: {median_f1:.2f}",
           fontsize=7, color="orange")
 
 
-# ── Panel C: Assembly completeness scoring concept ───────────────────────────
+# ── Panel C: Assembly completeness (REAL data from training plasmids) ─────────
 ax_c = fig.add_subplot(gs[0, 2])
 
-# Simulate completeness score distribution
-np.random.seed(42)
-complete = np.random.normal(90, 5, 500).clip(80, 100)
-near_complete = np.random.normal(70, 5, 150).clip(60, 79.9)
-fragmented = np.random.normal(50, 5, 80).clip(40, 59.9)
-poor = np.random.normal(25, 8, 30).clip(0, 39.9)
-
-all_scores = np.concatenate([complete, near_complete, fragmented, poor])
+COMP_TSV = os.path.join(BASE_DIR, "output", "figure14_validation", "assembly_completeness.tsv")
+comp_df = pd.read_csv(COMP_TSV, sep="\t")
 
 colors_comp = {"COMPLETE": "#27ae60", "NEAR-COMPLETE": "#f39c12",
                "FRAGMENTED": "#e67e22", "POOR": "#e74c3c"}
 
-ax_c.hist(complete, bins=20, alpha=0.8, color=colors_comp["COMPLETE"],
-          label=f"Complete (n={len(complete)})", edgecolor="white", linewidth=0.3)
-ax_c.hist(near_complete, bins=15, alpha=0.8, color=colors_comp["NEAR-COMPLETE"],
-          label=f"Near-complete (n={len(near_complete)})", edgecolor="white", linewidth=0.3)
-ax_c.hist(fragmented, bins=12, alpha=0.8, color=colors_comp["FRAGMENTED"],
-          label=f"Fragmented (n={len(fragmented)})", edgecolor="white", linewidth=0.3)
-ax_c.hist(poor, bins=10, alpha=0.8, color=colors_comp["POOR"],
-          label=f"Poor (n={len(poor)})", edgecolor="white", linewidth=0.3)
+# Separate by status
+for status, color in colors_comp.items():
+    subset = comp_df[comp_df["completeness_status"] == status]["completeness_score"]
+    if len(subset) > 0:
+        ax_c.hist(subset, bins=20, alpha=0.8, color=color,
+                  label=f"{status} (n={len(subset)})", edgecolor="white", linewidth=0.3)
 
 # Threshold lines
-for thresh, label in [(80, "Complete"), (60, "Near-complete"), (40, "Fragmented")]:
+for thresh, label_t in [(80, "Complete"), (60, "Near-complete"), (40, "Fragmented")]:
     ax_c.axvline(x=thresh, color="gray", linestyle="--", linewidth=0.8, alpha=0.6)
-    ax_c.text(thresh + 0.5, ax_c.get_ylim()[1] * 0.95, f"{thresh}", fontsize=7,
-              color="gray", ha="left", va="top")
 
+# Fix y-axis annotation after draw
 ax_c.set_xlabel("Completeness Score")
 ax_c.set_ylabel("Count")
-ax_c.set_title("C) Assembly Completeness Assessment\n(L3: Composite Score Distribution)", fontweight="bold")
+n_total = len(comp_df)
+n_single = int((comp_df["n_contigs"] == 1).sum())
+n_circ = int(comp_df["circular_signal"].sum())
+ax_c.set_title(f"C) Assembly Completeness Assessment\n({n_total:,} Training Plasmids)", fontweight="bold")
 ax_c.legend(fontsize=7, loc="upper left")
 
-# Scoring criteria inset
+# Scoring criteria + real stats inset
 criteria_text = ("Scoring criteria:\n"
                  "  Single contig: +40\n"
                  "  N50 ratio > 0.9: +20\n"
                  "  Circular signal: +20\n"
                  "  Coding density > 80%: +10\n"
-                 "  No N-gaps: +10")
+                 "  No N-gaps: +10\n"
+                 f"Single contig: {n_single/n_total*100:.1f}%\n"
+                 f"Circular: {n_circ/n_total*100:.1f}%\n"
+                 f"Median score: {comp_df['completeness_score'].median():.0f}")
 ax_c.text(0.98, 0.55, criteria_text, transform=ax_c.transAxes, fontsize=6,
           ha="right", va="top", fontfamily="monospace",
           bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.8))
 
 
-# ── Panel D: Database coverage / novelty concept ────────────────────────────
+# ── Panel D: Database coverage / novelty (REAL leave-one-out NN distances) ───
 ax_d = fig.add_subplot(gs[1, 0])
 
-# Simulate NN distance distributions per Inc group
-np.random.seed(123)
-well_covered = np.random.exponential(0.015, 300)
-moderate = np.random.exponential(0.030, 100)
-novel = np.random.exponential(0.060, 30)
+NN_TSV = os.path.join(BASE_DIR, "output", "figure14_validation", "nn_distances.tsv")
+nn_df = pd.read_csv(NN_TSV, sep="\t")
 
-ax_d.hist(well_covered, bins=30, alpha=0.7, color="#27ae60", label="Well-covered (GREEN)",
-          edgecolor="white", linewidth=0.3, density=True)
-ax_d.hist(moderate, bins=20, alpha=0.7, color="#f39c12", label="Sparse coverage (YELLOW)",
-          edgecolor="white", linewidth=0.3, density=True)
-ax_d.hist(novel, bins=15, alpha=0.7, color="#e74c3c", label="Potentially novel (RED)",
-          edgecolor="white", linewidth=0.3, density=True)
+# Separate by coverage indicator
+green = nn_df[nn_df["coverage_indicator"] == "GREEN"]["nn_distance"]
+yellow = nn_df[nn_df["coverage_indicator"] == "YELLOW"]["nn_distance"]
+red = nn_df[nn_df["coverage_indicator"] == "RED"]["nn_distance"]
 
-# Threshold
-ax_d.axvline(x=0.050, color="red", linestyle="--", linewidth=1.2, alpha=0.8)
-ax_d.text(0.052, ax_d.get_ylim()[1] * 0.9, "L3 threshold\n(0.050)", fontsize=7,
-          color="red", ha="left", va="top")
+ax_d.hist(green, bins=50, alpha=0.7, color="#27ae60",
+          label=f"Well-covered (n={len(green)})", edgecolor="white", linewidth=0.3)
+ax_d.hist(yellow, bins=20, alpha=0.8, color="#f39c12",
+          label=f"Divergent (n={len(yellow)})", edgecolor="white", linewidth=0.3)
+ax_d.hist(red, bins=15, alpha=0.8, color="#e74c3c",
+          label=f"Potentially novel (n={len(red)})", edgecolor="white", linewidth=0.3)
 
-ax_d.set_xlabel("Nearest-Neighbor Distance (cosine)")
-ax_d.set_ylabel("Density")
-ax_d.set_title("D) Database Coverage & Novelty Detection\n(L4: NN Distance Percentile)", fontweight="bold")
+# Threshold lines
+ax_d.axvline(x=0.020, color="#f39c12", linestyle="--", linewidth=1.2, alpha=0.8)
+ax_d.axvline(x=0.050, color="#e74c3c", linestyle="--", linewidth=1.2, alpha=0.8)
+
+ax_d.set_xlabel("Leave-One-Out Nearest-Neighbour Distance (cosine)")
+ax_d.set_ylabel("Count")
+n_nn = len(nn_df)
+ax_d.set_title(f"D) Database Coverage & Novelty Detection\n({n_nn:,} Training Plasmids, Leave-One-Out)", fontweight="bold")
 ax_d.legend(fontsize=7, loc="upper right")
-ax_d.set_xlim(0, 0.2)
+ax_d.set_xlim(0, 0.10)
+
+# Stats inset
+nn_med = nn_df["nn_distance"].median()
+nn_p95 = nn_df["nn_distance"].quantile(0.95)
+nn_p99 = nn_df["nn_distance"].quantile(0.99)
+ax_d.text(0.98, 0.95,
+          f"Median: {nn_med:.4f}\np95: {nn_p95:.4f}\np99: {nn_p99:.4f}\n"
+          f"GREEN: {len(green)/n_nn*100:.1f}%\n"
+          f"YELLOW: {len(yellow)/n_nn*100:.1f}%\n"
+          f"RED: {len(red)/n_nn*100:.1f}%",
+          transform=ax_d.transAxes, fontsize=6, ha="right", va="top",
+          bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.8))
 
 
 # ── Panel E: Confusion matrix heatmap ────────────────────────────────────────
@@ -245,10 +274,10 @@ cmap = LinearSegmentedColormap.from_list("conf",
 im = ax_e.imshow(conf_norm, cmap=cmap, aspect="auto", vmin=0, vmax=1)
 ax_e.set_xticks(range(n_groups))
 ax_e.set_yticks(range(n_groups))
-ax_e.set_xticklabels(group_names, rotation=90, fontsize=5.5, ha="center")
-ax_e.set_yticklabels(group_names, fontsize=5.5)
-ax_e.set_xlabel("Predicted", fontsize=9)
-ax_e.set_ylabel("True", fontsize=9)
+ax_e.set_xticklabels(group_names, rotation=90, fontsize=6.5, ha="center")
+ax_e.set_yticklabels(group_names, fontsize=6.5)
+ax_e.set_xlabel("Predicted", fontsize=10)
+ax_e.set_ylabel("True", fontsize=10)
 ax_e.set_title("E) Classifier Confusion Matrix\n(Row-Normalized, 5-Fold CV)", fontweight="bold")
 
 # Add colorbar
@@ -339,28 +368,28 @@ legend_items = [
     mpatches.Patch(color="#f1c40f", label="IS Elements"),
     mpatches.Patch(color="#95a5a6", label="Hypothetical"),
 ]
-ax_f.legend(handles=legend_items, loc="lower center", ncol=5, fontsize=6,
-            framealpha=0.9, bbox_to_anchor=(0.5, -0.05))
+ax_f.legend(handles=legend_items, loc="lower center", ncol=5, fontsize=8,
+            framealpha=0.9, bbox_to_anchor=(0.5, -0.12))
 
 # Scale bar
 ax_f.plot([0, 10], [-0.8, -0.8], "k-", linewidth=1.5)
 ax_f.text(5, -1.3, "~5 kb", ha="center", fontsize=7)
 
 ax_f.set_title("F) MGE Boundary Detection\n(L10: Gene Architecture Map)", fontweight="bold")
-ax_f.set_xlabel("Position (kb)", fontsize=9)
-ax_f.set_xticks([0, 20, 40, 60, 80, 100])
-ax_f.set_xticklabels(["0", "10", "20", "30", "40", "50"])
+ax_f.set_xlabel("Position (kb)", fontsize=10)
+ax_f.set_xticks([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+ax_f.set_xticklabels(["0", "5", "10", "15", "20", "25", "30", "35", "40", "45", "50"])
 ax_f.set_yticks([])
 ax_f.spines["left"].set_visible(False)
 ax_f.spines["top"].set_visible(False)
 
 # ── Main title ───────────────────────────────────────────────────────────────
-fig.suptitle("Figure 16: Addressed Limitations — Expanded Classifier, Quality Assessment,\n"
-             "Novelty Detection, and Mobile Genetic Element Analysis",
+fig.suptitle("Figure 14: Analytical Module Validation Summary — Expanded Classifier,\n"
+             "Quality Assessment, Novelty Detection, and Mobile Genetic Element Analysis",
              fontsize=13, fontweight="bold", y=1.01)
 
 # Save
-out_path = os.path.join(FIG_DIR, "figure16_limitations_addressed.png")
+out_path = os.path.join(FIG_DIR, "figure14_analytical_validation.png")
 fig.savefig(out_path, dpi=300, bbox_inches="tight", facecolor="white")
 out_pdf = out_path.replace(".png", ".pdf")
 fig.savefig(out_pdf, dpi=300, bbox_inches="tight", facecolor="white")
@@ -372,32 +401,40 @@ print(f"  Saved: {out_pdf}")
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 17: Gram-Positive Expansion Detail
 # ══════════════════════════════════════════════════════════════════════════════
-print("\nGenerating Figure 17: Gram-Positive Expansion ...")
+print("\nGenerating Figure 15: Novel Inc/Rep Group Discovery and Expansion ...")
 
 fig17, axes17 = plt.subplots(1, 3, figsize=(18, 6))
 
-# Panel A: Gram-positive group composition
+# Panel A: Gram-positive group composition (horizontal bars to avoid label overlap)
 ax = axes17[0]
 gp_names = gram_pos_groups
 gp_counts = [samples_per_group[group_names.index(g)] for g in gp_names]
 gp_colors = [get_group_color(g) for g in gp_names]
 
 gp_labels_display = {
-    "repSA_large": "S. aureus\nlarge plasmids\n(pI258/pSK1/pSK41)",
-    "repSA_small": "S. aureus\nsmall plasmids\n(pT181/SAP/pWBG749)",
-    "repEF_conj": "Enterococcus\nconjugative\n(pAD1/pCF10)",
-    "repEF_res": "Enterococcus\nresistance\n(pRUM/pRE25/pHTbeta)",
+    "repSA_large": "repSA_large (S. aureus large)",
+    "repSA_small": "repSA_small (S. aureus small)",
+    "repEF_conj": "repEF_conj (Enterococcus conj.)",
+    "repEF_res": "repEF_res (Enterococcus res.)",
+    "repAci1": "repAci1 (Acinetobacter small)",
+    "repAci_large": "repAci_large (Acinetobacter)",
+    "repPae_large": "repPae_large (Pseudomonas)",
+    "repPae_small": "repPae_small (Pseudomonas)",
 }
 
-bars17 = ax.bar(range(len(gp_names)), gp_counts, color=gp_colors,
-                edgecolor="white", linewidth=0.5, width=0.6)
-ax.set_xticks(range(len(gp_names)))
-ax.set_xticklabels([gp_labels_display.get(g, g) for g in gp_names], fontsize=7)
-ax.set_ylabel("Training sequences")
-ax.set_title("A) Gram-Positive Rep Type Groups", fontweight="bold")
+# Sort by count for cleaner display
+sorted_pairs = sorted(zip(gp_names, gp_counts, gp_colors), key=lambda x: x[1])
+s_names, s_counts, s_colors = zip(*sorted_pairs)
 
-for i, (cnt, bar) in enumerate(zip(gp_counts, bars17)):
-    ax.text(i, cnt + 2, str(cnt), ha="center", fontsize=9, fontweight="bold")
+bars17 = ax.barh(range(len(s_names)), s_counts, color=s_colors,
+                 edgecolor="white", linewidth=0.5, height=0.7)
+ax.set_yticks(range(len(s_names)))
+ax.set_yticklabels([gp_labels_display.get(g, g) for g in s_names], fontsize=8)
+ax.set_xlabel("Training sequences")
+ax.set_title("A) Expanded Rep Type Groups\n(Gram-positive, Acinetobacter, Pseudomonas)", fontweight="bold")
+
+for i, (cnt, bar) in enumerate(zip(s_counts, bars17)):
+    ax.text(cnt + 3, i, str(cnt), va="center", ha="left", fontsize=9, fontweight="bold")
 
 # Panel B: F1 scores comparison (Gram-neg vs Gram-pos)
 ax = axes17[1]
@@ -450,8 +487,8 @@ for i, g1 in enumerate(all_selected):
 im17 = ax.imshow(dist_matrix, cmap="YlOrRd", aspect="auto")
 ax.set_xticks(range(n_sel))
 ax.set_yticks(range(n_sel))
-ax.set_xticklabels(all_selected, rotation=45, ha="right", fontsize=7)
-ax.set_yticklabels(all_selected, fontsize=7)
+ax.set_xticklabels(all_selected, rotation=45, ha="right", fontsize=8)
+ax.set_yticklabels(all_selected, fontsize=8)
 ax.set_title("C) Centroid Distances\n(Gram-pos vs Selected Gram-neg)", fontweight="bold")
 
 cbar17 = plt.colorbar(im17, ax=ax, fraction=0.046, pad=0.04)
@@ -471,11 +508,11 @@ rect17 = plt.Rectangle((gp_start_17 - 0.5, gp_start_17 - 0.5),
                         fill=False, edgecolor="cyan", linewidth=2, linestyle="--")
 ax.add_patch(rect17)
 
-fig17.suptitle("Figure 17: Gram-Positive Plasmid Expansion — Training Data, "
+fig17.suptitle("Figure 15: Novel Inc/Rep Group Discovery — Training Data, "
                "Performance, and Taxonomic Separation",
                fontsize=12, fontweight="bold", y=1.02)
 
-out17 = os.path.join(FIG_DIR, "figure17_gram_positive_expansion.png")
+out17 = os.path.join(FIG_DIR, "figure15_novel_inc_discovery.png")
 fig17.savefig(out17, dpi=300, bbox_inches="tight", facecolor="white")
 fig17.savefig(out17.replace(".png", ".pdf"), dpi=300, bbox_inches="tight", facecolor="white")
 plt.close(fig17)
@@ -485,7 +522,7 @@ print(f"  Saved: {out17}")
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 18: Recombination & Evolutionary Rate Concepts
 # ══════════════════════════════════════════════════════════════════════════════
-print("\nGenerating Figure 18: Recombination & Evolutionary Rate ...")
+print("\nGenerating Figure 17: Recombination Detection and Evolutionary Rate ...")
 
 fig18, axes18 = plt.subplots(1, 2, figsize=(14, 6))
 
@@ -594,10 +631,10 @@ ax.legend(fontsize=7, loc="lower right")
 ax.set_xlim(0, 800)
 ax.set_ylim(-1, max(snps) + 3)
 
-fig18.suptitle("Figure 18: Recombination Detection and Molecular Clock Analysis",
+fig18.suptitle("Figure 17: Recombination Detection and Molecular Clock Analysis",
                fontsize=12, fontweight="bold", y=1.02)
 
-out18 = os.path.join(FIG_DIR, "figure18_recombination_evolutionary_rate.png")
+out18 = os.path.join(FIG_DIR, "figure17_recombination_evolutionary_rate.png")
 fig18.savefig(out18, dpi=300, bbox_inches="tight", facecolor="white")
 fig18.savefig(out18.replace(".png", ".pdf"), dpi=300, bbox_inches="tight", facecolor="white")
 plt.close(fig18)
@@ -607,56 +644,72 @@ print(f"  Saved: {out18}")
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 19: Cluster Stability & Adaptive Thresholds
 # ══════════════════════════════════════════════════════════════════════════════
-print("\nGenerating Figure 19: Cluster Stability & Thresholds ...")
+print("\nGenerating Figure 16: Adaptive Thresholds and Cluster Stability ...")
 
 fig19, axes19 = plt.subplots(1, 2, figsize=(14, 6))
 
-# Panel A: Bootstrap stability distribution
+# Panel A: Bootstrap stability (REAL data from per-group bootstrap analysis)
 ax = axes19[0]
 
-np.random.seed(42)
-high_stability = np.random.beta(20, 3, 60) * 100  # mostly >80%
-medium_stability = np.random.beta(5, 3, 25) * 100  # spread around 50-70%
-low_stability = np.random.beta(2, 5, 15) * 100  # mostly <50%
-all_stability = np.concatenate([high_stability, medium_stability, low_stability])
+STAB_TSV = os.path.join(BASE_DIR, "output", "figure16_validation", "cluster_stability.tsv")
+stab_df = pd.read_csv(STAB_TSV, sep="\t")
+l3_stab = stab_df[stab_df["level"] == "L3"]
+
+# Expand per-group mean stability into per-cluster entries for histogram
+all_stability = []
+for _, row in l3_stab.iterrows():
+    all_stability.extend([row["mean_stability"]] * row["n_clusters"])
+all_stability = np.array(all_stability)
 
 bins = np.arange(0, 105, 5)
-n_stable = np.sum(all_stability >= 70)
-n_moderate = np.sum((all_stability >= 50) & (all_stability < 70))
-n_unstable = np.sum(all_stability < 50)
+n_stable = int(np.sum(all_stability >= 80))
+n_moderate = int(np.sum((all_stability >= 50) & (all_stability < 80)))
+n_unstable = int(np.sum(all_stability < 50))
 
 ax.hist(all_stability, bins=bins, color="#3498db", edgecolor="white", linewidth=0.5, alpha=0.8)
-ax.axvline(x=70, color="#27ae60", linestyle="--", linewidth=1.5, label=f"Stable threshold (n={n_stable})")
+ax.axvline(x=80, color="#27ae60", linestyle="--", linewidth=1.5, label=f"Stable threshold (n={n_stable})")
 ax.axvline(x=50, color="#e74c3c", linestyle="--", linewidth=1.5, label=f"Unstable threshold (n={n_unstable})")
 
 ax.set_xlabel("Bootstrap Stability Score (%)")
 ax.set_ylabel("Number of Clusters")
-ax.set_title("A) Cluster Stability Assessment (L8)\n50 Bootstrap Iterations", fontweight="bold")
+n_total_cl = len(all_stability)
+ax.set_title(f"A) Cluster Stability Assessment\n(50 Bootstrap Iterations, {n_total_cl} L3 Clusters, 28 Groups)",
+             fontweight="bold")
 ax.legend(fontsize=7, loc="upper left")
 
 # Annotate zones
-ax.axvspan(70, 100, alpha=0.08, color="#27ae60")
-ax.axvspan(50, 70, alpha=0.08, color="#f39c12")
+ax.axvspan(80, 100, alpha=0.08, color="#27ae60")
+ax.axvspan(50, 80, alpha=0.08, color="#f39c12")
 ax.axvspan(0, 50, alpha=0.08, color="#e74c3c")
 
-ax.text(85, ax.get_ylim()[1] * 0.85, "Stable", fontsize=9, ha="center",
+ylim = ax.get_ylim()
+ax.text(90, ylim[1] * 0.85, "Stable", fontsize=9, ha="center",
         color="#27ae60", fontweight="bold")
-ax.text(60, ax.get_ylim()[1] * 0.85, "Moderate", fontsize=9, ha="center",
+ax.text(65, ylim[1] * 0.85, "Moderate", fontsize=9, ha="center",
         color="#f39c12", fontweight="bold")
-ax.text(25, ax.get_ylim()[1] * 0.85, "Unstable", fontsize=9, ha="center",
+ax.text(25, ylim[1] * 0.85, "Unstable", fontsize=9, ha="center",
         color="#e74c3c", fontweight="bold")
 
 # Panel B: Linkage method comparison
 ax = axes19[1]
 
+LINK_TSV = os.path.join(BASE_DIR, "output", "figure16_validation", "linkage_comparison.tsv")
+link_df = pd.read_csv(LINK_TSV, sep="\t")
+l3_link = link_df[link_df["level"] == "L3"]
+
 methods = ["Single", "Complete", "Average"]
-# Simulated ARI values
+# Real ARI values (mean across 28 groups at L3)
+sc = round(float(l3_link["single_vs_complete"].mean()), 2)
+sa = round(float(l3_link["single_vs_average"].mean()), 2)
+ca = round(float(l3_link["complete_vs_average"].mean()), 2)
 ari_matrix = np.array([
-    [1.00, 0.72, 0.85],
-    [0.72, 1.00, 0.88],
-    [0.85, 0.88, 1.00],
+    [1.00,  sc,    sa],
+    [sc,    1.00,  ca],
+    [sa,    ca,    1.00],
 ])
-cluster_counts = [42, 35, 38]
+cluster_counts = [round(l3_link["n_clusters_single"].mean(), 1),
+                  round(l3_link["n_clusters_complete"].mean(), 1),
+                  round(l3_link["n_clusters_average"].mean(), 1)]
 
 im19 = ax.imshow(ari_matrix, cmap="YlGnBu", vmin=0.5, vmax=1.0, aspect="auto")
 ax.set_xticks(range(3))
@@ -675,10 +728,10 @@ cbar19.set_label("Adjusted Rand Index (ARI)", fontsize=8)
 
 ax.set_title("B) Linkage Method Comparison (L8)\nClustering Agreement", fontweight="bold")
 
-fig19.suptitle("Figure 19: Cluster Robustness — Bootstrap Stability and Linkage Sensitivity",
+fig19.suptitle("Figure 16: Adaptive Thresholds and Cluster Stability",
                fontsize=12, fontweight="bold", y=1.02)
 
-out19 = os.path.join(FIG_DIR, "figure19_cluster_stability.png")
+out19 = os.path.join(FIG_DIR, "figure16_cluster_stability.png")
 fig19.savefig(out19, dpi=300, bbox_inches="tight", facecolor="white")
 fig19.savefig(out19.replace(".png", ".pdf"), dpi=300, bbox_inches="tight", facecolor="white")
 plt.close(fig19)

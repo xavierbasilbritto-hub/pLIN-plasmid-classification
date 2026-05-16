@@ -49,7 +49,7 @@ _LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 _FAVICON = os.path.join(_LOGO_DIR, "pLIN_favicon.png")
 
 st.set_page_config(
-    page_title="pLIN Classifier",
+    page_title="Generating pLIN number — a digital ID for your plasmid",
     page_icon=_FAVICON if os.path.exists(_FAVICON) else "🧬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -111,7 +111,17 @@ INC_CONFIDENCE_THRESHOLD = 0.40  # 40% confidence minimum
 
 # Threshold for detecting multiple Inc types (multi-replicon plasmids)
 # If 2+ Inc types have confidence >= this threshold, flag as "Multiple Inc"
-MULTI_INC_THRESHOLD = 0.25  # 25% minimum for secondary Inc types
+# Lowered from 0.25 → 0.15: large multi-replicon plasmids (e.g. IncHI2/IncN co-carrying
+# blaVIM-1) split KNN probability ~80/20 between the two replicon types; the 25% threshold
+# missed the secondary replicon for 4 of 8 Swiss VIM-1 isolates.
+MULTI_INC_THRESHOLD = 0.15  # 15% minimum for secondary Inc types
+
+# PlasmidFinder replicon BLAST — used as a secondary signal for large plasmids
+# where KNN gives ≥95% to a single group (all 5 neighbours same group → misses secondary)
+PLASMIDFINDER_DB_DIR = os.path.expanduser("~/plasmidfinder_db")
+REPLICON_BLAST_SIZE_THRESHOLD = 100_000   # only run for sequences > 100 kb
+REPLICON_BLAST_IDENTITY = 80.0            # min % identity for replicon hit
+REPLICON_BLAST_COVERAGE = 60.0           # min query coverage % for replicon hit
 
 # Minimum sequence length for reliable 4-mer classification
 # Plasmids shorter than this have high stochastic variance in k-mer profiles
@@ -494,6 +504,78 @@ def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
     return results
 
 
+def merge_multicontig_plasmids(records):
+    """Merge plasmid contigs from the same source file + Inc type into single records.
+
+    When a multi-FASTA assembly file contains multiple plasmid contigs with the
+    same Inc type, they are likely fragments of the same replicon. This function
+    concatenates them (with 100-N spacer) so they receive a single pLIN code.
+
+    Contigs with different Inc types within the same file are kept separate
+    (they represent genuinely different plasmids).
+
+    Returns:
+        merged_records: list of dicts (same schema as input records)
+        merge_map: dict mapping merged plasmid_id → list of original contig plasmid_ids
+    """
+    from collections import defaultdict
+
+    # Group records by (source_file, inc_type)
+    groups = defaultdict(list)
+    for rec in records:
+        key = (rec.get("source_file", "unknown"), rec.get("inc_type", "Unknown"))
+        groups[key].append(rec)
+
+    merged_records = []
+    merge_map = {}
+
+    for (src_file, inc_type), group_recs in groups.items():
+        if len(group_recs) == 1:
+            # Single contig — pass through unchanged
+            rec = group_recs[0]
+            merged_records.append(rec)
+            merge_map[rec["plasmid_id"]] = [rec["plasmid_id"]]
+        else:
+            # Multiple contigs from same file with same Inc type — merge
+            # Sort by contig index to maintain original order
+            group_recs.sort(key=lambda r: r.get("_contig_index", 0))
+
+            # Concatenate sequences with N spacer
+            spacer = "N" * 100
+            merged_seq = spacer.join(r["sequence"] for r in group_recs)
+            original_ids = [r["plasmid_id"] for r in group_recs]
+
+            # Use first contig as template for metadata
+            template = group_recs[0].copy()
+            merged_id = f"{src_file}|{inc_type}|merged({len(group_recs)})"
+            template["plasmid_id"] = merged_id
+            template["sequence"] = merged_seq
+            template["length"] = len(merged_seq)
+            template["_merged_from"] = original_ids
+            template["_merged_count"] = len(group_recs)
+
+            # Use best confidence among merged contigs
+            confidences = [r.get("inc_confidence", 0) or 0 for r in group_recs]
+            if confidences:
+                best_idx = confidences.index(max(confidences))
+                best_rec = group_recs[best_idx]
+                template["inc_confidence"] = best_rec.get("inc_confidence")
+                template["inc_best_match"] = best_rec.get("inc_best_match")
+                template["inc_top5_candidates"] = best_rec.get("inc_top5_candidates")
+                template["inc_is_low_confidence"] = best_rec.get("inc_is_low_confidence")
+
+            # Only skip pLIN if ALL contigs in the group were marked _skip_plin
+            if all(r.get("_skip_plin", False) for r in group_recs):
+                template["_skip_plin"] = True
+            else:
+                template.pop("_skip_plin", None)
+
+            merged_records.append(template)
+            merge_map[merged_id] = original_ids
+
+    return merged_records, merge_map
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  L3: ASSEMBLY COMPLETENESS ASSESSMENT
 # ══════════════════════════════════════════════════════════════════════════════
@@ -619,6 +701,100 @@ def detect_duplicates(records):
     return duplicates
 
 
+# PlasmidFinder FSA filename → Inc group name mapping
+# Covers the FSA files present in ~/plasmidfinder_db/
+_PLASMIDFINDER_FSA_TO_INC = {
+    "Rep1.fsa":       "IncI1",
+    "Rep2.fsa":       "IncI2",
+    "Rep3.fsa":       "IncF",
+    "Rep7.fsa":       "IncX1",
+    "Rep9.fsa":       "IncHI2",
+    "Rep10.fsa":      "IncR",
+    "Inc18.fsa":      "IncFII",
+    "NT_Rep.fsa":     "IncN",
+    "Rep_trans.fsa":  "IncHI1",
+    "RepL.fsa":       "ColE",
+    "Rep3_1.fsa":     "IncFIC",
+}
+
+def _replicon_blast_inc_types(sequence: str) -> list:
+    """Run BLASTn of sequence against PlasmidFinder replicon database.
+
+    Uses enterobacteriales.fsa (combined FSA with all Inc groups in headers).
+    Coverage is measured against the replicon subject sequence (not the query plasmid).
+    Returns list of (inc_group, pct_identity, coverage) tuples for hits passing thresholds.
+    Only called for sequences > REPLICON_BLAST_SIZE_THRESHOLD bp.
+    Returns [] if BLAST unavailable or DB missing.
+    """
+    import subprocess, tempfile, re
+
+    # Prefer Homebrew blastn, fall back to PATH
+    for candidate in ["/opt/homebrew/bin/blastn", "blastn"]:
+        try:
+            subprocess.run([candidate, "-version"], capture_output=True, timeout=5)
+            blastn = candidate
+            break
+        except Exception:
+            blastn = None
+
+    db_dir = PLASMIDFINDER_DB_DIR
+    combined_fsa = os.path.join(db_dir, "enterobacteriales.fsa")
+    if not blastn or not os.path.isfile(combined_fsa):
+        return []
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".fa", delete=False) as qf:
+        qf.write(f">query\n{sequence}\n")
+        query_path = qf.name
+
+    detected = {}
+    try:
+        result = subprocess.run(
+            [blastn, "-query", query_path, "-subject", combined_fsa,
+             "-outfmt", "6 qseqid sseqid pident length slen",
+             "-perc_identity", str(REPLICON_BLAST_IDENTITY),
+             "-task", "blastn", "-evalue", "1e-5", "-max_hsps", "50"],
+            capture_output=True, text=True, timeout=60
+        )
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            if len(parts) < 5:
+                continue
+            sseqid  = parts[1]   # e.g. "IncHI2_1__BX664015" or "IncHI2A_1__BX664015"
+            pident  = float(parts[2])
+            aln_len = int(parts[3])
+            slen    = int(parts[4])
+            # Coverage of the replicon sequence (subject)
+            coverage = (aln_len / slen) * 100 if slen > 0 else 0
+            if pident < REPLICON_BLAST_IDENTITY or coverage < REPLICON_BLAST_COVERAGE:
+                continue
+            # Parse Inc group from subject header: "IncHI2A_1__BX664015" → "IncHI2A" → normalise to "IncHI2"
+            m = re.match(r"(Inc[A-Za-z0-9]+|Col[A-Za-z0-9]+|rep[A-Za-z0-9]+)", sseqid)
+            if not m:
+                continue
+            raw_group = m.group(1)
+            # Collapse sub-types: IncHI2A → IncHI2, IncHI1B → IncHI1, IncN2/IncN3 → IncN
+            inc_group = re.sub(r"([A-Z])$", "", raw_group)   # strip trailing letter sub-type
+            inc_group = re.sub(r"\d+$", "", inc_group) if inc_group.endswith(("2","3")) and "HI" not in inc_group else inc_group
+            # Keep only groups in our 28-group classifier
+            if inc_group not in ("IncA","IncAC2","IncC","IncF","IncFIB","IncFIBK","IncFIC","IncFII",
+                                  "IncHI1","IncHI2","IncI","IncI1","IncI2","IncN","IncR",
+                                  "IncX1","IncX3","IncX4","ColE","ColRNAI"):
+                continue
+            if inc_group not in detected or detected[inc_group][0] < pident:
+                detected[inc_group] = (pident, coverage)
+    except Exception:
+        pass
+    finally:
+        try:
+            os.unlink(query_path)
+        except Exception:
+            pass
+
+    return [(grp, pid, cov) for grp, (pid, cov) in sorted(detected.items(), key=lambda x: -x[1][0])]
+
+
 def classify_inc_group(sequence, group_names, classifier):
     """Classify a plasmid to its Inc group using KNN or centroid distance.
 
@@ -651,25 +827,47 @@ def classify_inc_group(sequence, group_names, classifier):
         high_conf_incs = [(inc, conf) for inc, conf in sorted_candidates if conf >= MULTI_INC_THRESHOLD]
         is_multiple_inc = len(high_conf_incs) >= 2
 
+        # Secondary signal: replicon BLAST for large plasmids where KNN gives 100% to one group.
+        # KNN k=5 cannot detect a secondary replicon when all 5 neighbours are the same group.
+        blast_inc_types = []
+        blast_used = False
+        if (not is_multiple_inc
+                and confidence >= 0.95
+                and len(sequence) >= REPLICON_BLAST_SIZE_THRESHOLD
+                and os.path.isdir(PLASMIDFINDER_DB_DIR)):
+            blast_hits = _replicon_blast_inc_types(sequence)
+            # Only promote to multi-replicon if BLAST finds a second Inc group
+            # that is different from the KNN winner and passes thresholds
+            blast_others = [g for g, pid, cov in blast_hits if g != best_group]
+            if blast_others:
+                blast_inc_types = blast_hits
+                blast_used = True
+                # Merge: KNN winner + BLAST additional groups
+                blast_groups = [g for g, _, _ in blast_hits]
+                combined = [best_group] + [g for g in blast_groups if g != best_group]
+                high_conf_incs = [(g, confidence if g == best_group else 0.0) for g in combined]
+                is_multiple_inc = True
+
         # Determine the predicted group label
         if is_low_confidence:
             predicted_group = "Unknown/Novel"
         elif is_multiple_inc:
-            # Format as "IncF/IncN" for the top detected types
-            inc_names = [inc for inc, _ in high_conf_incs[:3]]  # Max 3 in label
+            inc_names = [inc for inc, _ in high_conf_incs[:3]]
             predicted_group = "Multiple: " + "/".join(inc_names)
         else:
             predicted_group = best_group
 
         return {
             "predicted_group": predicted_group,
-            "best_match": best_group,  # Always store the best match even if flagged as Unknown
+            "best_match": best_group,
             "confidence": confidence,
             "is_low_confidence": is_low_confidence,
             "is_multiple_inc": is_multiple_inc,
             "multiple_inc_types": high_conf_incs if is_multiple_inc else [],
             "top5_candidates": sorted_candidates,
             "all_probabilities": proba_dict,
+            "blast_replicon_hits": blast_inc_types,
+            "blast_used": blast_used,
             # CV-based quality metadata (populated by caller if available)
             "cv_f1": None,
             "is_confusion_pair": False,
@@ -1529,6 +1727,8 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
                     rec_dict["inc_multiple_types"] = result["multiple_inc_types"]
                     rec_dict["inc_top5_candidates"] = result["top5_candidates"]
                     rec_dict["inc_probabilities"] = result["all_probabilities"]
+                    rec_dict["inc_blast_used"] = result.get("blast_used", False)
+                    rec_dict["inc_blast_hits"] = result.get("blast_replicon_hits", [])
                     # Enrich with CV metrics
                     best = result["best_match"]
                     if best in cv_data["per_class"]:
@@ -1861,6 +2061,10 @@ def build_results_df(records, plin_codes, cluster_assignments):
             # Format top 5 as string for display: "IncFII (45%), IncN (30%), ..."
             top5_str = ", ".join([f"{inc} ({conf*100:.1f}%)" for inc, conf in rec["inc_top5_candidates"]])
             row["inc_top5_candidates"] = top5_str
+        # Track merged contig info
+        if "_merged_from" in rec:
+            row["merged_contigs"] = ", ".join(rec["_merged_from"])
+            row["merged_count"] = rec["_merged_count"]
         for b in PLIN_THRESHOLDS:
             row[f"bin_{b}"] = int(cluster_assignments[b][i])
         rows.append(row)
@@ -4612,8 +4816,8 @@ if run_btn and uploaded_files:
         vectors = vectors[non_chromo_indices]
         st.session_state.records = records
 
-        # Track which contigs should get pLIN codes
-        st.session_state._plin_eligible_ids = set(
+        # Track which contigs should get pLIN codes (pre-merge IDs)
+        plin_eligible_original = set(
             contig_classes[i]["plasmid_id"] for i in plasmid_indices
         )
 
@@ -4663,12 +4867,47 @@ if run_btn and uploaded_files:
         else:
             st.session_state.strain_contig_summary = None
 
+        # ── Step 2c: Merge multi-contig plasmids from same file + Inc type ──
+        pre_merge_count = len(records)
+        records, merge_map = merge_multicontig_plasmids(records)
+        st.session_state.merge_map = merge_map
+
+        if len(records) < pre_merge_count:
+            # Merging happened — recompute 4-mer vectors on merged sequences
+            sequences = tuple(r["sequence"] for r in records)
+            vectors = compute_kmer_vectors(sequences, k=4)
+
+            # Show merge summary
+            merged_groups = {k: v for k, v in merge_map.items() if len(v) > 1}
+            for mid, orig_ids in merged_groups.items():
+                st.info(
+                    f"**Merged {len(orig_ids)} contigs** from same assembly + Inc type "
+                    f"into single plasmid: {', '.join(orig_ids)}",
+                    icon="🔗",
+                )
+
+        st.session_state.records = records
+
+        # Update pLIN eligible IDs to use merged record IDs
+        plin_eligible = set()
+        for rec in records:
+            merged_from = rec.get("_merged_from")
+            if merged_from:
+                # Merged record is eligible if ANY original contig was eligible
+                if any(oid in plin_eligible_original for oid in merged_from):
+                    plin_eligible.add(rec["plasmid_id"])
+            else:
+                if rec["plasmid_id"] in plin_eligible_original:
+                    plin_eligible.add(rec["plasmid_id"])
+        st.session_state._plin_eligible_ids = plin_eligible
+
     else:
         st.session_state.contig_classification = None
         st.session_state.excluded_chromosomes = None
         st.session_state.incomplete_plasmids = None
         st.session_state._plin_eligible_ids = None
         st.session_state.strain_contig_summary = None
+        st.session_state.merge_map = None
 
     # Determine analysis mode
     is_query_mode = len(records) == 1
@@ -5290,27 +5529,48 @@ with tab_overview:
                 multi_inc_df = df[df["inc_is_multiple"] == True]
                 multi_inc_count = len(multi_inc_df)
                 if multi_inc_count > 0:
+                    blast_count = int(df.get("inc_blast_used", False).sum()) if "inc_blast_used" in df.columns else 0
+                    blast_note = f" ({blast_count} confirmed by PlasmidFinder BLAST)" if blast_count > 0 else ""
                     st.warning(
-                        f"**{multi_inc_count} plasmid(s) detected with Multiple Inc types** — "
-                        f"These may be multi-replicon or mosaic plasmids carrying multiple incompatibility groups. "
-                        f"Threshold: ≥{MULTI_INC_THRESHOLD*100:.0f}% confidence for secondary Inc types."
+                        f"**{multi_inc_count} plasmid(s) detected with Multiple Inc types{blast_note}** — "
+                        f"These are multi-replicon plasmids carrying replicons from multiple incompatibility groups. "
+                        f"KNN threshold: ≥{MULTI_INC_THRESHOLD*100:.0f}% for secondary Inc types. "
+                        f"For large plasmids (>100 kb) with 100% KNN confidence, PlasmidFinder BLAST is used as a secondary signal."
                     )
-                    # Show multi-Inc plasmids with their detected types
                     with st.expander(f"View Multiple Inc type plasmids ({multi_inc_count})"):
                         multi_cols = ["plasmid_id", "inc_type", "inc_confidence"]
                         if "inc_multiple_types" in df.columns:
                             multi_cols.append("inc_multiple_types")
+                        if "inc_blast_used" in df.columns:
+                            multi_cols.append("inc_blast_used")
+                        if "inc_blast_hits" in df.columns:
+                            multi_cols.append("inc_blast_hits")
                         multi_display = multi_inc_df[multi_cols].copy()
+                        # Format blast hits for display
+                        if "inc_blast_hits" in multi_display.columns:
+                            multi_display["inc_blast_hits"] = multi_display["inc_blast_hits"].apply(
+                                lambda hits: ", ".join(f"{g} ({p:.0f}% id)" for g, p, c in hits[:3]) if isinstance(hits, list) and hits else "—"
+                            )
+                        if "inc_blast_used" in multi_display.columns:
+                            multi_display["inc_blast_used"] = multi_display["inc_blast_used"].apply(
+                                lambda x: "✔ BLAST" if x else "KNN"
+                            )
                         multi_display = multi_display.rename(columns={
-                            "inc_type": "Detected Inc Types",
-                            "inc_confidence": "Primary Confidence",
-                            "inc_multiple_types": "All Detected Inc Types",
+                            "inc_type": "Reported Inc Type(s)",
+                            "inc_confidence": "KNN Confidence",
+                            "inc_multiple_types": "All Detected (KNN)",
+                            "inc_blast_used": "Detection Method",
+                            "inc_blast_hits": "PlasmidFinder BLAST Hits",
                         })
                         st.dataframe(multi_display, use_container_width=True, hide_index=True)
                         st.caption(
-                            "**Note:** Multi-replicon plasmids carry replicons from multiple incompatibility groups. "
-                            "This is common in large conjugative plasmids (e.g., IncF plasmids often carry multiple FII/FIA/FIB replicons). "
-                            "Consider verifying with PlasmidFinder or BLAST against NCBI replicon database."
+                            "**Multi-replicon plasmids** carry replicons from multiple incompatibility groups on the same molecule. "
+                            "Common in large conjugative plasmids (e.g. IncHI2 + IncN co-occurring on VIM/NDM resistance plasmids). "
+                            "Detection method: KNN probability split ≥15% triggers multi-replicon flag; "
+                            "PlasmidFinder BLAST (enterobacteriales.fsa, ≥80% identity, ≥60% replicon coverage) "
+                            "is used as a secondary signal for large plasmids where KNN gives 100% to one group. "
+                            "**The pLIN code is unaffected** — it is based on whole-sequence 4-mer composition and correctly "
+                            "identifies these plasmids as a single lineage regardless of which replicon label is assigned."
                         )
 
             inc_summary = df.groupby("inc_type").agg(

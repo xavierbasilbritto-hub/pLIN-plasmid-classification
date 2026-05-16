@@ -1,0 +1,22 @@
+pLIN + MLST Combined Typing — Retrospective Validation Summary
+============================================================
+
+Total outbreak plasmids: 74
+Plasmids with curated host/MLST data: 74
+Unique host species: 7
+Unique MLST STs: 20
+Studies evaluated (≥2 plasmids with MLST): 13
+
+Overall concordance: 12/13 (92.3%)
+Multi-ST diversity detection: 13/13 (100.0%)
+Clonal spread detection: 12/13 (92.3%)
+Studies with HGT pairs: 4
+Studies with clonal pairs: 5
+
+Key validation cases:
+  Conlan 2014 (NIH KPC): ST258 + pLIN 672 → Clonal (CORRECT)
+  Sheppard 2016 (CTX-M USA): ST131 + pLIN 1482 → Clonal (CORRECT)
+  Yao 2023 (KPC Germany): ST11/ST131 + pLIN 671/725 → HGT (CORRECT)
+  Weber 2019 (NDM Germany): Multi-species + 9 L6 → HGT (CORRECT)
+  Jousset 2019 (OXA-48 NL): K.pn/E.coli + pLIN 1688 → HGT (CORRECT)
+  Ho 2019 (NDM HK): Multi-ST K.pn + pLIN 475 → HGT (CORRECT)

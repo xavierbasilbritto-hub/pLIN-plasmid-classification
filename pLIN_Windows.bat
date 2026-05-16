@@ -275,14 +275,32 @@ echo [%~1/%~2] Installing bioinformatics tools via conda...
 
 call :find_conda
 if "!CONDA_BIN!"=="" (
-    call :warn "Conda not found — skipping bioinformatics tools"
-    call :info "Core pLIN features work without these tools"
-    call :info "Install Miniconda from: https://docs.conda.io/en/latest/miniconda.html"
-    call :info ""
-    call :info "For full bioinformatics tool support on Windows, consider:"
-    call :info "  1. Install WSL2:  wsl --install"
-    call :info "  2. Run pLIN_Linux.sh inside WSL"
-    goto :eof
+    call :info "Conda not found — attempting to download Miniconda..."
+    set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
+    set "MINICONDA_EXE=%TEMP%\Miniconda3-latest-Windows-x86_64.exe"
+
+    REM Try downloading with PowerShell
+    powershell -Command "Invoke-WebRequest -Uri '!MINICONDA_URL!' -OutFile '!MINICONDA_EXE!'" >nul 2>&1
+    if exist "!MINICONDA_EXE!" (
+        call :info "Installing Miniconda (silent install)..."
+        "!MINICONDA_EXE!" /InstallationType=JustMe /RegisterPython=0 /AddToPath=1 /S /D=%USERPROFILE%\miniconda3
+        del "!MINICONDA_EXE!" 2>nul
+        set "CONDA_BIN=%USERPROFILE%\miniconda3\Scripts\conda.exe"
+        if exist "!CONDA_BIN!" (
+            call :ok "Miniconda installed to %USERPROFILE%\miniconda3"
+        ) else (
+            call :fail "Miniconda installation failed"
+            call :info "Install manually from: https://docs.conda.io/en/latest/miniconda.html"
+            call :info "For full bioinformatics support, consider WSL2: wsl --install"
+            goto :eof
+        )
+    ) else (
+        call :warn "Could not download Miniconda (no internet or PowerShell blocked)"
+        call :info "Core pLIN features work without bioinformatics tools"
+        call :info "Install Miniconda manually: https://docs.conda.io/en/latest/miniconda.html"
+        call :info "Or use WSL2: wsl --install, then run pLIN_Linux.sh inside WSL"
+        goto :eof
+    )
 )
 
 REM Create or reuse conda env
@@ -344,6 +362,76 @@ if not exist "output\amrfinder" mkdir "output\amrfinder"
 if not exist "output\crispr_evaluation" mkdir "output\crispr_evaluation"
 if not exist "output\figures" mkdir "output\figures"
 if not exist "output\manuscripts\docx" mkdir "output\manuscripts\docx"
+if not exist "output\mge_detection" mkdir "output\mge_detection"
+goto :eof
+
+REM ── IS reference database setup ─────────────────────────────────────────────
+:setup_is_database
+set "IS_DIR=output\mge_detection"
+set "IS_FASTA=%IS_DIR%\is_reference_sequences.fasta"
+set "IS_DB=%IS_DIR%\is_reference_sequences.fasta.ndb"
+
+REM Skip if database already exists
+if exist "!IS_DB!" (
+    call :ok "IS reference BLAST database already exists"
+    goto :eof
+)
+
+call :info "Setting up IS element reference database (25 IS families)..."
+
+if "!PYTHON_BIN!"=="" (
+    call :warn "Python not available — skipping IS database setup"
+    goto :eof
+)
+
+REM Download IS references via BioPython inline script
+!PYTHON_BIN! -c "import sys,os;exec(\"try:\\n from Bio import Entrez,SeqIO\\nexcept ImportError:\\n print('  [WARN] BioPython not available -- skipping IS database download');sys.exit(0)\\nEntrez.email='plin_tool@example.com'\\nacc={'IS26':'X00011.1','ISEcp1':'AJ242809.1','IS1':'J01730.1','IS903':'M17148.1','IS6100':'M95400.1','ISKpn26':'KF914891.1','IS5':'X02311.1','IS3':'X02180.1','IS4321':'AJ245418.1','IS15':'X01840.1','IS10':'J01830.1','IS2':'J01733.1','IS4':'V00029.1','IS30':'X00792.1','IS66':'X53365.1','IS110':'M21395.1','ISPa':'AF261825.1','ISAba':'AY758396.1','IS256':'M18086.1','IS257':'U40412.1','IS16':'AF053365.1','ISEnfa':'AF162694.1','IS1216':'L40841.1','IS1251':'X83579.1','Tn916':'U09422.1'}\\nout=r'!IS_FASTA!'\\nos.makedirs(os.path.dirname(out),exist_ok=True)\\nd=0\\nwith open(out,'w') as fh:\\n for n,a in acc.items():\\n  try:\\n   h=Entrez.efetch(db='nucleotide',id=a,rettype='fasta',retmode='text')\\n   r=SeqIO.read(h,'fasta');h.close();r.id=n;r.description=f'{n} ({a})'\\n   SeqIO.write(r,fh,'fasta');d+=1\\n  except Exception as e:print(f'  [WARN] Could not download {n} ({a}): {e}')\\nprint(f'  [OK]   Downloaded {d}/25 IS reference sequences')\")" 2>nul
+
+if !errorlevel! neq 0 (
+    call :warn "IS reference download failed (NCBI may be unreachable)"
+    goto :eof
+)
+
+REM Build BLAST database
+if exist "!IS_FASTA!" (
+    where makeblastdb >nul 2>&1
+    if !errorlevel! equ 0 (
+        makeblastdb -in "!IS_FASTA!" -dbtype nucl -parse_seqids -title "IS_reference_25families" -out "!IS_FASTA!" >nul 2>&1
+        if !errorlevel! equ 0 (
+            call :ok "BLAST database built for IS references"
+        ) else (
+            call :warn "makeblastdb failed — IS detection may not work"
+        )
+    ) else (
+        call :warn "makeblastdb not found — BLAST database not built"
+        call :info "IS detection requires BLAST+ (installed via conda)"
+    )
+)
+goto :eof
+
+REM ── Verify BLAST ────────────────────────────────────────────────────────────
+:verify_blast
+where blastn >nul 2>&1
+if !errorlevel! equ 0 (
+    call :ok "BLAST+ available"
+) else (
+    REM Check conda env
+    set "BLAST_FOUND=0"
+    for %%d in (
+        "%USERPROFILE%\miniconda3\envs\pLIN_tools\Scripts\blastn.exe"
+        "%USERPROFILE%\Miniconda3\envs\pLIN_tools\Scripts\blastn.exe"
+        "%USERPROFILE%\anaconda3\envs\pLIN_tools\Scripts\blastn.exe"
+    ) do (
+        if exist %%d (
+            call :ok "BLAST+ available (in conda env)"
+            set "BLAST_FOUND=1"
+        )
+    )
+    if !BLAST_FOUND! equ 0 (
+        call :warn "BLAST+ not found — IS element detection will not be available"
+        call :info "Contig classification (plasmid vs chromosome) works without BLAST"
+    )
+)
 goto :eof
 
 REM ── Launch app ──────────────────────────────────────────────────────────────
@@ -417,15 +505,15 @@ call :detect_platform
 echo.
 
 echo.
-echo [1/4] Checking Python...
+echo [1/5] Checking Python...
 call :find_python
 
 echo.
-echo [2/4] Checking required files...
+echo [2/5] Checking required files...
 call :check_files
 
 echo.
-echo [3/4] Checking Python packages...
+echo [3/5] Checking Python packages...
 if not "!PYTHON_BIN!"=="" (
     call :check_packages
 ) else (
@@ -433,8 +521,17 @@ if not "!PYTHON_BIN!"=="" (
 )
 
 echo.
-echo [4/4] Checking bioinformatics tools...
+echo [4/5] Checking bioinformatics tools...
 call :check_biotools
+
+echo.
+echo [5/5] Checking IS reference database + BLAST...
+if exist "output\mge_detection\is_reference_sequences.fasta.ndb" (
+    call :ok "IS reference BLAST database found"
+) else (
+    call :warn "IS reference database not built (run --install to set up)"
+)
+call :verify_blast
 
 echo.
 echo  ================================================================
@@ -526,7 +623,7 @@ goto :eof
 call :banner
 
 echo.
-echo [1/5] Checking environment...
+echo [1/6] Checking environment...
 call :detect_platform
 echo.
 call :find_python
@@ -541,13 +638,18 @@ if "!FILES_OK!"=="0" (
     goto :eof
 )
 
-call :install_biotools 2 5
-call :install_python_packages 3 5
+call :install_biotools 2 6
+call :install_python_packages 3 6
 
 echo.
-echo [4/5] Setting up directories...
+echo [4/6] Setting up directories...
 call :setup_directories
 call :ok "Output directories ready"
+
+echo.
+echo [5/6] Setting up IS element reference database + BLAST verification...
+call :setup_is_database
+call :verify_blast
 
 echo.
 echo  ================================================================
@@ -574,7 +676,7 @@ goto :eof
 call :banner
 
 echo.
-echo [1/5] Checking environment...
+echo [1/6] Checking environment...
 call :detect_platform
 echo.
 call :find_python
@@ -589,13 +691,18 @@ if "!FILES_OK!"=="0" (
     goto :eof
 )
 
-call :install_biotools 2 5
-call :install_python_packages 3 5
+call :install_biotools 2 6
+call :install_python_packages 3 6
 
 echo.
-echo [4/5] Setting up directories...
+echo [4/6] Setting up directories...
 call :setup_directories
 call :ok "Output directories ready"
 
-call :launch_app 5 5
+echo.
+echo [5/6] Setting up IS element reference database + BLAST verification...
+call :setup_is_database
+call :verify_blast
+
+call :launch_app 6 6
 goto :eof

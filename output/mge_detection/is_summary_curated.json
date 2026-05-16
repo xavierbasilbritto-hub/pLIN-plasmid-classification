@@ -1,0 +1,67 @@
+{
+  "total_plasmids": 8077,
+  "plasmids_with_IS": 5376,
+  "pct_with_IS": 66.6,
+  "total_IS_hits": 28265,
+  "unique_IS_families": 11,
+  "top_IS_families": [
+    {
+      "is_family": "IS26",
+      "total_hits": 18631,
+      "unique_plasmids": 4486
+    },
+    {
+      "is_family": "IS1",
+      "total_hits": 7470,
+      "unique_plasmids": 3236
+    },
+    {
+      "is_family": "ISEcp1",
+      "total_hits": 738,
+      "unique_plasmids": 681
+    },
+    {
+      "is_family": "IS10",
+      "total_hits": 442,
+      "unique_plasmids": 328
+    },
+    {
+      "is_family": "IS1216",
+      "total_hits": 309,
+      "unique_plasmids": 90
+    },
+    {
+      "is_family": "IS30",
+      "total_hits": 264,
+      "unique_plasmids": 236
+    },
+    {
+      "is_family": "ISAba1",
+      "total_hits": 177,
+      "unique_plasmids": 150
+    },
+    {
+      "is_family": "IS5",
+      "total_hits": 141,
+      "unique_plasmids": 111
+    },
+    {
+      "is_family": "IS256",
+      "total_hits": 66,
+      "unique_plasmids": 43
+    },
+    {
+      "is_family": "IS2",
+      "total_hits": 18,
+      "unique_plasmids": 18
+    },
+    {
+      "is_family": "IS903",
+      "total_hits": 9,
+      "unique_plasmids": 9
+    }
+  ],
+  "composite_transposons": 9559,
+  "blast_params": "evalue=1e-20, perc_identity=85%, coverage>=70%, task=blastn",
+  "reference_db": "20 curated IS elements from ISfinder/NCBI"
+}
