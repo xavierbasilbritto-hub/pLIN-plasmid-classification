@@ -47,6 +47,8 @@ output/pLIN_Manuscript_Tables.xlsx
 output/Manuscript*.docx
 FIGURE_MAPPING_ANALYSIS.md
 pLIN_v1_prefinal.doc
+manuscripts/
+REVIEWER_GUIDE.md
 
 # Figures (generated for manuscripts)
 output/figures/
