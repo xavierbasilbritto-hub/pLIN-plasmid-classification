@@ -22,6 +22,7 @@ import glob
 import hashlib
 import tempfile
 import subprocess
+import shutil
 import zipfile
 import json
 import requests
@@ -1524,6 +1525,287 @@ def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
     return fig
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  WITHIN-GROUP SEQUENCE ALIGNMENT
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# A pLIN code (or a shared code prefix) says two plasmids are compositionally
+# similar, but composition similarity is not itself evidence of which regions
+# are actually shared. This module runs pairwise blastn between members of a
+# user-selected pLIN group and reports coverage, identity, and the coordinates
+# of shared vs. non-shared sequence directly, plus which AMR genes (if any)
+# fall inside vs. outside the shared blocks — the same analysis performed by
+# hand for Supplementary Table S5 during peer review, now a reusable feature
+# rather than a one-off validation script.
+
+def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_align_len=500):
+    """Pairwise blastn alignment between all selected plasmids.
+
+    Parameters
+    ----------
+    records : list of dict
+        Plasmid records as stored in st.session_state.records (must include
+        "plasmid_id" and "sequence").
+    plasmid_ids : list of str
+        Subset of plasmid_ids to align, all pairwise combinations.
+    blastn_binary : str, optional
+        Path to blastn; auto-detected via detect_blastn() if not given.
+    min_align_len : int
+        Discard HSPs shorter than this (bp) as noise.
+
+    Returns
+    -------
+    dict with keys:
+        "pairs": DataFrame, one row per plasmid pair — query/subject id,
+            length of each, total length covered, % coverage (of the
+            shorter sequence), weighted % identity, n_blocks.
+        "blocks": DataFrame, one row per aligned block (HSP) — pair,
+            query/subject coordinates, length, % identity. This is the
+            data needed to say *which* regions are shared, not just how
+            much.
+        "error": str or None. If blastn/makeblastdb are unavailable, or a
+            pair fails, this is set and "pairs"/"blocks" may be empty.
+    """
+    if blastn_binary is None:
+        blastn_binary, makeblastdb_binary = detect_blastn()
+    else:
+        _, makeblastdb_binary = detect_blastn()
+
+    if not blastn_binary or not makeblastdb_binary:
+        return {"pairs": pd.DataFrame(), "blocks": pd.DataFrame(),
+                "error": "BLAST+ (blastn/makeblastdb) not found. Install BLAST+ to use "
+                         "within-group alignment (see Installation docs)."}
+
+    # plasmid_id is not guaranteed unique across records — e.g. multi-contig
+    # assemblies with generic contig names ("1", "unnamed", ...) can collide
+    # across different uploaded files. Silently keying a dict by plasmid_id
+    # would drop one and silently align the wrong sequence, so check first.
+    selected_records = [r for r in records if r["plasmid_id"] in plasmid_ids]
+    id_counts = {}
+    for r in selected_records:
+        id_counts[r["plasmid_id"]] = id_counts.get(r["plasmid_id"], 0) + 1
+    duplicated = sorted(pid for pid, n in id_counts.items() if n > 1)
+    if duplicated:
+        return {"pairs": pd.DataFrame(), "blocks": pd.DataFrame(),
+                "error": "Duplicate plasmid_id among selected records (cannot tell them "
+                         f"apart): {', '.join(duplicated)}. This can happen with generic "
+                         "contig names shared across different uploaded files."}
+
+    seq_by_id = {r["plasmid_id"]: r["sequence"] for r in selected_records}
+    missing = [pid for pid in plasmid_ids if pid not in seq_by_id]
+    if missing:
+        return {"pairs": pd.DataFrame(), "blocks": pd.DataFrame(),
+                "error": f"Sequence not found in session for: {', '.join(missing)}"}
+    if len(seq_by_id) < 2:
+        return {"pairs": pd.DataFrame(), "blocks": pd.DataFrame(),
+                "error": "Select at least 2 plasmids to align."}
+
+    pair_rows = []
+    block_rows = []
+    work_dir = tempfile.mkdtemp(prefix="plin_align_")
+    try:
+        ordered_ids = [pid for pid in plasmid_ids if pid in seq_by_id]
+        for i in range(len(ordered_ids)):
+            for j in range(i + 1, len(ordered_ids)):
+                qid, sid = ordered_ids[i], ordered_ids[j]
+                qseq, sseq = seq_by_id[qid], seq_by_id[sid]
+
+                query_path = os.path.join(work_dir, "query.fasta")
+                subject_path = os.path.join(work_dir, "subject.fasta")
+                with open(query_path, "w") as fh:
+                    fh.write(f">{qid}\n{qseq}\n")
+                with open(subject_path, "w") as fh:
+                    fh.write(f">{sid}\n{sseq}\n")
+
+                try:
+                    result = subprocess.run(
+                        [blastn_binary, "-query", query_path, "-subject", subject_path,
+                         "-outfmt", "6 qstart qend sstart send length pident evalue",
+                         "-task", "blastn", "-evalue", "1e-10"],
+                        capture_output=True, text=True, timeout=120)
+                except Exception as exc:
+                    pair_rows.append({
+                        "plasmid_1": qid, "plasmid_2": sid,
+                        "length_1_bp": len(qseq), "length_2_bp": len(sseq),
+                        "coverage_pct": None, "weighted_identity_pct": None,
+                        "n_blocks": 0, "error": str(exc),
+                    })
+                    continue
+
+                hsps = []
+                for line in result.stdout.strip().split("\n"):
+                    if not line:
+                        continue
+                    qstart, qend, sstart, send, length, pident, evalue = line.split("\t")
+                    length = int(length)
+                    if length < min_align_len:
+                        continue
+                    hsps.append({
+                        "plasmid_1": qid, "plasmid_2": sid,
+                        "q_start": min(int(qstart), int(qend)), "q_end": max(int(qstart), int(qend)),
+                        "s_start": min(int(sstart), int(send)), "s_end": max(int(sstart), int(send)),
+                        "length_bp": length, "pct_identity": float(pident),
+                    })
+                hsps.sort(key=lambda h: h["q_start"])
+                block_rows.extend(hsps)
+
+                # Coverage is computed separately on each side (union of that
+                # side's aligned intervals, overlaps merged so duplicate/
+                # overlapping HSPs aren't double-counted, as a fraction of
+                # that side's own length) and then reported as coverage of
+                # the shorter sequence specifically — dividing a query-side
+                # union by the subject's length (or vice versa) is a
+                # mismatched numerator/denominator and can exceed 100% when
+                # the query is not the shorter sequence.
+                def _merged_union(pairs):
+                    if not pairs:
+                        return 0
+                    pairs = sorted(pairs)
+                    merged = [pairs[0]]
+                    for s, e in pairs[1:]:
+                        if s <= merged[-1][1]:
+                            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+                        else:
+                            merged.append((s, e))
+                    return sum(e - s for s, e in merged)
+
+                weighted_identity_num = 0.0
+                if hsps:
+                    q_covered = _merged_union([(h["q_start"], h["q_end"]) for h in hsps])
+                    s_covered = _merged_union([(h["s_start"], h["s_end"]) for h in hsps])
+                    covered_of_shorter = q_covered if len(qseq) <= len(sseq) else s_covered
+                    weighted_identity_num = sum(h["length_bp"] * h["pct_identity"] for h in hsps)
+                else:
+                    covered_of_shorter = 0
+
+                shorter_len = min(len(qseq), len(sseq))
+                coverage_pct = round(100 * covered_of_shorter / shorter_len, 1) if shorter_len else 0.0
+                total_aligned_bp = sum(h["length_bp"] for h in hsps)
+                weighted_identity = round(weighted_identity_num / total_aligned_bp, 2) if total_aligned_bp else None
+
+                pair_rows.append({
+                    "plasmid_1": qid, "plasmid_2": sid,
+                    "length_1_bp": len(qseq), "length_2_bp": len(sseq),
+                    "coverage_pct": coverage_pct,
+                    "weighted_identity_pct": weighted_identity,
+                    "n_blocks": len(hsps), "error": None,
+                })
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+    return {"pairs": pd.DataFrame(pair_rows), "blocks": pd.DataFrame(block_rows), "error": None}
+
+
+def annotate_alignment_blocks_with_amr(blocks_df, amr_df):
+    """Flag which AMR genes fall inside vs. outside each aligned shared block.
+
+    For every (plasmid_1, plasmid_2) pair in blocks_df, checks amr_df for
+    genes on either plasmid and reports whether each gene's coordinates fall
+    within any shared block on that plasmid's side of the alignment. This is
+    what lets a user see, directly, whether AMR content differs between two
+    plasmids that otherwise look nearly identical by pLIN code — the
+    question Reviewer 2 asked for by name.
+
+    Returns a DataFrame: plasmid_id, gene, class, start, end, in_shared_block
+    (bool), paired_with (the other plasmid_id in the comparison).
+    """
+    if blocks_df is None or len(blocks_df) == 0 or amr_df is None or len(amr_df) == 0:
+        return pd.DataFrame()
+    if "Start" not in amr_df.columns or "source_file" not in amr_df.columns:
+        return pd.DataFrame()
+
+    rows = []
+    for (p1, p2), pair_blocks in blocks_df.groupby(["plasmid_1", "plasmid_2"]):
+        q_intervals = [(b["q_start"], b["q_end"]) for _, b in pair_blocks.iterrows()]
+        s_intervals = [(b["s_start"], b["s_end"]) for _, b in pair_blocks.iterrows()]
+
+        for plasmid_id, intervals, other in ((p1, q_intervals, p2), (p2, s_intervals, p1)):
+            genes = amr_df[amr_df["source_file"] == plasmid_id]
+            for _, gene in genes.iterrows():
+                try:
+                    gstart, gend = int(gene["Start"]), int(gene["Stop"])
+                except (ValueError, TypeError, KeyError):
+                    continue
+                gstart, gend = min(gstart, gend), max(gstart, gend)
+                in_block = any(gstart >= s and gend <= e for s, e in intervals) or \
+                           any(min(gend, e) - max(gstart, s) > 0 for s, e in intervals)
+                rows.append({
+                    "plasmid_id": plasmid_id,
+                    "paired_with": other,
+                    "gene": gene.get("Element symbol", ""),
+                    "class": gene.get("Class", ""),
+                    "start": gstart, "end": gend,
+                    "in_shared_block": bool(in_block),
+                })
+    return pd.DataFrame(rows)
+
+
+def draw_alignment_comparison(blocks_row_group, plasmid_1, plasmid_2, len_1, len_2,
+                               amr_annotated=None):
+    """Draw a two-track linear comparison of one plasmid pair with shared
+    blocks connected between tracks, similar in spirit to an Easyfig/ACT
+    view but lightweight (matplotlib only, no external alignment viewer).
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.path import Path as MplPath
+
+    fig, ax = plt.subplots(1, 1, figsize=(14, 3.2))
+    y_top, y_bot = 1.0, 0.0
+    track_h = 0.15
+
+    ax.add_patch(mpatches.Rectangle((0, y_top - track_h / 2), len_1, track_h,
+                                     fc="#E0E0E0", ec="none"))
+    ax.add_patch(mpatches.Rectangle((0, y_bot - track_h / 2), len_2, track_h,
+                                     fc="#E0E0E0", ec="none"))
+
+    cmap = plt.get_cmap("viridis")
+    n_blocks = len(blocks_row_group)
+    for idx, (_, b) in enumerate(blocks_row_group.iterrows()):
+        color = cmap(idx / max(n_blocks - 1, 1)) if n_blocks > 1 else cmap(0.5)
+        alpha = min(0.3 + b["pct_identity"] / 200, 0.85)
+
+        ax.add_patch(mpatches.Rectangle((b["q_start"], y_top - track_h / 2),
+                                         b["q_end"] - b["q_start"], track_h,
+                                         fc=color, ec="none"))
+        ax.add_patch(mpatches.Rectangle((b["s_start"], y_bot - track_h / 2),
+                                         b["s_end"] - b["s_start"], track_h,
+                                         fc=color, ec="none"))
+
+        verts = [(b["q_start"], y_top - track_h / 2), (b["s_start"], y_bot + track_h / 2),
+                 (b["s_end"], y_bot + track_h / 2), (b["q_end"], y_top - track_h / 2),
+                 (b["q_start"], y_top - track_h / 2)]
+        codes = [MplPath.MOVETO, MplPath.LINETO, MplPath.LINETO, MplPath.LINETO, MplPath.CLOSEPOLY]
+        ax.add_patch(mpatches.PathPatch(MplPath(verts, codes), fc=color, ec="none", alpha=alpha))
+
+    if amr_annotated is not None and len(amr_annotated) > 0:
+        for plasmid_id, y, length in ((plasmid_1, y_top, len_1), (plasmid_2, y_bot, len_2)):
+            genes = amr_annotated[amr_annotated["plasmid_id"] == plasmid_id]
+            for _, g in genes.iterrows():
+                color = "#43A047" if g["in_shared_block"] else "#E53935"
+                y_off = track_h if y == y_top else -track_h
+                ax.plot([g["start"], g["end"]], [y + y_off, y + y_off],
+                        color=color, linewidth=3, solid_capstyle="butt")
+
+    ax.set_xlim(-max(len_1, len_2) * 0.02, max(len_1, len_2) * 1.02)
+    ax.set_ylim(-0.5, 1.5)
+    ax.set_yticks([y_bot, y_top])
+    ax.set_yticklabels([f"{plasmid_2}\n({len_2:,} bp)", f"{plasmid_1}\n({len_1:,} bp)"], fontsize=8)
+    ax.set_xlabel("Position (bp)", fontsize=9)
+    ax.set_title(f"{plasmid_1} vs {plasmid_2} — shared blocks (color = block; darker = higher identity)",
+                 fontsize=10)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if amr_annotated is not None and len(amr_annotated) > 0:
+        legend_patches = [
+            mpatches.Patch(color="#43A047", label="AMR gene — inside shared block"),
+            mpatches.Patch(color="#E53935", label="AMR gene — outside shared block"),
+        ]
+        ax.legend(handles=legend_patches, loc="upper right", fontsize=7, framealpha=0.8)
+
+    plt.tight_layout()
+    return fig
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -6074,7 +6356,137 @@ with tab_clado:
                                f"pLIN_cladogram_{viz_type.lower()}.pdf", "application/pdf")
         plt.close(fig)
 
+        # ── Within-group sequence alignment ─────────────────────────────────
+        st.markdown("---")
+        st.subheader("🔬 Within-Group Sequence Alignment")
+        st.caption(
+            "A shared pLIN code means two plasmids look similar by composition. "
+            "This does not by itself say *which* regions are shared, or whether "
+            "AMR content differs. Select two or more plasmids — typically ones "
+            "sharing a pLIN code or prefix — to run pairwise BLAST and see "
+            "coverage, identity, and shared-block coordinates directly."
+        )
 
+        blastn_path, makeblastdb_path = detect_blastn()
+        if not blastn_path or not makeblastdb_path:
+            st.warning(
+                "BLAST+ not detected (blastn/makeblastdb). Within-group alignment "
+                "is optional and requires BLAST+ to be installed and on PATH."
+            )
+        else:
+            plin_lookup = dict(zip(labels, plin_codes))
+            group_options = sorted(set(plin_codes))
+            preselect_group = st.selectbox(
+                "Filter by pLIN code (optional — narrows the plasmid list below)",
+                ["(no filter)"] + group_options, index=0, key="align_group_filter",
+            )
+            candidate_ids = (
+                [pid for pid in labels if plin_lookup.get(pid) == preselect_group]
+                if preselect_group != "(no filter)" else labels
+            )
+
+            selected_ids = st.multiselect(
+                "Plasmids to align (all pairwise combinations will be run)",
+                options=candidate_ids,
+                default=candidate_ids[:2] if len(candidate_ids) >= 2 else candidate_ids,
+                key="align_selected_ids",
+            )
+
+            if len(selected_ids) >= 2:
+                n_pairs = len(selected_ids) * (len(selected_ids) - 1) // 2
+                run_align = st.button(f"Run alignment ({n_pairs} pair{'s' if n_pairs != 1 else ''})",
+                                       key="run_within_group_alignment")
+                if run_align:
+                    with st.spinner(f"Running blastn on {n_pairs} plasmid pair(s)..."):
+                        align_result = run_within_group_alignment(
+                            st.session_state.records, selected_ids, blastn_binary=blastn_path)
+                    st.session_state.within_group_alignment = align_result
+
+                align_result = st.session_state.get("within_group_alignment")
+                if align_result:
+                    if align_result["error"]:
+                        st.error(align_result["error"])
+                    elif len(align_result["pairs"]) > 0:
+                        st.markdown("**Pairwise summary**")
+                        pairs_display = align_result["pairs"].rename(columns={
+                            "plasmid_1": "Plasmid 1", "plasmid_2": "Plasmid 2",
+                            "length_1_bp": "Length 1 (bp)", "length_2_bp": "Length 2 (bp)",
+                            "coverage_pct": "Coverage (%)", "weighted_identity_pct": "Weighted Identity (%)",
+                            "n_blocks": "Aligned Blocks",
+                        }).drop(columns=["error"], errors="ignore")
+                        st.dataframe(pairs_display, use_container_width=True, hide_index=True)
+                        st.download_button(
+                            "📥 Download pairwise summary (TSV)",
+                            align_result["pairs"].to_csv(sep="\t", index=False),
+                            "within_group_alignment_pairs.tsv", "text/tab-separated-values",
+                        )
+
+                        amr_df = st.session_state.get("amr_df")
+                        amr_annotated = (
+                            annotate_alignment_blocks_with_amr(align_result["blocks"], amr_df)
+                            if amr_df is not None and len(amr_df) > 0 else pd.DataFrame()
+                        )
+
+                        st.markdown("**Pair detail**")
+                        pair_labels = [f"{r['plasmid_1']} vs {r['plasmid_2']}"
+                                       for _, r in align_result["pairs"].iterrows()]
+                        chosen_pair = st.selectbox("Select a pair to view", pair_labels,
+                                                    key="align_pair_detail_select")
+                        p1, p2 = chosen_pair.split(" vs ")
+                        pair_row = align_result["pairs"][
+                            (align_result["pairs"]["plasmid_1"] == p1) &
+                            (align_result["pairs"]["plasmid_2"] == p2)
+                        ].iloc[0]
+                        blocks_for_pair = align_result["blocks"][
+                            (align_result["blocks"]["plasmid_1"] == p1) &
+                            (align_result["blocks"]["plasmid_2"] == p2)
+                        ]
+
+                        if len(blocks_for_pair) == 0:
+                            st.info("No aligned blocks above the length cutoff for this pair — "
+                                    "these plasmids do not share substantial sequence despite the "
+                                    "shared pLIN code prefix.")
+                        else:
+                            amr_for_pair = (
+                                amr_annotated[(amr_annotated["plasmid_id"].isin([p1, p2]))]
+                                if len(amr_annotated) > 0 else None
+                            )
+                            fig_align = draw_alignment_comparison(
+                                blocks_for_pair, p1, p2,
+                                int(pair_row["length_1_bp"]), int(pair_row["length_2_bp"]),
+                                amr_annotated=amr_for_pair,
+                            )
+                            st.pyplot(fig_align, use_container_width=True)
+                            st.download_button(
+                                "📥 Download comparison (PNG)", fig_to_bytes(fig_align, "png"),
+                                f"alignment_{p1}_vs_{p2}.png", "image/png",
+                            )
+                            plt.close(fig_align)
+
+                            with st.expander(f"Aligned block coordinates ({len(blocks_for_pair)})"):
+                                st.dataframe(
+                                    blocks_for_pair[["q_start", "q_end", "s_start", "s_end",
+                                                     "length_bp", "pct_identity"]].rename(columns={
+                                        "q_start": f"{p1} start", "q_end": f"{p1} end",
+                                        "s_start": f"{p2} start", "s_end": f"{p2} end",
+                                        "length_bp": "Length (bp)", "pct_identity": "% Identity",
+                                    }),
+                                    use_container_width=True, hide_index=True,
+                                )
+
+                            if amr_for_pair is not None and len(amr_for_pair) > 0:
+                                with st.expander("AMR genes: inside vs. outside shared blocks"):
+                                    st.dataframe(
+                                        amr_for_pair[["plasmid_id", "gene", "class", "start", "end",
+                                                      "in_shared_block"]].rename(columns={
+                                            "plasmid_id": "Plasmid", "gene": "Gene", "class": "Class",
+                                            "start": "Start", "end": "End",
+                                            "in_shared_block": "Inside shared block",
+                                        }),
+                                        use_container_width=True, hide_index=True,
+                                    )
+            else:
+                st.info("Select at least 2 plasmids above to run alignment.")
 
 
 # ── TAB 4: AMR Analysis ─────────────────────────────────────────────────────
