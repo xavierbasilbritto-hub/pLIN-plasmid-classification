@@ -9,8 +9,11 @@ Uses tetranucleotide (4-mer) composition-based cosine distance + single-linkage 
 
 import os
 import glob
+import hashlib
+import subprocess
 import numpy as np
 import pandas as pd
+from datetime import datetime, timezone
 from itertools import product as iter_product
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, fcluster
@@ -44,6 +47,79 @@ PLIN_THRESHOLDS = {
 }
 
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")
+
+# Training-folder provenance labels retained as-is in `inc_type` for
+# traceability. `resolved_inc_type` maps them onto current PlasmidFinder
+# nomenclature, since some legacy labels (e.g. IncAC2) are no longer used
+# by PlasmidFinder: IncA and IncC are now typed as separate, non-compatible
+# replicon markers (Carattoli, Int. J. Med. Microbiol. 2013; PMID: 29486211),
+# so a plasmid trained under the legacy "IncAC2" folder resolves to "IncA/IncC"
+# to make clear it predates that split rather than representing a current
+# PlasmidFinder marker.
+RESOLVED_INC_TYPE = {
+    "IncAC2": "IncA/IncC",
+}
+
+
+def resolve_inc_type(inc_type):
+    """Map a training-provenance Inc label onto current PlasmidFinder nomenclature."""
+    return RESOLVED_INC_TYPE.get(inc_type, inc_type)
+
+
+def run_version_stamp():
+    """Build a reproducibility stamp for this pipeline run.
+
+    Re-running the clustering pipeline (e.g. after adding training data,
+    or after any code change) can change pLIN codes even for previously
+    assigned plasmids. Stamping every output with a run ID and the exact
+    input-file fingerprint makes it possible to tell, at a glance, whether
+    two tables/figures were generated from the same run.
+    """
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=BASE_DIR,
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        git_hash = "unknown"
+
+    fasta_paths = sorted(glob.glob(os.path.join(TRAINING_DIR, "*", "fastas", "*.fasta")))
+    hasher = hashlib.sha256()
+    for p in fasta_paths:
+        hasher.update(os.path.relpath(p, TRAINING_DIR).encode())
+        hasher.update(str(os.path.getsize(p)).encode())
+    input_fingerprint = hasher.hexdigest()[:12]
+
+    return {
+        "run_timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "git_commit": git_hash,
+        "input_fingerprint": input_fingerprint,
+        "n_input_fastas": len(fasta_paths),
+    }
+
+
+def stable_cluster_ids(raw_labels, member_keys):
+    """Renumber scipy fcluster labels into a deterministic scheme.
+
+    scipy.cluster.hierarchy.fcluster assigns cluster-ID integers based on
+    internal linkage-tree traversal order, which is not guaranteed stable
+    across runs (it can shift with input ordering, library version, or
+    floating-point tie-breaking) even when cluster MEMBERSHIP is identical.
+    That non-determinism silently renumbers every pLIN code on re-run.
+
+    Here we renumber clusters by sorting on each cluster's lexicographically
+    smallest member key (e.g. plasmid accession), so cluster 1 is always
+    "the cluster containing the alphabetically-first member", reproducibly,
+    regardless of how fcluster happened to label it internally.
+    """
+    raw_labels = np.asarray(raw_labels)
+    cluster_min_key = {}
+    for raw_id, key in zip(raw_labels, member_keys):
+        if raw_id not in cluster_min_key or key < cluster_min_key[raw_id]:
+            cluster_min_key[raw_id] = key
+
+    ordered_raw_ids = sorted(cluster_min_key, key=lambda rid: cluster_min_key[rid])
+    remap = {raw_id: new_id for new_id, raw_id in enumerate(ordered_raw_ids, start=1)}
+    return np.array([remap[rid] for rid in raw_labels])
 
 
 # ── Step 1: Load sequences ────────────────────────────────────────────────────
@@ -106,10 +182,12 @@ def assign_plin_codes(records, vectors):
 
     bin_labels = list(PLIN_THRESHOLDS.keys())
     bin_thresholds = list(PLIN_THRESHOLDS.values())
+    member_keys = [rec["plasmid_id"] for rec in records]
 
     cluster_assignments = {}
     for bname, thresh in zip(bin_labels, bin_thresholds):
-        clusters = fcluster(Z, t=thresh, criterion="distance")
+        raw_clusters = fcluster(Z, t=thresh, criterion="distance")
+        clusters = stable_cluster_ids(raw_clusters, member_keys)
         cluster_assignments[bname] = clusters
         n_clusters = len(set(clusters))
         print(f"  Bin {bname} (d ≤ {thresh:.3f}): {n_clusters:>5} clusters")
@@ -135,6 +213,7 @@ def build_results(records, plin_codes, cluster_assignments):
         row = {
             "plasmid_id": rec["plasmid_id"],
             "inc_type": rec["inc_type"],
+            "resolved_inc_type": resolve_inc_type(rec["inc_type"]),
             "length_bp": rec["length"],
             "pLIN": plin_codes[i],
         }
@@ -168,6 +247,16 @@ def main():
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
     df.to_csv(OUTPUT_FILE, sep="\t", index=False)
     print(f"\n  Results saved to: {OUTPUT_FILE}")
+
+    stamp = run_version_stamp()
+    stamp_path = OUTPUT_FILE + ".run_info.json"
+    import json
+    with open(stamp_path, "w") as fh:
+        json.dump(stamp, fh, indent=2)
+    print(f"  Run info saved to: {stamp_path}")
+    print(f"  Run: {stamp['run_timestamp_utc']}  "
+          f"commit={stamp['git_commit']}  "
+          f"input_fingerprint={stamp['input_fingerprint']}")
 
     # Summary
     print("\n" + "=" * 70)

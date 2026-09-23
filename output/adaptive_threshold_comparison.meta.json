@@ -1,0 +1,24 @@
+{
+  "level_quantiles": {
+    "A": 0.99,
+    "B": 0.95,
+    "C": 0.75,
+    "D": 0.5,
+    "E": 0.25,
+    "F": 0.05
+  },
+  "uniform_thresholds": {
+    "A": 0.15,
+    "B": 0.1,
+    "C": 0.05,
+    "D": 0.02,
+    "E": 0.01,
+    "F": 0.001
+  },
+  "incx_like_groups": [
+    "IncX1",
+    "IncX3",
+    "IncX4"
+  ],
+  "n_groups_calibrated": 28
+}

@@ -64,6 +64,17 @@ IS_REFERENCES = {
     "Tn916":   {"acc": "U09422.1", "len_range": (18000, 18000), "desc": "Tn916 conjugative transposon"},
 }
 
+# IS6-family elements (ISfinder classification) among the references above.
+# IS6-family elements form pseudo-compound transposon structures from
+# DIRECT-orientation copies rather than the inverted-repeat pairing of a
+# canonical composite transposon (Harmer & Hall, Microbiol Mol Biol Rev
+# 2024, e0011922 — cited as Ref 20 in the manuscript). For these elements
+# specifically, detect_composite_transposons() requires same-orientation
+# flanking pairs; other IS families are not restricted by orientation here
+# since the manuscript makes no equivalent mechanistic claim about them.
+IS6_FAMILY = {"IS26", "IS6100", "IS257", "IS1216", "IS15",
+              "IS1006", "IS1008", "ISSau10"}
+
 # Organism categories for each training group
 GRAM_CATEGORY = {
     "ColE": "Gram-negative", "ColRNAI": "Gram-negative", "IncA": "Gram-negative",
@@ -192,6 +203,16 @@ def scan_plasmids_for_IS(is_db_path, training_dir, out_tsv):
                 source_file = qseqid
                 is_family = sseqid
 
+                # BLAST outfmt 6 convention: sstart > send means the hit
+                # aligns to the minus strand of the subject (IS reference)
+                # relative to the query (plasmid) — i.e. the IS copy sits
+                # in reverse orientation on the plasmid. This lets us tell
+                # direct- from inverted-orientation IS pairs, which matters
+                # for IS6-family elements (IS26, IS256): only direct-
+                # orientation pairs form the pseudo-compound transposon
+                # structures described in Harmer & Hall 2024 (Ref 20).
+                strand = "+" if int(sstart) <= int(send) else "-"
+
                 all_hits.append({
                     "source_file": source_file,
                     "inc_group": group,
@@ -205,6 +226,7 @@ def scan_plasmids_for_IS(is_db_path, training_dir, out_tsv):
                     "q_end": int(qend),
                     "s_start": int(sstart),
                     "s_end": int(send),
+                    "strand": strand,
                     "evalue": float(evalue),
                     "bitscore": float(bitscore),
                     "plasmid_length": int(qlen),
@@ -266,6 +288,17 @@ def detect_composite_transposons(is_hits_df, amr_df):
                 is1_end = fam_hits.iloc[i]["q_end"]
                 is2_start = fam_hits.iloc[i + 1]["q_start"]
 
+                # IS6-family elements (IS26, IS256/IS257, IS1216, IS15,
+                # IS6100) only form pseudo-compound transposon structures
+                # from direct-orientation pairs; an opposite-orientation
+                # pair is not evidence of this mechanism (Ref 20). Other IS
+                # families are not restricted here.
+                strand1 = fam_hits.iloc[i].get("strand")
+                strand2 = fam_hits.iloc[i + 1].get("strand")
+                same_orientation = (strand1 is None or strand2 is None or strand1 == strand2)
+                if is_fam in IS6_FAMILY and not same_orientation:
+                    continue
+
                 # Check if any AMR gene falls between these IS elements
                 acc = source_file
                 if acc in amr_positions:
@@ -281,6 +314,7 @@ def detect_composite_transposons(is_hits_df, amr_df):
                             "is1_end": int(is1_end),
                             "is2_start": int(is2_start),
                             "is2_end": fam_hits.iloc[i + 1]["q_end"],
+                            "same_orientation": bool(same_orientation),
                             "cargo_genes": ",".join(g["gene"] for g in cargo_genes),
                             "n_cargo_genes": len(cargo_genes),
                             "region_size": int(is2_start) - int(is1_end),

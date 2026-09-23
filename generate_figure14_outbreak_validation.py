@@ -108,12 +108,12 @@ def main():
     print(f"  Training plasmids: {len(integrated_df)}")
 
     # Compute lineage profiles for Panel C
-    p671 = compute_lineage_profile("1.1.2.15.48.671", integrated_df)
-    p860 = compute_lineage_profile("1.1.2.15.48.860", integrated_df)
-    print(f"  pLIN 671: n={p671['n']}, mean_amr={p671['mean_amr']:.1f}, "
+    p671 = compute_lineage_profile("1.1.2.4.7.1947", integrated_df)
+    p860 = compute_lineage_profile("1.1.2.4.7.13", integrated_df)
+    print(f"  pLIN 1947: n={p671['n']}, mean_amr={p671['mean_amr']:.1f}, "
           f"Inc groups={p671['n_inc']}, mcr={p671['mcr_pct']:.0f}%, "
           f"top gene={p671['top_gene']} ({p671['top_gene_pct']:.0f}%)")
-    print(f"  pLIN 860: n={p860['n']}, mean_amr={p860['mean_amr']:.1f}, "
+    print(f"  pLIN 13: n={p860['n']}, mean_amr={p860['mean_amr']:.1f}, "
           f"Inc groups={p860['n_inc']}, mcr={p860['mcr_pct']:.0f}%, "
           f"top gene={p860['top_gene']} ({p860['top_gene_pct']:.0f}%)")
 
@@ -145,15 +145,17 @@ def main():
               color=GRAY, ha="right", va="bottom")
 
     # Annotate key plasmids
-    # CP104944 → pLIN 671 (exact match)
-    ax_a.annotate("CP104944\npLIN 671 (KPC-2 hotspot)",
-                  xy=(0.0, 100.0), xytext=(0.0015, 90),
+    # CP104944 → pLIN 1947 (exact match)
+    cp104944_row = val_df[val_df["accession"] == "CP104944"].iloc[0]
+    ax_a.annotate("CP104944\npLIN 1947 (KPC-2 hotspot)",
+                  xy=(cp104944_row["nn_distance"], cp104944_row["confidence"]),
+                  xytext=(0.0015, 90),
                   fontsize=7.5, fontweight="bold", color=DARK_BLUE,
                   arrowprops=dict(arrowstyle="->", color=DARK_BLUE, lw=1.2))
 
-    # CP022533 → pLIN 860 (MDR hub)
+    # CP022533 → pLIN 13 (MDR hub)
     cp022_row = val_df[val_df["accession"] == "CP022533"].iloc[0]
-    ax_a.annotate("CP022533\npLIN 860 (MDR hub)",
+    ax_a.annotate("CP022533\npLIN 13 (MDR hub)",
                   xy=(cp022_row["nn_distance"], cp022_row["confidence"]),
                   xytext=(0.002, 82),
                   fontsize=7.5, fontweight="bold", color=TEAL,
@@ -217,9 +219,9 @@ def main():
             palette = {}
             for k, code in enumerate(sorted(unique_codes)):
                 palette[code] = cols[k]
-            # Highlight pLIN 492 in red
+            # Highlight the shared outbreak-backbone code in red
             for code in unique_codes:
-                if code.endswith(".492"):
+                if code.endswith(".26"):
                     palette[code] = RED
             level_palettes[level] = palette
 
@@ -236,10 +238,10 @@ def main():
             # Show L6 code number in the last column
             if level == "L6":
                 l6_num = code_val.split(".")[-1]
-                is_492 = l6_num == "492"
+                is_shared_backbone = l6_num == "26"
                 ax_b.text(j, i, l6_num, ha="center", va="center",
                           fontsize=8, fontweight="bold",
-                          color="white" if is_492 else "#333333", zorder=3)
+                          color="white" if is_shared_backbone else "#333333", zorder=3)
 
     # Plasmid labels (y-axis)
     plasmid_labels = []
@@ -262,23 +264,36 @@ def main():
     ax_b.spines["top"].set_visible(False)
     ax_b.spines["right"].set_visible(False)
 
-    # Annotation bracket for pLIN 492 group
-    plin492_indices = study3.index[study3["pLIN"] == "1.1.2.15.48.492"].tolist()
-    if plin492_indices:
-        y_min = min(plin492_indices) - 0.3
-        y_max = max(plin492_indices) + 0.3
+    # Annotation bracket for the shared outbreak-backbone group
+    shared_backbone_code = "1.1.2.4.7.26"
+    shared_indices = study3.index[study3["pLIN"] == shared_backbone_code].tolist()
+    if shared_indices:
+        y_min = min(shared_indices) - 0.3
+        y_max = max(shared_indices) + 0.3
         ax_b.annotate("", xy=(5.55, y_min), xytext=(5.55, y_max),
                        arrowprops=dict(arrowstyle="-", color=RED, lw=2))
         ax_b.text(5.7, (y_min + y_max) / 2,
-                  "Outbreak\nbackbone\n(pLIN 492)",
+                  "Outbreak\nbackbone\n(pLIN 26)",
                   fontsize=7, color=RED, fontweight="bold",
                   ha="left", va="center")
 
-    # Annotation: all share L1-L4
-    ax_b.text(1.5, n_plasmids + 0.1,
-              "All 12 plasmids share L1\u2013L4 code (1.1.2.15)",
-              fontsize=7.5, color=DARK_BLUE, fontweight="bold",
-              ha="center", va="top", style="italic")
+    # Annotation: report the deepest hierarchical level all plasmids share
+    level_labels = ["L1", "L2", "L3", "L4", "L5", "L6"]
+    deepest_shared_depth = 0
+    for depth in range(1, 7):
+        prefixes = study3["pLIN"].apply(lambda c: ".".join(c.split(".")[:depth])).unique()
+        if len(prefixes) == 1:
+            deepest_shared_depth = depth
+            shared_prefix = prefixes[0]
+        else:
+            break
+    if deepest_shared_depth > 0:
+        ax_b.text(0.5, -0.13,
+                  f"All {n_plasmids} plasmids share {level_labels[deepest_shared_depth-1]} "
+                  f"code ({shared_prefix})",
+                  transform=ax_b.transAxes,
+                  fontsize=7.5, color=DARK_BLUE, fontweight="bold",
+                  ha="center", va="top", style="italic")
 
     # ══════════════════════════════════════════════════════════════════════════
     # Panel C: High-Risk Lineage Profiles (grouped bar chart)
@@ -294,10 +309,10 @@ def main():
     width = 0.32
 
     bars1 = ax_c.bar(x - width / 2, values_671, width, color=BLUE,
-                     label="pLIN 671 (IncN, KPC-2 hotspot)",
+                     label="pLIN 1947 (IncN, KPC-2 hotspot)",
                      edgecolor="white", linewidth=0.8)
     bars2 = ax_c.bar(x + width / 2, values_860, width, color=RED,
-                     label="pLIN 860 (multi-Inc MDR hub)",
+                     label="pLIN 13 (multi-Inc MDR hub)",
                      edgecolor="white", linewidth=0.8)
 
     # Value labels on bars
@@ -324,8 +339,8 @@ def main():
 
     # Clinical significance box
     ax_c.text(0.02, 0.02,
-              "pLIN 671: specialist KPC-2 lineage (1 Inc group, 100% $bla_{KPC-2}$)\n"
-              "pLIN 860: broad MDR hub (5 Inc groups, 44% $mcr$, 61% $sul1$)",
+              "pLIN 1947: specialist KPC-2 lineage (1 Inc group, 100% $bla_{KPC-2}$)\n"
+              "pLIN 13: broad MDR hub (5 Inc groups, 44% $mcr$, 61% $sul1$)",
               transform=ax_c.transAxes, fontsize=7.5, color=DARK_BLUE,
               style="italic", va="bottom",
               bbox=dict(boxstyle="round,pad=0.4", facecolor="#E3F2FD",
@@ -342,17 +357,33 @@ def main():
     ax_d.set_title("D   Validation Summary", fontweight="bold", fontsize=12,
                    loc="left")
 
+    # Compute summary statistics directly from val_df (the 17 original
+    # outbreak plasmids) rather than hardcoding them, so this panel cannot
+    # silently go stale if the pLIN numbering or underlying data changes.
+    n_total = len(val_df)
+    n_studies = val_df["study"].nunique()
+    n_unique_l6 = val_df["pLIN"].nunique()
+    l6_counts = val_df["pLIN"].value_counts()
+    n_novel = int((l6_counts == 1).sum())
+    high_conf_df = val_df[val_df["confidence"] >= 60]
+    n_high_conf = len(high_conf_df)
+    known_hits = val_df["pLIN"].isin(["1.1.2.4.7.1947", "1.1.2.4.7.13"]).sum()
+    shared_backbone_n = int(l6_counts.get(shared_backbone_code, 0))
+    mean_nn_dist = val_df["nn_distance"].mean()
+
     table_data = [
-        ("Total outbreak plasmids tested", "17"),
-        ("Published outbreak studies", "4"),
-        ("Unique pLIN L6 codes assigned", "13"),
-        ("Novel codes (new L6 variants)", "9"),
-        ("Known high-risk lineage matches", "2"),
-        ("Inc accuracy (confidence \u226560%)", "100% (8/8)"),
-        ("Outbreak backbone grouping", "4 plasmids \u2192 pLIN 492"),
-        ("Mean NN distance", "0.0013"),
-        ("Cross-species transmission", "Detected"),
-        ("Hierarchical resolution", "12 \u2192 9 L6 \u2192 1 L3"),
+        ("Total outbreak plasmids tested", str(n_total)),
+        ("Published outbreak studies", str(n_studies)),
+        ("Unique pLIN L6 codes assigned", str(n_unique_l6)),
+        ("Novel codes (new L6 variants)", str(n_novel)),
+        ("Known high-risk lineage matches", str(int(known_hits))),
+        ("Inc accuracy (confidence \u226560%)",
+         f"{n_high_conf/n_total*100:.0f}% ({n_high_conf}/{n_total})"),
+        ("Outbreak backbone grouping",
+         f"{shared_backbone_n} plasmids \u2192 pLIN 26" if shared_backbone_n else "n/a"),
+        ("Mean NN distance", f"{mean_nn_dist:.4f}"),
+        ("Cross-species transmission", "Detected" if shared_backbone_n >= 2 else "Not detected"),
+        ("Hierarchical resolution", f"{n_total} \u2192 {n_unique_l6} L6 \u2192 1 L3"),
     ]
 
     # Highlight values

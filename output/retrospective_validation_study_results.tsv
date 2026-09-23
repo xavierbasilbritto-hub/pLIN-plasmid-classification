@@ -6,9 +6,9 @@ Hasman_2015_mcr1_Europe	2	2	Escherichia coli; Salmonella enterica	2	ST10; ST34	2
 Ho_2019_NDM_HK_ICU	13	1	Klebsiella pneumoniae	4	ST11; ST147; ST15; ST307	2	78	19	47	Mixed	True	True	True	True	True	True	True
 Jousset_2019_OXA48_NL	4	2	Escherichia coli; Klebsiella pneumoniae	3	ST15; ST307; ST410	2	6	0	3	HGT	True	True	True	False	False	True	True
 Li_2020_NDM5_China	6	1	Escherichia coli	4	ST156; ST167; ST410; ST648	4	15	0	2	HGT	True	True	True	False	False	True	True
-Rojas_2017_NDM_Colombia	5	3	Enterobacter cloacae; Escherichia coli; Klebsiella pneumoniae	4	ST11; ST114; ST131; ST258	5	10	0	0	Independent	True	True	True	False	False	True	True
+Rojas_2017_NDM_Colombia	5	3	Enterobacter cloacae; Escherichia coli; Klebsiella pneumoniae	4	ST11; ST114; ST131; ST258	4	10	0	1	HGT	True	True	True	False	False	True	True
 Sheppard_2016_CTXM_USA	3	1	Escherichia coli	1	ST131	1	3	3	0	Clonal	False	False	True	True	True	True	True
 Study1_KPC2_IncN_Germany	3	2	Escherichia coli; Klebsiella pneumoniae	2	ST11; ST131	2	3	1	0	Clonal	True	True	True	True	True	True	True
-Study3_NDM1_Germany	12	4	Citrobacter freundii; Enterobacter cloacae; Escherichia coli; Klebsiella pneumoniae	9	ST114; ST147; ST15; ST167; ST22; ST258; ST307; ST410; ST648	9	66	0	6	HGT	True	True	True	False	False	True	True
+Study3_NDM1_Germany	12	4	Citrobacter freundii; Enterobacter cloacae; Escherichia coli; Klebsiella pneumoniae	9	ST114; ST147; ST15; ST167; ST22; ST258; ST307; ST410; ST648	5	66	0	17	HGT	True	True	True	False	False	True	True
 Woodford_2009_CTXM_UK	3	1	Escherichia coli	2	ST131; ST405	3	3	0	0	Independent	True	True	True	True	False	False	False
 Zheng_2017_mcr1_China	2	1	Escherichia coli	2	ST10; ST156	2	1	0	0	Independent	True	True	True	False	False	True	True

@@ -11,6 +11,7 @@ sequences.fasta
 # Large binary files (>50MB — not suitable for GitHub)
 output/reference_kmer_vectors.npz
 output/mash/
+outbreak_validation/swiss_vim1/
 
 # CRISPR evaluation intermediate files
 output/crispr_evaluation/

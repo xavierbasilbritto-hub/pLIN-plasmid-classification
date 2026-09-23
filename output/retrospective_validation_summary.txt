@@ -10,7 +10,7 @@ Studies evaluated (≥2 plasmids with MLST): 13
 Overall concordance: 12/13 (92.3%)
 Multi-ST diversity detection: 13/13 (100.0%)
 Clonal spread detection: 12/13 (92.3%)
-Studies with HGT pairs: 4
+Studies with HGT pairs: 5
 Studies with clonal pairs: 5
 
 Key validation cases:

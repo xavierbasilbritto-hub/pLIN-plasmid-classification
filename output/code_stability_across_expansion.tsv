@@ -1,0 +1,7 @@
+level	pairs_same_before	pct_still_same	pairs_diff_before	pct_wrongly_merged
+L1	105	100.0	3000	16.7
+L2	105	100.0	3000	0.0
+L3	111	100.0	3000	2.1
+L4	267	71.2	3000	0.9
+L5	1465	80.8	3000	1.4
+L6	10871	92.1	3000	0.0

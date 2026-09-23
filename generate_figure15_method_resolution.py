@@ -541,22 +541,22 @@ def main():
 
     # ── Callout annotations ──────────────────────────────────────────────────
     # Annotation 1: Ho 2019 NDM — 13 plasmids all IncX3 at PlasmidFinder,
-    #               but 12→pLIN 475 + 1→pLIN 473 at pLIN
+    #               but 12→pLIN 284 + 1→pLIN 285 at pLIN
     ax.text(-2.3, 60,
             "Ho 2019 NDM (HK):\n"
             "PlasmidFinder: all \"IncX3\"\n"
-            "pLIN: 12\u2192475 + 1\u2192473\n"
+            "pLIN: 12\u2192284 + 1\u2192285\n"
             "(outbreak cluster detected)",
             fontsize=7, color=DARK_BLUE, fontweight="bold",
             va="top", ha="left",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="#E3F2FD",
                       edgecolor=BLUE, alpha=0.9, linewidth=1.5))
 
-    # Annotation 2: OXA-48 cross-country — all IncFII but pLIN 1688
+    # Annotation 2: OXA-48 cross-country — all IncFII but pLIN 976
     ax.text(-2.3, 44,
             "OXA-48 (3 countries):\n"
             "PlasmidFinder: all \"IncFII\"\n"
-            "pLIN: 5/6\u21921688\n"
+            "pLIN: 5/6\u2192976\n"
             "(Turkey=France=Netherlands)",
             fontsize=7, color=DARK_BLUE, fontweight="bold",
             va="top", ha="left",
@@ -567,7 +567,7 @@ def main():
     ax.text(-2.3, 28,
             "mcr-1 separation:\n"
             "PlasmidFinder: IncI2 + IncX4\n"
-            "pLIN: 87 (IncI2) vs 340 (IncX4)\n"
+            "pLIN: 147 (IncI2) vs 319 (IncX4)\n"
             "(backbone lineages separated)",
             fontsize=7, color=DARK_BLUE, fontweight="bold",
             va="top", ha="left",

@@ -61,7 +61,7 @@
       "unique_plasmids": 9
     }
   ],
-  "composite_transposons": 9559,
+  "composite_transposons": 5462,
   "blast_params": "evalue=1e-20, perc_identity=85%, coverage>=70%, task=blastn",
   "reference_db": "20 curated IS elements from ISfinder/NCBI"
 }

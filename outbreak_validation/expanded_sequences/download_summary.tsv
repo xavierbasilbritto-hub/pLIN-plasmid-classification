@@ -1,0 +1,60 @@
+accession	gene	country	study	length	is_plasmid	status
+GU595196	blaKPC-2	USA	Kitchel_2009_KPC_IncN	113637	True	ok
+JN233704	blaKPC-2	USA	Chen_2012_KPC_IncFIA	208191	True	ok
+CP004366	blaKPC-3	USA	Conlan_2014_NIH_KPC	53081	True	ok
+CP004367	blaKPC-3	USA	Conlan_2014_NIH_KPC	54605	True	ok
+CP019026	blaKPC-2	China	Li_2018_KPC_IncN	59373	True	ok
+CP081510	blaKPC-2	Italy	Arcari_2023_KPC_outbreak	41852	True	ok
+CP081509	blaKPC-2	Italy	Arcari_2023_KPC_outbreak	21888	True	ok
+MH133192	blaKPC-2	Brazil	Andrade_2019_KPC_Brazil	12748	True	ok
+MH234497	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234498	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234499	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	47849	True	ok
+MH234500	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234501	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234502	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	45547	True	ok
+MH234503	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234504	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234505	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	53097	True	ok
+MH234506	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234507	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234508	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	46161	True	ok
+MH234509	blaNDM-1	Hong Kong	Ho_2019_NDM_HK_ICU	47474	True	ok
+KX832926	blaNDM-1	Colombia	Rojas_2017_NDM_Colombia	43191	True	ok
+KX832927	blaNDM-1	Colombia	Rojas_2017_NDM_Colombia	244116	True	ok
+KX832928	blaNDM-1	Colombia	Rojas_2017_NDM_Colombia	54712	True	ok
+KX832929	blaNDM-1	Colombia	Rojas_2017_NDM_Colombia	90666	True	ok
+CP017672	blaNDM-1	Colombia	Rojas_2017_NDM_Colombia	108417	True	ok
+JX104760	blaNDM-1	China	Ho_2012_NDM_China	54035	True	ok
+MH985166	blaNDM-5	China	Li_2020_NDM5_China	9553	True	ok
+MH985167	blaNDM-5	China	Li_2020_NDM5_China	90378	True	ok
+MH985168	blaNDM-5	China	Li_2020_NDM5_China	9553	True	ok
+MH985169	blaNDM-5	China	Li_2020_NDM5_China	4200	True	ok
+MH985170	blaNDM-5	China	Li_2020_NDM5_China	6346	True	ok
+MH985171	blaNDM-5	China	Li_2020_NDM5_China	6344	True	ok
+JN626286	blaOXA-48	Turkey	Potron_2013_OXA48_Turkey	61881	True	ok
+LR025096	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	4830938	False	skipped_chromo
+LR025097	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	142200	True	ok
+LR025098	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	63589	True	ok
+LR025099	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	5323688	False	skipped_chromo
+LR025100	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	63589	True	ok
+LR025105	blaOXA-48	Netherlands	Jousset_2019_OXA48_NL	63589	True	ok
+KP061858	blaOXA-48	France	Jousset_2019_OXA48_FR	63584	True	ok
+MN783743	blaVIM-1	Italy	Arcari_2020_VIM_Italy	182016	True	ok
+MN783744	blaVIM-1	Italy	Arcari_2020_VIM_Italy	164903	True	ok
+MN783745	blaVIM-1	Italy	Arcari_2020_VIM_Italy	117164	True	ok
+AB616660	blaIMP-6	Japan	Tada_2015_IMP_Japan	47236	True	ok
+KP347127	mcr-1	China	Liu_2016_mcr1_discovery	64015	True	ok
+KU761326	mcr-1	China	Zheng_2017_mcr1_China	64964	True	ok
+KU761327	mcr-1	China	Zheng_2017_mcr1_China	33287	True	ok
+KY075653	mcr-1	Europe	Hasman_2015_mcr1_Europe	33309	True	ok
+KY075654	mcr-1	Europe	Hasman_2015_mcr1_Europe	61908	True	ok
+CP016405	mcr-1	USA	McGann_2016_mcr1_USA	63329	True	ok
+AY458016	blaCTX-M-15	India	Karim_2001_CTXM_India	92353	True	ok
+EU935738	blaCTX-M-15	UK	Woodford_2009_CTXM_UK	64471	True	ok
+EU935739	blaCTX-M-15	UK	Woodford_2009_CTXM_UK	117536	True	ok
+EU935740	blaCTX-M-15	UK	Woodford_2009_CTXM_UK	93732	True	ok
+CP009231	blaCTX-M-15	USA	Sheppard_2016_CTXM_USA	155456	True	ok
+CP009232	blaCTX-M-15	USA	Sheppard_2016_CTXM_USA	172280	True	ok
+CP009233	blaCTX-M-15	USA	Sheppard_2016_CTXM_USA	154789	True	ok
+FN868832	blaCTX-M-15	France	Valverde_2009_CTXM_FR	93629	True	ok

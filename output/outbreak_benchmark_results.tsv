@@ -1,75 +1,75 @@
 accession	study	resistance_gene	country	original_plin	loocv_plin	l6_match	original_l3	loocv_l3	l3_match	nn_distance	confidence	predicted_inc	method
-CP022533	Study6_IMP4_IncHI2_Australia	blaIMP-4	Australia	1.1.2.15.48.860	1.1.2.15.48.860	True	1.1.2	1.1.2	True	0.000369	100.0	IncHI2	precomputed
-CP104940	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.15.48.725	1.1.2.15.48.725	True	1.1.2	1.1.2	True	0.0	100.0	IncN	precomputed
-CP104944	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.15.48.671	1.1.2.15.48.671	True	1.1.2	1.1.2	True	0.0	100.0	IncN	precomputed
-CP104949	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.15.48.725	1.1.2.15.48.725	True	1.1.2	1.1.2	True	0.0	100.0	IncN	precomputed
-MN542377	Study4_KPC2_Singapore	blaKPC-2	Singapore	1.1.2.15.48.2455	1.1.2.15.48.2455	True	1.1.2	1.1.2	True	0.005795	60.9	IncN	precomputed
-MN657241	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2456	1.1.2.15.48.2456	True	1.1.2	1.1.2	True	0.001418	61.9	IncN	precomputed
-MN657242	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2457	1.1.2.15.48.2457	True	1.1.2	1.1.2	True	0.001152	63.3	IncC	precomputed
-MN657243	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2458	1.1.2.15.48.2458	True	1.1.2	1.1.2	True	0.001991	58.2	IncFII	precomputed
-MN657244	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.492	1.1.2.15.48.492	True	1.1.2	1.1.2	True	0.000947	39.8	IncC	precomputed
-MN657245	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2459	1.1.2.15.48.2459	True	1.1.2	1.1.2	True	0.003863	100.0	IncN	precomputed
-MN657246	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2460	1.1.2.15.48.2460	True	1.1.2	1.1.2	True	0.002791	100.0	IncN	precomputed
-MN657247	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.2461	1.1.2.15.48.2461	True	1.1.2	1.1.2	True	0.001039	43.0	IncA	precomputed
-MN657248	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.1360	1.1.2.15.48.1360	True	1.1.2	1.1.2	True	0.000248	100.0	IncFII	precomputed
-MN657249	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.492	1.1.2.15.48.492	True	1.1.2	1.1.2	True	0.000989	41.0	IncAC2	precomputed
-MN657250	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.492	1.1.2.15.48.492	True	1.1.2	1.1.2	True	0.000991	40.9	IncAC2	precomputed
-MN657251	Study3_NDM1_Germany	blaKPC-2	Germany	1.1.2.15.48.1327	1.1.2.15.48.1327	True	1.1.2	1.1.2	True	7e-06	100.0	IncFII	precomputed
-MN657252	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.15.48.492	1.1.2.15.48.492	True	1.1.2	1.1.2	True	0.000858	44.8	IncC	precomputed
-AB616660	Tada_2015_IMP_Japan	blaIMP-6	Japan	1.1.2.15.48.750	1.1.2.15.48.750	True	1.1.2	1.1.2	True	0.000865	100.0	IncN	loocv
-AY458016	Karim_2001_CTXM_India	blaCTX-M-15	India	1.1.2.15.48.1524	1.1.2.15.48.1524	True	1.1.2	1.1.2	True	0.001066	100.0	IncFII	loocv
-CP004366	Conlan_2014_NIH_KPC	blaKPC-3	USA	1.1.2.15.48.672	1.1.2.15.48.672	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
-CP004367	Conlan_2014_NIH_KPC	blaKPC-3	USA	1.1.2.15.48.672	1.1.2.15.48.672	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
-CP009231	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.15.48.1482	1.1.2.15.48.1482	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
-CP009232	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.15.48.1482	1.1.2.15.48.1482	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
-CP009233	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.15.48.1482	1.1.2.15.48.1482	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
-CP016405	McGann_2016_mcr1_USA	mcr-1	USA	1.1.2.15.48.87	1.1.2.15.48.87	True	1.1.2	1.1.2	True	0.000477	100.0	IncI2	loocv
-CP017672	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.15.48.107	1.1.2.15.83.2420	False	1.1.2	1.1.2	True	0.014336	74.53	IncFII	loocv
-CP019026	Li_2018_KPC_IncN	blaKPC-2	China	1.1.2.15.48.667	1.1.2.15.48.667	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
-CP081509	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	1.1.2.15.48.472	1.1.2.15.48.472	True	1.1.2	1.1.2	True	0.009107	100.0	IncX3	loocv
-CP081510	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	1.1.2.15.48.256	1.1.2.15.48.256	True	1.1.2	1.1.2	True	0.004441	100.0	IncX3	loocv
-EU935738	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.15.48.1434	1.1.2.15.48.1434	True	1.1.2	1.1.2	True	0.00236	61.71	IncFII	loocv
-EU935739	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.15.48.1485	1.1.2.15.48.1485	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
-EU935740	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.15.48.554	1.1.2.15.48.554	True	1.1.2	1.1.2	True	0.000184	63.05	IncI1	loocv
-FN868832	Valverde_2009_CTXM_FR	blaCTX-M-15	France	1.1.2.15.48.115	1.1.2.15.48.115	True	1.1.2	1.1.2	True	0.002679	49.72	IncFII	loocv
-GU595196	Kitchel_2009_KPC_IncN	blaKPC-2	USA	1.1.2.15.48.1360	1.1.2.15.48.1360	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
-JN233704	Chen_2012_KPC_IncFIA	blaKPC-2	USA	1.1.2.15.48.1327	1.1.2.15.48.1327	True	1.1.2	1.1.2	True	6.6e-05	100.0	IncFII	loocv
-JN626286	Potron_2013_OXA48_Turkey	blaOXA-48	Turkey	1.1.2.15.48.1688	1.1.2.15.48.1688	True	1.1.2	1.1.2	True	0.00358	100.0	IncFII	loocv
-JX104760	Ho_2012_NDM_China	blaNDM-1	China	1.1.2.15.48.473	1.1.2.15.48.473	True	1.1.2	1.1.2	True	0.000235	100.0	IncX3	loocv
-KP061858	Jousset_2019_OXA48_FR	blaOXA-48	France	1.1.2.15.48.1688	1.1.2.15.48.1688	True	1.1.2	1.1.2	True	0.003396	82.68	IncFII	loocv
-KP347127	Liu_2016_mcr1_discovery	mcr-1	China	1.1.2.15.48.87	1.1.2.15.48.87	True	1.1.2	1.1.2	True	0.000203	100.0	IncI2	loocv
-KU761326	Zheng_2017_mcr1_China	mcr-1	China	1.1.2.15.48.87	1.1.2.15.48.87	True	1.1.2	1.1.2	True	0.0	100.0	IncI2	loocv
-KU761327	Zheng_2017_mcr1_China	mcr-1	China	1.1.2.15.48.340	1.1.2.15.48.340	True	1.1.2	1.1.2	True	0.0	100.0	IncX4	loocv
-KX832926	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.15.48.2176	1.1.2.15.48.2176	True	1.1.2	1.1.2	True	0.030195	100.0	IncX1	loocv
-KX832927	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.15.48.859	1.1.2.15.48.859	True	1.1.2	1.1.2	True	0.006489	62.78	IncN	loocv
-KX832928	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.15.83.2420	1.1.2.15.83.2420	True	1.1.2	1.1.2	True	0.015888	34.88	IncX1	loocv
-KX832929	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.15.48.96	1.1.2.15.48.96	True	1.1.2	1.1.2	True	0.018881	100.0	IncX1	loocv
-KY075653	Hasman_2015_mcr1_Europe	mcr-1	Europe	1.1.2.15.48.340	1.1.2.15.48.340	True	1.1.2	1.1.2	True	4e-06	100.0	IncX4	loocv
-KY075654	Hasman_2015_mcr1_Europe	mcr-1	Europe	1.1.2.15.48.87	1.1.2.15.48.87	True	1.1.2	1.1.2	True	0.000381	100.0	IncI2	loocv
-LR025097	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.15.48.1637	1.1.2.15.48.1637	True	1.1.2	1.1.2	True	0.000679	46.53	IncFII	loocv
-LR025098	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.15.48.1688	1.1.2.15.48.1688	True	1.1.2	1.1.2	True	0.003409	82.67	IncFII	loocv
-LR025100	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.15.48.1688	1.1.2.15.48.1688	True	1.1.2	1.1.2	True	0.003409	82.67	IncFII	loocv
-LR025105	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.15.48.1688	1.1.2.15.48.1688	True	1.1.2	1.1.2	True	0.003507	82.27	IncFII	loocv
-MH133192	Andrade_2019_KPC_Brazil	blaKPC-2	Brazil	1.1.2.15.48.2337	1.1.2.15.48.2337	True	1.1.2	1.1.2	True	0.023626	59.08	IncFII	loocv
-MH234497	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234498	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234499	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	9.9e-05	100.0	IncX3	loocv
-MH234500	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234501	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1.6e-05	100.0	IncX3	loocv
-MH234502	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	5.6e-05	100.0	IncX3	loocv
-MH234503	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234504	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1.6e-05	100.0	IncX3	loocv
-MH234505	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.473	1.1.2.15.48.473	True	1.1.2	1.1.2	True	0.00027	100.0	IncX3	loocv
-MH234506	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	0.0	100.0	IncX3	loocv
-MH234507	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234508	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
-MH234509	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.15.48.475	1.1.2.15.48.475	True	1.1.2	1.1.2	True	0.000125	100.0	IncX3	loocv
-MH985166	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.48.402	1.1.2.15.48.402	True	1.1.2	1.1.2	True	0.017547	60.88	IncFII	loocv
-MH985167	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.48.1484	1.1.2.15.48.1485	False	1.1.2	1.1.2	True	0.002113	100.0	IncFII	loocv
-MH985168	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.48.402	1.1.2.15.48.402	True	1.1.2	1.1.2	True	0.017547	60.88	IncFII	loocv
-MH985169	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.48.2033	1.1.2.15.48.2033	True	1.1.2	1.1.2	True	0.038623	60.13	IncFII	loocv
-MH985170	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.66.2403	1.1.2.15.66.2403	True	1.1.2	1.1.2	True	0.029752	60.51	IncFII	loocv
-MH985171	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.15.66.2403	1.1.2.15.66.2403	True	1.1.2	1.1.2	True	0.029795	60.56	IncFII	loocv
-MN783743	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.15.48.490	1.1.2.15.48.490	True	1.1.2	1.1.2	True	0.001755	44.4	IncA	loocv
-MN783744	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.15.48.490	1.1.2.15.48.490	True	1.1.2	1.1.2	True	0.000619	68.32	IncA	loocv
-MN783745	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.15.48.1041	1.1.2.15.48.585	False	1.1.2	1.1.2	True	0.001973	100.0	IncFII	loocv
+CP022533	Study6_IMP4_IncHI2_Australia	blaIMP-4	Australia	1.1.2.4.7.13	1.1.2.4.7.13	True	1.1.2	1.1.2	True	0.000369	100.0	IncHI2	loocv
+CP104940	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.4.7.2197	1.1.2.4.7.2197	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+CP104944	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.4.7.1947	1.1.2.4.7.1947	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+CP104949	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	1.1.2.4.7.2197	1.1.2.4.7.2197	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+MN542377	Study4_KPC2_Singapore	blaKPC-2	Singapore	1.1.2.4.7.13	1.1.2.4.7.13	True	1.1.2	1.1.2	True	0.005795	60.89	IncN	loocv
+MN657241	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.1142	1.1.2.4.7.1142	True	1.1.2	1.1.2	True	0.001418	61.87	IncN	loocv
+MN657242	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.001152	63.3	IncC	loocv
+MN657243	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.1142	1.1.2.4.7.1142	True	1.1.2	1.1.2	True	0.001991	58.24	IncFII	loocv
+MN657244	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.000947	39.84	IncC	loocv
+MN657245	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.2886	1.1.2.4.7.2886	True	1.1.2	1.1.2	True	0.003863	100.0	IncN	loocv
+MN657246	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.2886	1.1.2.4.7.2886	True	1.1.2	1.1.2	True	0.002791	100.0	IncN	loocv
+MN657247	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.001039	43.04	IncA	loocv
+MN657248	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.46	1.1.2.4.7.46	True	1.1.2	1.1.2	True	0.000248	100.0	IncFII	loocv
+MN657249	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.000989	41.0	IncAC2	loocv
+MN657250	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.000991	40.89	IncAC2	loocv
+MN657251	Study3_NDM1_Germany	blaKPC-2	Germany	1.1.2.4.7.23	1.1.2.4.7.23	True	1.1.2	1.1.2	True	7e-06	100.0	IncFII	loocv
+MN657252	Study3_NDM1_Germany	blaNDM-1	Germany	1.1.2.4.7.26	1.1.2.4.7.26	True	1.1.2	1.1.2	True	0.000858	44.83	IncC	loocv
+AB616660	Tada_2015_IMP_Japan	blaIMP-6	Japan	1.1.2.4.7.8	1.1.2.4.7.8	True	1.1.2	1.1.2	True	0.000865	100.0	IncN	loocv
+AY458016	Karim_2001_CTXM_India	blaCTX-M-15	India	1.1.2.4.7.533	1.1.2.4.7.533	True	1.1.2	1.1.2	True	0.001066	100.0	IncFII	loocv
+CP004366	Conlan_2014_NIH_KPC	blaKPC-3	USA	1.1.2.4.7.977	1.1.2.4.7.977	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+CP004367	Conlan_2014_NIH_KPC	blaKPC-3	USA	1.1.2.4.7.977	1.1.2.4.7.977	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+CP009231	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.4.7.32	1.1.2.4.7.32	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
+CP009232	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.4.7.32	1.1.2.4.7.32	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
+CP009233	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	1.1.2.4.7.32	1.1.2.4.7.32	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
+CP016405	McGann_2016_mcr1_USA	mcr-1	USA	1.1.2.4.7.147	1.1.2.4.7.147	True	1.1.2	1.1.2	True	0.000477	100.0	IncI2	loocv
+CP017672	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.4.6.275	1.1.2.4.6.2079	False	1.1.2	1.1.2	True	0.014336	79.16	repAci_large	loocv
+CP019026	Li_2018_KPC_IncN	blaKPC-2	China	1.1.2.4.7.1231	1.1.2.4.7.1231	True	1.1.2	1.1.2	True	0.0	100.0	IncN	loocv
+CP081509	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	1.1.2.4.7.41	1.1.2.4.7.41	True	1.1.2	1.1.2	True	0.009107	100.0	IncX3	loocv
+CP081510	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	1.1.2.4.7.315	1.1.2.4.7.315	True	1.1.2	1.1.2	True	0.004441	100.0	IncX3	loocv
+EU935738	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.4.7.10	1.1.2.4.7.10	True	1.1.2	1.1.2	True	0.00236	61.71	IncFII	loocv
+EU935739	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.4.7.925	1.1.2.4.7.925	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
+EU935740	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	1.1.2.4.7.392	1.1.2.4.7.392	True	1.1.2	1.1.2	True	0.000184	63.05	IncI1	loocv
+FN868832	Valverde_2009_CTXM_FR	blaCTX-M-15	France	1.1.2.4.7.826	1.1.2.4.7.826	True	1.1.2	1.1.2	True	0.002679	49.72	IncFII	loocv
+GU595196	Kitchel_2009_KPC_IncN	blaKPC-2	USA	1.1.2.4.7.46	1.1.2.4.7.46	True	1.1.2	1.1.2	True	0.0	100.0	IncFII	loocv
+JN233704	Chen_2012_KPC_IncFIA	blaKPC-2	USA	1.1.2.4.7.23	1.1.2.4.7.23	True	1.1.2	1.1.2	True	6.6e-05	100.0	IncFII	loocv
+JN626286	Potron_2013_OXA48_Turkey	blaOXA-48	Turkey	1.1.2.4.7.976	1.1.2.4.7.976	True	1.1.2	1.1.2	True	0.00358	100.0	IncFII	loocv
+JX104760	Ho_2012_NDM_China	blaNDM-1	China	1.1.2.4.7.285	1.1.2.4.7.285	True	1.1.2	1.1.2	True	0.000235	100.0	IncX3	loocv
+KP061858	Jousset_2019_OXA48_FR	blaOXA-48	France	1.1.2.4.7.976	1.1.2.4.7.976	True	1.1.2	1.1.2	True	0.003396	82.68	IncFII	loocv
+KP347127	Liu_2016_mcr1_discovery	mcr-1	China	1.1.2.4.7.147	1.1.2.4.7.147	True	1.1.2	1.1.2	True	0.000203	100.0	IncI2	loocv
+KU761326	Zheng_2017_mcr1_China	mcr-1	China	1.1.2.4.7.147	1.1.2.4.7.147	True	1.1.2	1.1.2	True	0.0	100.0	IncI2	loocv
+KU761327	Zheng_2017_mcr1_China	mcr-1	China	1.1.2.4.7.319	1.1.2.4.7.319	True	1.1.2	1.1.2	True	0.0	100.0	IncX4	loocv
+KX832926	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.4.6.193	1.1.2.4.6.140	False	1.1.2	1.1.2	True	0.017041	78.39	repEF_conj	loocv
+KX832927	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.4.7.1194	1.1.2.4.7.1194	True	1.1.2	1.1.2	True	0.006489	62.78	IncN	loocv
+KX832928	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.4.40.272	1.1.2.4.40.272	True	1.1.2	1.1.2	True	0.003754	100.0	repAci_large	loocv
+KX832929	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	1.1.2.4.6.193	1.1.2.4.6.193	True	1.1.2	1.1.2	True	0.010525	100.0	repAci_large	loocv
+KY075653	Hasman_2015_mcr1_Europe	mcr-1	Europe	1.1.2.4.7.319	1.1.2.4.7.319	True	1.1.2	1.1.2	True	4e-06	100.0	IncX4	loocv
+KY075654	Hasman_2015_mcr1_Europe	mcr-1	Europe	1.1.2.4.7.147	1.1.2.4.7.147	True	1.1.2	1.1.2	True	0.000381	100.0	IncI2	loocv
+LR025097	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.4.7.864	1.1.2.4.7.864	True	1.1.2	1.1.2	True	0.000679	46.53	IncFII	loocv
+LR025098	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.4.7.976	1.1.2.4.7.976	True	1.1.2	1.1.2	True	0.003409	82.67	IncFII	loocv
+LR025100	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.4.7.976	1.1.2.4.7.976	True	1.1.2	1.1.2	True	0.003409	82.67	IncFII	loocv
+LR025105	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	1.1.2.4.7.976	1.1.2.4.7.976	True	1.1.2	1.1.2	True	0.003507	82.27	IncFII	loocv
+MH133192	Andrade_2019_KPC_Brazil	blaKPC-2	Brazil	1.1.2.4.23.549	1.1.2.4.23.549	True	1.1.2	1.1.2	True	0.014663	100.0	repPae_small	loocv
+MH234497	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234498	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234499	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	9.9e-05	100.0	IncX3	loocv
+MH234500	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234501	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1.6e-05	100.0	IncX3	loocv
+MH234502	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	5.6e-05	100.0	IncX3	loocv
+MH234503	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234504	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1.6e-05	100.0	IncX3	loocv
+MH234505	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.285	1.1.2.4.7.285	True	1.1.2	1.1.2	True	0.00027	100.0	IncX3	loocv
+MH234506	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	0.0	100.0	IncX3	loocv
+MH234507	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234508	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	1e-06	100.0	IncX3	loocv
+MH234509	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	1.1.2.4.7.284	1.1.2.4.7.284	True	1.1.2	1.1.2	True	0.000125	100.0	IncX3	loocv
+MH985166	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.7.2371	1.1.2.4.7.2371	True	1.1.2	1.1.2	True	0.017547	60.88	IncFII	loocv
+MH985167	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.7.2002	1.1.2.4.7.925	False	1.1.2	1.1.2	True	0.002113	100.0	IncFII	loocv
+MH985168	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.7.2371	1.1.2.4.7.2371	True	1.1.2	1.1.2	True	0.017547	60.88	IncFII	loocv
+MH985169	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.23.516	1.1.2.4.23.516	True	1.1.2	1.1.2	True	0.030517	60.25	repPae_large	loocv
+MH985170	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.23.127	1.1.2.4.23.127	True	1.1.2	1.1.2	True	0.024907	100.0	repPae_large	loocv
+MH985171	Li_2020_NDM5_China	blaNDM-5	China	1.1.2.4.23.127	1.1.2.4.23.127	True	1.1.2	1.1.2	True	0.02494	100.0	repPae_large	loocv
+MN783743	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.4.7.647	1.1.2.4.7.647	True	1.1.2	1.1.2	True	0.001755	44.4	IncA	loocv
+MN783744	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.4.7.647	1.1.2.4.7.647	True	1.1.2	1.1.2	True	0.000619	68.32	IncA	loocv
+MN783745	Arcari_2020_VIM_Italy	blaVIM-1	Italy	1.1.2.4.7.2246	1.1.2.4.7.1949	False	1.1.2	1.1.2	True	0.001973	100.0	IncFII	loocv

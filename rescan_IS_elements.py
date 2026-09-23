@@ -35,6 +35,10 @@ GRAM_CATEGORY = {
     "repPae_large": "Pseudomonas", "repPae_small": "Pseudomonas",
 }
 
+# See detect_IS_elements.py::IS6_FAMILY for rationale.
+IS6_FAMILY = {"IS26", "IS6100", "IS257", "IS1216", "IS15",
+              "IS1006", "IS1008", "ISSau10"}
+
 
 def scan_group(group, fastas_dir, is_db):
     """Scan all plasmids in a group for IS elements."""
@@ -85,6 +89,11 @@ def scan_group(group, fastas_dir, is_db):
 
         # Require ≥70% coverage of the IS reference AND ≥85% identity
         if coverage >= 0.70 and float(pident) >= 85.0:
+            # sstart > send means the hit aligns to the minus strand of the
+            # IS reference relative to the plasmid query — i.e. this copy
+            # sits in reverse orientation. See detect_IS_elements.py for
+            # the full rationale (Harmer & Hall 2024, Ref 20).
+            strand = "+" if int(sstart) <= int(send) else "-"
             hits.append({
                 "source_file": qseqid,
                 "inc_group": group,
@@ -96,6 +105,7 @@ def scan_group(group, fastas_dir, is_db):
                 "coverage": round(coverage, 3),
                 "q_start": int(qstart),
                 "q_end": int(qend),
+                "strand": strand,
                 "evalue": float(evalue),
                 "bitscore": float(bitscore),
                 "plasmid_length": int(qlen),
@@ -146,6 +156,16 @@ def detect_composite_transposons(is_df, amr_file):
                 if region > 50000 or region < 100:
                     continue
 
+                # IS6-family elements only form pseudo-compound transposon
+                # structures from direct-orientation pairs (Ref 20); an
+                # opposite-orientation pair is not evidence of this
+                # mechanism. Other IS families are not restricted here.
+                strand1 = fam_hits.iloc[i].get("strand")
+                strand2 = fam_hits.iloc[i + 1].get("strand")
+                same_orientation = (strand1 is None or strand2 is None or strand1 == strand2)
+                if is_fam in IS6_FAMILY and not same_orientation:
+                    continue
+
                 # Check for AMR genes in between
                 for key_variant in [source_file, f"RefSeq_{source_file}", source_file.replace("RefSeq_", "")]:
                     if key_variant in amr_positions:
@@ -160,6 +180,7 @@ def detect_composite_transposons(is_df, amr_file):
                                 "is1_pos": f"{fam_hits.iloc[i]['q_start']}-{fam_hits.iloc[i]['q_end']}",
                                 "is2_pos": f"{fam_hits.iloc[i+1]['q_start']}-{fam_hits.iloc[i+1]['q_end']}",
                                 "region_size": region,
+                                "same_orientation": bool(same_orientation),
                                 "cargo_genes": ",".join(g["gene"] for g in cargo),
                                 "n_cargo": len(cargo),
                             })

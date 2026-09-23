@@ -1,75 +1,75 @@
 accession	study	resistance_gene	country	length_bp	predicted_inc	confidence	pLIN	nn_plasmid	nn_distance	nn_inc_type	nn_plin	source	host_species	MLST_ST
-CP022533	Study6_IMP4_IncHI2_Australia	blaIMP-4	Australia	330060	IncHI2	100.0	1.1.2.15.48.860	NZ_CP080108.1	0.000369	IncHI2	1.1.2.15.48.860	original	Klebsiella pneumoniae	ST258
-CP104940	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78023	IncN	100.0	1.1.2.15.48.725	RefSeq_NZ_CP104940.1	0.0	IncN	1.1.2.15.48.725	original	Klebsiella pneumoniae	ST11
-CP104944	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78021	IncN	100.0	1.1.2.15.48.671	RefSeq_NZ_JAFIAF010000215.1	0.0	IncN	1.1.2.15.48.671	original	Escherichia coli	ST131
-CP104949	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78022	IncN	100.0	1.1.2.15.48.725	RefSeq_NZ_CP104949.1	0.0	IncN	1.1.2.15.48.725	original	Klebsiella pneumoniae	ST11
-MN542377	Study4_KPC2_Singapore	blaKPC-2	Singapore	71861	IncN	60.9	1.1.2.15.48.2455	RefSeq_NZ_CP047737.1	0.005795	IncN	1.1.2.15.48.860	original	Klebsiella pneumoniae	ST11
-MN657241	Study3_NDM1_Germany	blaNDM-1	Germany	176505	IncN	61.9	1.1.2.15.48.2456	RefSeq_NZ_CP007732.1	0.001418	IncN	1.1.2.15.48.488	original	Escherichia coli	ST167
-MN657242	Study3_NDM1_Germany	blaNDM-1	Germany	88530	IncC	63.3	1.1.2.15.48.2457	NZ_CP135682.1	0.001152	IncC	1.1.2.15.48.492	original	Escherichia coli	ST167
-MN657243	Study3_NDM1_Germany	blaNDM-1	Germany	147541	IncFII	58.2	1.1.2.15.48.2458	RefSeq_NZ_CP008824.1	0.001991	IncN	1.1.2.15.48.488	original	Klebsiella pneumoniae	ST147
-MN657244	Study3_NDM1_Germany	blaNDM-1	Germany	115265	IncC	39.8	1.1.2.15.48.492	NZ_CP050164.1	0.000947	IncA	1.1.2.15.48.492	original	Klebsiella pneumoniae	ST147
-MN657245	Study3_NDM1_Germany	blaNDM-1	Germany	44449	IncN	100.0	1.1.2.15.48.2459	RefSeq_NZ_MZ836798.1	0.003863	IncN	1.1.2.15.48.2054	original	Enterobacter cloacae	ST114
-MN657246	Study3_NDM1_Germany	blaNDM-1	Germany	49441	IncN	100.0	1.1.2.15.48.2460	RefSeq_NZ_MZ836798.1	0.002791	IncN	1.1.2.15.48.2054	original	Escherichia coli	ST410
-MN657247	Study3_NDM1_Germany	blaNDM-1	Germany	94919	IncA	43.0	1.1.2.15.48.2461	NZ_CP135682.1	0.001039	IncC	1.1.2.15.48.492	original	Escherichia coli	ST410
-MN657248	Study3_NDM1_Germany	blaNDM-1	Germany	126540	IncFII	100.0	1.1.2.15.48.1360	RefSeq_NZ_CP104662.1	0.000248	IncFII	1.1.2.15.48.1360	original	Klebsiella pneumoniae	ST307
-MN657249	Study3_NDM1_Germany	blaNDM-1	Germany	155176	IncAC2	41.0	1.1.2.15.48.492	NZ_CP036192.1	0.000989	IncAC2	1.1.2.15.48.492	original	Citrobacter freundii	ST22
-MN657250	Study3_NDM1_Germany	blaNDM-1	Germany	156376	IncAC2	40.9	1.1.2.15.48.492	NZ_CP036192.1	0.000991	IncAC2	1.1.2.15.48.492	original	Escherichia coli	ST648
-MN657251	Study3_NDM1_Germany	blaKPC-2	Germany	100959	IncFII	100.0	1.1.2.15.48.1327	RefSeq_NZ_CP059315.1	7e-06	IncFII	1.1.2.15.48.1327	original	Klebsiella pneumoniae	ST15
-MN657252	Study3_NDM1_Germany	blaNDM-1	Germany	168682	IncC	44.8	1.1.2.15.48.492	NZ_CP040024.1	0.000858	IncC	1.1.2.15.48.492	original	Klebsiella pneumoniae	ST258
-AB616660	Tada_2015_IMP_Japan	blaIMP-6	Japan	47236	IncN	100.0	1.1.2.15.48.750	RefSeq_NZ_AP019404.1	0.003214	IncN	1.1.2.15.48.750	expanded	Escherichia coli	ST131
-AY458016	Karim_2001_CTXM_India	blaCTX-M-15	India	92353	IncFII	100.0	1.1.2.15.48.1524	NZ_CP110199.1	0.002771	IncFII	1.1.2.15.48.1524	expanded	Escherichia coli	ST131
-CP004366	Conlan_2014_NIH_KPC	blaKPC-3	USA	53081	IncN	100.0	1.1.2.15.48.672	RefSeq_NZ_JAUEQX010000002.1	0.002361	IncN	1.1.2.15.48.672	expanded	Klebsiella pneumoniae	ST258
-CP004367	Conlan_2014_NIH_KPC	blaKPC-3	USA	54605	IncN	100.0	1.1.2.15.48.672	RefSeq_NC_021660.2	0.002253	IncN	1.1.2.15.48.672	expanded	Klebsiella pneumoniae	ST258
-CP009231	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	155456	IncFII	100.0	1.1.2.15.48.1482	RefSeq_NZ_CP009231.1	0.001598	IncFII	1.1.2.15.48.1482	expanded	Escherichia coli	ST131
-CP009232	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	172280	IncFII	100.0	1.1.2.15.48.1482	RefSeq_NZ_CP009232.1	0.00164	IncFII	1.1.2.15.48.1482	expanded	Escherichia coli	ST131
-CP009233	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	154789	IncFII	83.2	1.1.2.15.48.1482	RefSeq_NZ_CP009233.1	0.00175	IncFII	1.1.2.15.48.1482	expanded	Escherichia coli	ST131
-CP016405	McGann_2016_mcr1_USA	mcr-1	USA	63329	IncI2	100.0	1.1.2.15.48.87	NZ_CP075719.1	0.006133	IncI2	1.1.2.15.48.87	expanded	Escherichia coli	ST117
-CP017672	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	108417	IncFII	79.6	1.1.2.15.48.107	RefSeq_NC_004564.1	0.017983	IncFII	1.1.2.15.48.107	expanded	Klebsiella pneumoniae	ST258
-CP019026	Li_2018_KPC_IncN	blaKPC-2	China	59373	IncN	100.0	1.1.2.15.48.667	RefSeq_NZ_CP019026.1	0.002082	IncN	1.1.2.15.48.667	expanded	Klebsiella pneumoniae	ST11
-CP081509	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	21888	IncX3	100.0	1.1.2.15.48.472	CP080686.1	0.011713	IncX3	1.1.2.15.48.472	expanded	Klebsiella pneumoniae	ST258
-CP081510	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	41852	IncX3	100.0	1.1.2.15.48.256	NZ_CP058945.1	0.007703	IncX3	1.1.2.15.48.256	expanded	Klebsiella pneumoniae	ST512
-EU935738	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	64471	IncFII	80.6	1.1.2.15.48.1434	RefSeq_NZ_CP029580.1	0.003985	IncFII	1.1.2.15.48.1434	expanded	Escherichia coli	ST131
-EU935739	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	117536	IncFII	100.0	1.1.2.15.48.1485	RefSeq_NC_013122.1	0.001505	IncFII	1.1.2.15.48.1485	expanded	Escherichia coli	ST131
-EU935740	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	93732	IncI1	80.1	1.1.2.15.48.554	NZ_CP134359.1	0.002462	IncI1	1.1.2.15.48.554	expanded	Escherichia coli	ST405
-FN868832	Valverde_2009_CTXM_FR	blaCTX-M-15	France	93629	IncFII	43.4	1.1.2.15.48.115	NZ_MG825371.1	0.00481	IncFII	1.1.2.15.48.115	expanded	Escherichia coli	ST131
-GU595196	Kitchel_2009_KPC_IncN	blaKPC-2	USA	113637	IncFII	80.1	1.1.2.15.48.1360	RefSeq_NZ_CP115931.1	0.001258	IncFII	1.1.2.15.48.1360	expanded	Klebsiella pneumoniae	ST258
-JN233704	Chen_2012_KPC_IncFIA	blaKPC-2	USA	208191	IncFII	78.0	1.1.2.15.48.1327	CP080752.1	0.001333	IncFIB	1.1.2.15.48.1327	expanded	Klebsiella pneumoniae	ST258
-JN626286	Potron_2013_OXA48_Turkey	blaOXA-48	Turkey	61881	IncFII	100.0	1.1.2.15.48.1688	RefSeq_NC_021502.1	0.004961	IncFII	1.1.2.15.48.1688	expanded	Klebsiella pneumoniae	ST14
-JX104760	Ho_2012_NDM_China	blaNDM-1	China	54035	IncX3	100.0	1.1.2.15.48.473	NZ_CP050158.1	0.003216	IncX3	1.1.2.15.48.473	expanded	Acinetobacter baumannii	ST2
-KP061858	Jousset_2019_OXA48_FR	blaOXA-48	France	63584	IncFII	100.0	1.1.2.15.48.1688	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.15.48.1688	expanded	Klebsiella pneumoniae	ST258
-KP347127	Liu_2016_mcr1_discovery	mcr-1	China	64015	IncI2	100.0	1.1.2.15.48.87	NZ_CP075719.1	0.006593	IncI2	1.1.2.15.48.87	expanded	Escherichia coli	ST10
-KU761326	Zheng_2017_mcr1_China	mcr-1	China	64964	IncI2	100.0	1.1.2.15.48.87	NZ_CP075719.1	0.006279	IncI2	1.1.2.15.48.87	expanded	Escherichia coli	ST156
-KU761327	Zheng_2017_mcr1_China	mcr-1	China	33287	IncX4	100.0	1.1.2.15.48.340	NZ_OK642377.1	0.005726	IncX4	1.1.2.15.48.340	expanded	Escherichia coli	ST10
-KX832926	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	43191	IncX1	80.1	1.1.2.15.48.2176	RefSeq_NZ_CP076708.1	0.029318	IncX1	1.1.2.15.48.2176	expanded	Klebsiella pneumoniae	ST258
-KX832927	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	244116	IncN	81.1	1.1.2.15.48.859	RefSeq_NZ_CP015725.1	0.008467	IncN	1.1.2.15.48.859	expanded	Escherichia coli	ST131
-KX832928	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	54712	IncFII	73.9	1.1.2.15.83.2420	RefSeq_NZ_CP093261.1	0.01873	IncN	1.1.2.15.83.2420	expanded	Klebsiella pneumoniae	ST11
-KX832929	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	90666	IncX1	79.7	1.1.2.15.48.96	RefSeq_NZ_CP032088.1	0.024831	IncX1	1.1.2.15.48.96	expanded	Enterobacter cloacae	ST114
-KY075653	Hasman_2015_mcr1_Europe	mcr-1	Europe	33309	IncX4	100.0	1.1.2.15.48.340	NZ_OK642377.1	0.005713	IncX4	1.1.2.15.48.340	expanded	Escherichia coli	ST10
-KY075654	Hasman_2015_mcr1_Europe	mcr-1	Europe	61908	IncI2	100.0	1.1.2.15.48.87	NZ_CP075719.1	0.006651	IncI2	1.1.2.15.48.87	expanded	Salmonella enterica	ST34
-LR025097	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	142200	IncFII	56.9	1.1.2.15.48.1637	NZ_MW390534.1	0.002451	IncF	1.1.2.15.48.1637	expanded	Klebsiella pneumoniae	ST307
-LR025098	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.15.48.1688	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.15.48.1688	expanded	Escherichia coli	ST410
-LR025100	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.15.48.1688	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.15.48.1688	expanded	Klebsiella pneumoniae	ST307
-LR025105	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.15.48.1688	RefSeq_NC_021502.1	0.004878	IncFII	1.1.2.15.48.1688	expanded	Klebsiella pneumoniae	ST15
-MH133192	Andrade_2019_KPC_Brazil	blaKPC-2	Brazil	12748	IncFII	59.0	1.1.2.15.48.2337	RefSeq_NZ_CP070535.1	0.02444	IncN	1.1.2.15.48.2337	expanded	Klebsiella pneumoniae	ST11
-MH234497	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003595	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234498	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003595	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234499	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	47849	IncX3	100.0	1.1.2.15.48.475	NZ_CP122474.1	0.003628	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST15
-MH234500	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003595	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST15
-MH234501	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003597	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST307
-MH234502	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	45547	IncX3	100.0	1.1.2.15.48.475	NZ_CP122474.1	0.003597	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST147
-MH234503	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003592	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST147
-MH234504	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003613	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234505	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	53097	IncX3	100.0	1.1.2.15.48.473	NZ_CP050158.1	0.003253	IncX3	1.1.2.15.48.473	expanded	Klebsiella pneumoniae	ST11
-MH234506	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003596	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234507	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003595	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234508	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.15.48.475	NZ_CP065346.1	0.003595	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST11
-MH234509	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	47474	IncX3	100.0	1.1.2.15.48.475	NZ_CP122474.1	0.003716	IncX3	1.1.2.15.48.475	expanded	Klebsiella pneumoniae	ST15
-MH985166	Li_2020_NDM5_China	blaNDM-5	China	9553	IncFII	80.3	1.1.2.15.48.402	RefSeq_NZ_CP135476.1	0.018041	IncFII	1.1.2.15.48.402	expanded	Escherichia coli	ST167
-MH985167	Li_2020_NDM5_China	blaNDM-5	China	90378	IncFII	100.0	1.1.2.15.48.1484	RefSeq_NZ_CP103530.1	0.00369	IncFII	1.1.2.15.48.1484	expanded	Escherichia coli	ST167
-MH985168	Li_2020_NDM5_China	blaNDM-5	China	9553	IncFII	80.3	1.1.2.15.48.402	RefSeq_NZ_CP135476.1	0.018041	IncFII	1.1.2.15.48.402	expanded	Escherichia coli	ST410
-MH985169	Li_2020_NDM5_China	blaNDM-5	China	4200	IncFII	60.4	1.1.2.15.48.2033	RefSeq_NZ_OP776642.1	0.03731	IncFII	1.1.2.15.48.2033	expanded	Escherichia coli	ST410
-MH985170	Li_2020_NDM5_China	blaNDM-5	China	6346	IncFII	60.8	1.1.2.15.66.2403	RefSeq_NZ_CP066878.1	0.03042	IncFII	1.1.2.15.66.2403	expanded	Escherichia coli	ST648
-MH985171	Li_2020_NDM5_China	blaNDM-5	China	6344	IncFII	60.8	1.1.2.15.66.2403	RefSeq_NZ_CP066878.1	0.030462	IncFII	1.1.2.15.66.2403	expanded	Escherichia coli	ST156
-MN783743	Arcari_2020_VIM_Italy	blaVIM-1	Italy	182016	IncAC2	57.5	1.1.2.15.48.490	NZ_CP150624.1	0.00265	IncA	1.1.2.15.48.490	expanded	Klebsiella pneumoniae	ST307
-MN783744	Arcari_2020_VIM_Italy	blaVIM-1	Italy	164903	IncA	44.1	1.1.2.15.48.490	NZ_CP150624.1	0.001505	IncA	1.1.2.15.48.490	expanded	Klebsiella pneumoniae	ST307
-MN783745	Arcari_2020_VIM_Italy	blaVIM-1	Italy	117164	IncFII	100.0	1.1.2.15.48.1041	RefSeq_NZ_KY706108.1	0.004705	IncFII	1.1.2.15.48.1041	expanded	Enterobacter hormaechei	ST171
+CP022533	Study6_IMP4_IncHI2_Australia	blaIMP-4	Australia	330060	IncHI2	100.0	1.1.2.4.7.13	NZ_CP080108.1	0.002501	IncHI2	1.1.2.4.7.13	original	Klebsiella pneumoniae	ST258
+CP104940	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78023	IncN	100.0	1.1.2.4.7.2197	RefSeq_NZ_CP104940.1	0.001895	IncN	1.1.2.4.7.2197	original	Klebsiella pneumoniae	ST11
+CP104944	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78021	IncN	100.0	1.1.2.4.7.1947	RefSeq_NZ_JAFHVK010000127.1	0.001724	IncN	1.1.2.4.7.1947	original	Escherichia coli	ST131
+CP104949	Study1_KPC2_IncN_Germany	blaKPC-2	Germany	78022	IncN	100.0	1.1.2.4.7.2197	RefSeq_NZ_CP104940.1	0.001893	IncN	1.1.2.4.7.2197	original	Klebsiella pneumoniae	ST11
+MN542377	Study4_KPC2_Singapore	blaKPC-2	Singapore	71861	IncN	80.1	1.1.2.4.7.13	RefSeq_NZ_CP047737.1	0.007116	IncN	1.1.2.4.7.13	original	Klebsiella pneumoniae	ST11
+MN657241	Study3_NDM1_Germany	blaNDM-1	Germany	176505	IncN	59.0	1.1.2.4.7.1142	RefSeq_NZ_CP007732.1	0.00208	IncN	1.1.2.4.7.1142	original	Escherichia coli	ST167
+MN657242	Study3_NDM1_Germany	blaNDM-1	Germany	88530	IncC	42.2	1.1.2.4.7.26	NZ_CP135682.1	0.001802	IncC	1.1.2.4.7.26	original	Escherichia coli	ST167
+MN657243	Study3_NDM1_Germany	blaNDM-1	Germany	147541	IncN	43.5	1.1.2.4.7.1142	RefSeq_NZ_CP008824.1	0.002768	IncN	1.1.2.4.7.1142	original	Klebsiella pneumoniae	ST147
+MN657244	Study3_NDM1_Germany	blaNDM-1	Germany	115265	IncC	60.0	1.1.2.4.7.26	NZ_MZ606383.1	0.001646	IncC	1.1.2.4.7.26	original	Klebsiella pneumoniae	ST147
+MN657245	Study3_NDM1_Germany	blaNDM-1	Germany	44449	IncN	100.0	1.1.2.4.7.2886	RefSeq_NZ_MZ836798.1	0.005732	IncN	1.1.2.4.7.2886	original	Enterobacter cloacae	ST114
+MN657246	Study3_NDM1_Germany	blaNDM-1	Germany	49441	IncN	100.0	1.1.2.4.7.2886	RefSeq_NZ_MZ836798.1	0.004849	IncN	1.1.2.4.7.2886	original	Escherichia coli	ST410
+MN657247	Study3_NDM1_Germany	blaNDM-1	Germany	94919	IncA	41.2	1.1.2.4.7.26	NZ_CP032496.1	0.001755	IncA	1.1.2.4.7.26	original	Escherichia coli	ST410
+MN657248	Study3_NDM1_Germany	blaNDM-1	Germany	126540	IncFII	100.0	1.1.2.4.7.46	RefSeq_NZ_CP095596.1	0.001886	IncFII	1.1.2.4.7.46	original	Klebsiella pneumoniae	ST307
+MN657249	Study3_NDM1_Germany	blaNDM-1	Germany	155176	IncAC2	41.5	1.1.2.4.7.26	NZ_CP036192.1	0.001559	IncAC2	1.1.2.4.7.26	original	Citrobacter freundii	ST22
+MN657250	Study3_NDM1_Germany	blaNDM-1	Germany	156376	IncAC2	41.2	1.1.2.4.7.26	NZ_CP036192.1	0.001558	IncAC2	1.1.2.4.7.26	original	Escherichia coli	ST648
+MN657251	Study3_NDM1_Germany	blaKPC-2	Germany	100959	IncFII	100.0	1.1.2.4.7.23	RefSeq_NZ_CP059315.1	0.001443	IncFII	1.1.2.4.7.23	original	Klebsiella pneumoniae	ST15
+MN657252	Study3_NDM1_Germany	blaNDM-1	Germany	168682	IncAC2	44.9	1.1.2.4.7.26	NZ_CP036192.1	0.001555	IncAC2	1.1.2.4.7.26	original	Klebsiella pneumoniae	ST258
+AB616660	Tada_2015_IMP_Japan	blaIMP-6	Japan	47236	IncN	100.0	1.1.2.4.7.8	RefSeq_NZ_AP019404.1	0.003214	IncN	1.1.2.4.7.8	expanded	Escherichia coli	ST131
+AY458016	Karim_2001_CTXM_India	blaCTX-M-15	India	92353	IncFII	100.0	1.1.2.4.7.533	NZ_CP110199.1	0.002771	IncFII	1.1.2.4.7.533	expanded	Escherichia coli	ST131
+CP004366	Conlan_2014_NIH_KPC	blaKPC-3	USA	53081	IncN	100.0	1.1.2.4.7.977	RefSeq_NZ_JAUEQX010000002.1	0.002361	IncN	1.1.2.4.7.977	expanded	Klebsiella pneumoniae	ST258
+CP004367	Conlan_2014_NIH_KPC	blaKPC-3	USA	54605	IncN	100.0	1.1.2.4.7.977	RefSeq_NC_021660.2	0.002253	IncN	1.1.2.4.7.977	expanded	Klebsiella pneumoniae	ST258
+CP009231	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	155456	IncFII	100.0	1.1.2.4.7.32	RefSeq_NZ_CP009231.1	0.001598	IncFII	1.1.2.4.7.32	expanded	Escherichia coli	ST131
+CP009232	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	172280	IncFII	100.0	1.1.2.4.7.32	RefSeq_NZ_CP009232.1	0.00164	IncFII	1.1.2.4.7.32	expanded	Escherichia coli	ST131
+CP009233	Sheppard_2016_CTXM_USA	blaCTX-M-15	USA	154789	IncFII	83.2	1.1.2.4.7.32	RefSeq_NZ_CP009233.1	0.00175	IncFII	1.1.2.4.7.32	expanded	Escherichia coli	ST131
+CP016405	McGann_2016_mcr1_USA	mcr-1	USA	63329	IncI2	100.0	1.1.2.4.7.147	NZ_CP075719.1	0.006133	IncI2	1.1.2.4.7.147	expanded	Escherichia coli	ST117
+CP017672	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	108417	repAci_large	100.0	1.1.2.4.6.275	NZ_CP047975.1	0.015968	repAci_large	1.1.2.4.6.275	expanded	Klebsiella pneumoniae	ST258
+CP019026	Li_2018_KPC_IncN	blaKPC-2	China	59373	IncN	100.0	1.1.2.4.7.1231	RefSeq_NZ_CP019026.1	0.002082	IncN	1.1.2.4.7.1231	expanded	Klebsiella pneumoniae	ST11
+CP081509	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	21888	IncX3	100.0	1.1.2.4.7.41	CP080686.1	0.011713	IncX3	1.1.2.4.7.41	expanded	Klebsiella pneumoniae	ST258
+CP081510	Arcari_2023_KPC_outbreak	blaKPC-2	Italy	41852	IncX3	100.0	1.1.2.4.7.315	NZ_CP058945.1	0.007703	IncX3	1.1.2.4.7.315	expanded	Klebsiella pneumoniae	ST512
+EU935738	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	64471	IncFII	80.6	1.1.2.4.7.10	RefSeq_NZ_CP029580.1	0.003985	IncFII	1.1.2.4.7.10	expanded	Escherichia coli	ST131
+EU935739	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	117536	IncFII	100.0	1.1.2.4.7.925	RefSeq_NC_013122.1	0.001505	IncFII	1.1.2.4.7.925	expanded	Escherichia coli	ST131
+EU935740	Woodford_2009_CTXM_UK	blaCTX-M-15	UK	93732	IncI1	80.1	1.1.2.4.7.392	NZ_CP134359.1	0.002462	IncI1	1.1.2.4.7.392	expanded	Escherichia coli	ST405
+FN868832	Valverde_2009_CTXM_FR	blaCTX-M-15	France	93629	IncFII	43.4	1.1.2.4.7.826	NZ_MG825371.1	0.00481	IncFII	1.1.2.4.7.826	expanded	Escherichia coli	ST131
+GU595196	Kitchel_2009_KPC_IncN	blaKPC-2	USA	113637	IncFII	80.1	1.1.2.4.7.46	RefSeq_NZ_CP115931.1	0.001258	IncFII	1.1.2.4.7.46	expanded	Klebsiella pneumoniae	ST258
+JN233704	Chen_2012_KPC_IncFIA	blaKPC-2	USA	208191	IncFII	78.0	1.1.2.4.7.23	CP080752.1	0.001333	IncFIB	1.1.2.4.7.23	expanded	Klebsiella pneumoniae	ST258
+JN626286	Potron_2013_OXA48_Turkey	blaOXA-48	Turkey	61881	IncFII	100.0	1.1.2.4.7.976	RefSeq_NC_021502.1	0.004961	IncFII	1.1.2.4.7.976	expanded	Klebsiella pneumoniae	ST14
+JX104760	Ho_2012_NDM_China	blaNDM-1	China	54035	IncX3	100.0	1.1.2.4.7.285	NZ_CP050158.1	0.003216	IncX3	1.1.2.4.7.285	expanded	Acinetobacter baumannii	ST2
+KP061858	Jousset_2019_OXA48_FR	blaOXA-48	France	63584	IncFII	100.0	1.1.2.4.7.976	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.4.7.976	expanded	Klebsiella pneumoniae	ST258
+KP347127	Liu_2016_mcr1_discovery	mcr-1	China	64015	IncI2	100.0	1.1.2.4.7.147	NZ_CP075719.1	0.006593	IncI2	1.1.2.4.7.147	expanded	Escherichia coli	ST10
+KU761326	Zheng_2017_mcr1_China	mcr-1	China	64964	IncI2	100.0	1.1.2.4.7.147	NZ_CP075719.1	0.006279	IncI2	1.1.2.4.7.147	expanded	Escherichia coli	ST156
+KU761327	Zheng_2017_mcr1_China	mcr-1	China	33287	IncX4	100.0	1.1.2.4.7.319	NZ_OK642377.1	0.005726	IncX4	1.1.2.4.7.319	expanded	Escherichia coli	ST10
+KX832926	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	43191	repAci_large	100.0	1.1.2.4.6.193	NZ_CP179874.1	0.019279	repAci_large	1.1.2.4.6.193	expanded	Klebsiella pneumoniae	ST258
+KX832927	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	244116	IncN	81.1	1.1.2.4.7.1194	RefSeq_NZ_CP015725.1	0.008467	IncN	1.1.2.4.7.1194	expanded	Escherichia coli	ST131
+KX832928	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	54712	repAci_large	100.0	1.1.2.4.40.272	NZ_CP045133.1	0.01019	repAci_large	1.1.2.4.40.272	expanded	Klebsiella pneumoniae	ST11
+KX832929	Rojas_2017_NDM_Colombia	blaNDM-1	Colombia	90666	repAci_large	100.0	1.1.2.4.6.193	NZ_CP185462.1	0.013878	repAci_large	1.1.2.4.6.193	expanded	Enterobacter cloacae	ST114
+KY075653	Hasman_2015_mcr1_Europe	mcr-1	Europe	33309	IncX4	100.0	1.1.2.4.7.319	NZ_OK642377.1	0.005713	IncX4	1.1.2.4.7.319	expanded	Escherichia coli	ST10
+KY075654	Hasman_2015_mcr1_Europe	mcr-1	Europe	61908	IncI2	100.0	1.1.2.4.7.147	NZ_CP075719.1	0.006651	IncI2	1.1.2.4.7.147	expanded	Salmonella enterica	ST34
+LR025097	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	142200	IncFII	74.7	1.1.2.4.7.864	NZ_MW390534.1	0.002451	IncF	1.1.2.4.7.864	expanded	Klebsiella pneumoniae	ST307
+LR025098	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.4.7.976	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.4.7.976	expanded	Escherichia coli	ST410
+LR025100	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.4.7.976	RefSeq_NC_021502.1	0.004738	IncFII	1.1.2.4.7.976	expanded	Klebsiella pneumoniae	ST307
+LR025105	Jousset_2019_OXA48_NL	blaOXA-48	Netherlands	63589	IncFII	100.0	1.1.2.4.7.976	RefSeq_NC_021502.1	0.004878	IncFII	1.1.2.4.7.976	expanded	Klebsiella pneumoniae	ST15
+MH133192	Andrade_2019_KPC_Brazil	blaKPC-2	Brazil	12748	repPae_small	100.0	1.1.2.4.23.549	NZ_KU578314.1	0.014192	repPae_small	1.1.2.4.23.549	expanded	Klebsiella pneumoniae	ST11
+MH234497	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003595	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234498	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003595	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234499	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	47849	IncX3	100.0	1.1.2.4.7.284	NZ_CP122474.1	0.003628	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST15
+MH234500	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003595	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST15
+MH234501	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003597	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST307
+MH234502	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	45547	IncX3	100.0	1.1.2.4.7.284	NZ_CP122474.1	0.003597	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST147
+MH234503	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003592	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST147
+MH234504	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003613	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234505	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	53097	IncX3	100.0	1.1.2.4.7.285	NZ_CP050158.1	0.003253	IncX3	1.1.2.4.7.285	expanded	Klebsiella pneumoniae	ST11
+MH234506	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003596	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234507	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003595	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234508	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	46161	IncX3	100.0	1.1.2.4.7.284	NZ_CP065346.1	0.003595	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST11
+MH234509	Ho_2019_NDM_HK_ICU	blaNDM-1	Hong Kong	47474	IncX3	100.0	1.1.2.4.7.284	NZ_CP122474.1	0.003716	IncX3	1.1.2.4.7.284	expanded	Klebsiella pneumoniae	ST15
+MH985166	Li_2020_NDM5_China	blaNDM-5	China	9553	IncFII	80.3	1.1.2.4.7.2371	RefSeq_NZ_CP135476.1	0.018041	IncFII	1.1.2.4.7.2371	expanded	Escherichia coli	ST167
+MH985167	Li_2020_NDM5_China	blaNDM-5	China	90378	IncFII	100.0	1.1.2.4.7.2002	RefSeq_NZ_CP103530.1	0.00369	IncFII	1.1.2.4.7.2002	expanded	Escherichia coli	ST167
+MH985168	Li_2020_NDM5_China	blaNDM-5	China	9553	IncFII	80.3	1.1.2.4.7.2371	RefSeq_NZ_CP135476.1	0.018041	IncFII	1.1.2.4.7.2371	expanded	Escherichia coli	ST410
+MH985169	Li_2020_NDM5_China	blaNDM-5	China	4200	repPae_large	80.3	1.1.2.4.23.516	NZ_CP097845.1	0.028651	repPae_large	1.1.2.4.23.516	expanded	Escherichia coli	ST410
+MH985170	Li_2020_NDM5_China	blaNDM-5	China	6346	repPae_large	100.0	1.1.2.4.23.127	NZ_AP040360.1	0.023841	repPae_large	1.1.2.4.23.127	expanded	Escherichia coli	ST648
+MH985171	Li_2020_NDM5_China	blaNDM-5	China	6344	repPae_large	100.0	1.1.2.4.23.127	NZ_AP040360.1	0.023873	repPae_large	1.1.2.4.23.127	expanded	Escherichia coli	ST156
+MN783743	Arcari_2020_VIM_Italy	blaVIM-1	Italy	182016	IncAC2	57.5	1.1.2.4.7.647	NZ_CP150624.1	0.00265	IncA	1.1.2.4.7.647	expanded	Klebsiella pneumoniae	ST307
+MN783744	Arcari_2020_VIM_Italy	blaVIM-1	Italy	164903	IncA	44.1	1.1.2.4.7.647	NZ_CP150624.1	0.001505	IncA	1.1.2.4.7.647	expanded	Klebsiella pneumoniae	ST307
+MN783745	Arcari_2020_VIM_Italy	blaVIM-1	Italy	117164	IncFII	100.0	1.1.2.4.7.2246	RefSeq_NZ_KY706108.1	0.004705	IncFII	1.1.2.4.7.2246	expanded	Enterobacter hormaechei	ST171

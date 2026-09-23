@@ -17,10 +17,14 @@ Usage:
 import os
 import sys
 import glob
+import json
 import time
+import hashlib
 import argparse
+import subprocess
 import numpy as np
 import pandas as pd
+from datetime import datetime, timezone
 from itertools import product as iter_product
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster
@@ -54,12 +58,116 @@ PLIN_THRESHOLDS = {
 INC_CONFIDENCE_THRESHOLD = 0.40
 MULTI_INC_THRESHOLD = 0.15
 
+# See assign_pLIN.py for rationale: legacy training-provenance labels are
+# mapped onto current PlasmidFinder nomenclature for reporting.
+RESOLVED_INC_TYPE = {
+    "IncAC2": "IncA/IncC",
+}
+
+
+def resolve_inc_type(inc_type):
+    return RESOLVED_INC_TYPE.get(inc_type, inc_type)
+
+
+def run_version_stamp(training_fingerprint=None):
+    """Reproducibility stamp — see assign_pLIN.py::run_version_stamp for rationale."""
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=BASE_DIR,
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        git_hash = "unknown"
+
+    return {
+        "run_timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "git_commit": git_hash,
+        "training_input_fingerprint": training_fingerprint,
+        "classifier_path": CLASSIFIER_PATH,
+    }
+
 # 4-mer setup
 K = 4
 BASES = "ACGT"
 KMERS = ["".join(p) for p in iter_product(BASES, repeat=K)]
 KMER_INDEX = {km: i for i, km in enumerate(KMERS)}
 N_KMERS = len(KMERS)  # 256
+
+
+def stable_cluster_ids(raw_labels, member_keys):
+    """Renumber scipy fcluster labels into a deterministic scheme.
+
+    scipy.cluster.hierarchy.fcluster assigns cluster-ID integers based on
+    internal linkage-tree traversal order, which is not guaranteed stable
+    across runs even when cluster MEMBERSHIP is identical. Renumbering by
+    each cluster's lexicographically smallest member key (plasmid accession)
+    makes cluster IDs reproducible across runs and pipeline versions.
+
+    NOTE: this alone only guarantees reproducibility for a FIXED input set.
+    Adding new sequences to the database can change which member is
+    lexicographically smallest within a cluster, which reassigns the ID even
+    when the underlying cluster relationships are unchanged. For stability
+    across database growth, see `frozen_seed_cluster_ids` below, which is
+    the scheme actually used once a frozen training-set numbering exists.
+    """
+    raw_labels = np.asarray(raw_labels)
+    cluster_min_key = {}
+    for raw_id, key in zip(raw_labels, member_keys):
+        if raw_id not in cluster_min_key or key < cluster_min_key[raw_id]:
+            cluster_min_key[raw_id] = key
+
+    ordered_raw_ids = sorted(cluster_min_key, key=lambda rid: cluster_min_key[rid])
+    remap = {raw_id: new_id for new_id, raw_id in enumerate(ordered_raw_ids, start=1)}
+    return np.array([remap[rid] for rid in raw_labels])
+
+
+def frozen_seed_cluster_ids(raw_labels, member_keys, frozen_id_of_key):
+    """Renumber clusters so that IDs inherited from a frozen prior run are
+    preserved, and only genuinely new clusters receive fresh IDs.
+
+    `frozen_id_of_key`: dict mapping a subset of `member_keys` (the ones
+    that were already assigned a canonical ID in a prior, frozen run — e.g.
+    the training-only pLIN_assignments.tsv) to that canonical integer ID.
+
+    For each cluster found in THIS run, if any of its members carry a
+    frozen ID, the cluster inherits that ID (majority vote if it somehow
+    spans more than one frozen ID — this should be rare and only happens
+    when growth merges two previously-separate frozen clusters, which we
+    resolve by keeping the smaller original frozen ID for continuity).
+    Clusters with no frozen members at all (i.e. built entirely from newly
+    added reference sequences) get fresh sequential IDs continuing after
+    the maximum frozen ID, keyed by lexicographically smallest member for
+    reproducibility among themselves.
+    """
+    raw_labels = np.asarray(raw_labels)
+
+    # Group member indices by raw cluster label
+    cluster_members = {}
+    for i, (raw_id, key) in enumerate(zip(raw_labels, member_keys)):
+        cluster_members.setdefault(raw_id, []).append((i, key))
+
+    max_frozen_id = max(frozen_id_of_key.values()) if frozen_id_of_key else 0
+
+    remap = {}
+    new_clusters = []  # (raw_id, min_key) for clusters with no frozen anchor
+    for raw_id, members in cluster_members.items():
+        frozen_ids_present = sorted(set(
+            frozen_id_of_key[key] for _, key in members if key in frozen_id_of_key
+        ))
+        if frozen_ids_present:
+            # Inherit the smallest frozen ID seen (stable, deterministic
+            # tie-break if growth merged two previously-distinct clusters)
+            remap[raw_id] = frozen_ids_present[0]
+        else:
+            min_key = min(key for _, key in members)
+            new_clusters.append((raw_id, min_key))
+
+    # Assign fresh IDs to genuinely new clusters, ordered by min member key
+    # for reproducibility, continuing the numbering after the frozen max.
+    new_clusters.sort(key=lambda t: t[1])
+    for offset, (raw_id, _) in enumerate(new_clusters, start=1):
+        remap[raw_id] = max_frozen_id + offset
+
+    return np.array([remap[rid] for rid in raw_labels])
 
 
 # ── Phase 1: Load sequences & compute 4-mer vectors ──────────────────────────
@@ -130,6 +238,7 @@ def load_training_sequences():
                     "inc_type": inc_name,
                     "inc_confidence": 1.0,
                     "is_novel": False,
+                    "is_multiple": False,
                     "inc_secondary": "",
                 })
     print(f"  Training sequences: {len(records):,} across "
@@ -141,7 +250,7 @@ def compute_vectors(records, checkpoint_path, resume=False):
     """Compute 4-mer vectors for all records, with checkpoint support."""
     if resume and os.path.exists(checkpoint_path):
         print(f"  Resuming: loading vectors from {checkpoint_path} ...", flush=True)
-        data = np.load(checkpoint_path)
+        data = np.load(checkpoint_path, allow_pickle=True)
         vectors = data["vectors"]
         ids = list(data["ids"])
         lengths = list(data["lengths"])
@@ -273,8 +382,48 @@ def classify_inc_types(vectors, ids, lengths, checkpoint_path, resume=False):
 
 # ── Phase 3: Per-Inc-group clustering ────────────────────────────────────────
 
-def cluster_inc_group(vectors, max_group_size=25000):
-    """Run single-linkage clustering on vectors within one Inc group."""
+TRAINING_ASSIGNMENTS_PATH = os.path.join(OUTPUT_DIR, "pLIN_assignments.tsv")
+
+
+def load_frozen_training_ids(inc_type):
+    """Load the frozen (training-only) cluster IDs for one Inc group, per level.
+
+    Returns dict: {bin_name: {plasmid_id: frozen_int_id}}, or {} if the
+    frozen training-set assignments file is unavailable (in which case
+    cluster_inc_group falls back to the run-local stable_cluster_ids scheme).
+    """
+    if not hasattr(load_frozen_training_ids, "_cache"):
+        if os.path.exists(TRAINING_ASSIGNMENTS_PATH):
+            df = pd.read_csv(TRAINING_ASSIGNMENTS_PATH, sep="\t")
+            load_frozen_training_ids._cache = df
+        else:
+            load_frozen_training_ids._cache = None
+
+    df = load_frozen_training_ids._cache
+    if df is None:
+        return {}
+
+    sub = df[df["inc_type"] == inc_type]
+    if sub.empty:
+        return {}
+
+    result = {}
+    for bname in PLIN_THRESHOLDS:
+        col = f"bin_{bname}"
+        result[bname] = dict(zip(sub["plasmid_id"], sub[col].astype(int)))
+    return result
+
+
+def cluster_inc_group(vectors, member_keys, max_group_size=25000, inc_type=None):
+    """Run single-linkage clustering on vectors within one Inc group.
+
+    When a frozen training-only run exists (output/pLIN_assignments.tsv),
+    cluster IDs for this Inc group are anchored to that frozen numbering via
+    `frozen_seed_cluster_ids`, so adding new reference sequences does not
+    renumber clusters that already existed in the training-only run — only
+    genuinely new clusters receive new IDs. Without a frozen reference,
+    falls back to `stable_cluster_ids` (deterministic within this run only).
+    """
     n = len(vectors)
     if n < 2:
         # Single sequence — assign cluster 1 at all levels
@@ -295,11 +444,16 @@ def cluster_inc_group(vectors, max_group_size=25000):
     # Single-linkage clustering
     Z = linkage(dist_condensed, method="single")
 
-    # Cut at each threshold
+    frozen = load_frozen_training_ids(inc_type) if inc_type else {}
+
+    # Cut at each threshold, renumbering to a deterministic cluster-ID scheme
     assignments = {}
     for bname, thresh in PLIN_THRESHOLDS.items():
-        clusters = fcluster(Z, t=thresh, criterion="distance")
-        assignments[bname] = clusters
+        raw_clusters = fcluster(Z, t=thresh, criterion="distance")
+        if bname in frozen and frozen[bname]:
+            assignments[bname] = frozen_seed_cluster_ids(raw_clusters, member_keys, frozen[bname])
+        else:
+            assignments[bname] = stable_cluster_ids(raw_clusters, member_keys)
 
     return assignments
 
@@ -370,8 +524,9 @@ def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
             elif pid in ref_id_to_idx:
                 combined_vectors[i] = ref_vectors[ref_id_to_idx[pid]]
 
-        # Cluster
-        assignments = cluster_inc_group(combined_vectors, max_group_size)
+        # Cluster (member keys = plasmid IDs, used for deterministic cluster numbering;
+        # inc_type anchors IDs to the frozen training-only run when available)
+        assignments = cluster_inc_group(combined_vectors, combined_ids, max_group_size, inc_type=inc_type)
 
         # Report cluster counts
         for bname in PLIN_THRESHOLDS:
@@ -393,17 +548,20 @@ def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
                 length = rec["length"]
                 confidence = 1.0
                 is_novel = False
+                is_multiple = False
                 inc_secondary = ""
             else:
                 row = ref_rows_this[ref_rows_this["plasmid_id"] == pid].iloc[0]
                 length = int(row["length_bp"])
                 confidence = float(row["inc_confidence"])
                 is_novel = False
+                is_multiple = bool(row.get("is_multiple", False))
                 inc_secondary = str(row.get("inc_secondary", ""))
 
             all_results.append({
                 "plasmid_id": pid,
                 "inc_type": inc_type,
+                "resolved_inc_type": resolve_inc_type(inc_type),
                 "inc_confidence": confidence,
                 "length_bp": length,
                 "pLIN": plin_code,
@@ -414,6 +572,7 @@ def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
                 "bin_E": int(assignments["E"][i]),
                 "bin_F": int(assignments["F"][i]),
                 "source": source,
+                "is_multiple": is_multiple,
                 "inc_secondary": inc_secondary,
                 "is_novel": is_novel,
             })
@@ -429,12 +588,14 @@ def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
         all_results.append({
             "plasmid_id": pid,
             "inc_type": "Unknown",
+            "resolved_inc_type": "Unknown",
             "inc_confidence": float(row["inc_confidence"]),
             "length_bp": int(row["length_bp"]),
             "pLIN": "NA",
             "bin_A": "NA", "bin_B": "NA", "bin_C": "NA",
             "bin_D": "NA", "bin_E": "NA", "bin_F": "NA",
             "source": "reference",
+            "is_multiple": bool(row.get("is_multiple", False)),
             "inc_secondary": "",
             "is_novel": True,
         })
@@ -447,12 +608,30 @@ def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
 
 # ── Phase 4: Output ──────────────────────────────────────────────────────────
 
+def training_fingerprint():
+    """Fingerprint of the training FASTA set, comparable with assign_pLIN.py's."""
+    fasta_paths = sorted(glob.glob(os.path.join(TRAINING_DIR, "*", "fastas", "*.fasta")))
+    hasher = hashlib.sha256()
+    for p in fasta_paths:
+        hasher.update(os.path.relpath(p, TRAINING_DIR).encode())
+        hasher.update(str(os.path.getsize(p)).encode())
+    return hasher.hexdigest()[:12]
+
+
 def save_results(df):
     """Save final pLIN assignments and print summary."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     df.to_csv(OUTPUT_FILE, sep="\t", index=False)
     print(f"\n  Output saved: {OUTPUT_FILE}", flush=True)
     print(f"  Rows: {len(df):,}", flush=True)
+
+    stamp = run_version_stamp(training_fingerprint=training_fingerprint())
+    stamp_path = OUTPUT_FILE + ".run_info.json"
+    with open(stamp_path, "w") as fh:
+        json.dump(stamp, fh, indent=2)
+    print(f"  Run info saved: {stamp_path}", flush=True)
+    print(f"  Run: {stamp['run_timestamp_utc']}  commit={stamp['git_commit']}  "
+          f"training_fingerprint={stamp['training_input_fingerprint']}", flush=True)
 
     # Summary
     print("\n" + "=" * 70, flush=True)

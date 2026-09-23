@@ -280,7 +280,11 @@ genes_1 = [
     (18, 23, "IS26", COLORS["IS"], 1),
     (24, 32, "blaTEM-1", COLORS["AMR"], 1),
     (33, 37, "tnpA", COLORS["INT"], 1),
-    (38, 43, "IS26", COLORS["IS"], -1),
+    # Same orientation as the flanking copy above: IS26 (an IS6-family
+    # element) forms pseudo-compound transposon structures from
+    # DIRECT-orientation copies, not inverted-repeat pairs as in a
+    # canonical composite transposon (Harmer & Hall 2024, Ref 20).
+    (38, 43, "IS26", COLORS["IS"], 1),
     (45, 51, "aphA1", COLORS["AMR"], 1),
     (53, 58, "sul2", COLORS["AMR"], 1),
     (60, 67, "aadA1", COLORS["AMR"], -1),
@@ -292,7 +296,7 @@ genes_1 = [
 for x1, x2, label, color, d in genes_1:
     draw_gene_arrow(ax_b, x1, x2, y1, color, label, d)
 
-draw_bracket(ax_b, 18, 43, y1, "Composite Transposon (IS26-flanked)")
+draw_bracket(ax_b, 18, 43, y1, "Pseudo-compound transposon (direct-orientation IS26 pair)")
 
 # ── Plasmid 2: ISEcp1-associated blaCTX-M-15 on IncFII ──────────────────
 y2 = 11
@@ -333,7 +337,9 @@ genes_3 = [
     (18, 24, "IS256", COLORS["IS"], 1),
     (25, 36, "aac(6')-aph(2'')", COLORS["AMR"], 1),
     (37, 42, "sat4", COLORS["AMR"], 1),
-    (43, 49, "IS256", COLORS["IS"], -1),
+    # Same orientation as the flanking copy above — see note on the IS26
+    # pair (Panel B, plasmid 1): IS256 is also an IS6-family element.
+    (43, 49, "IS256", COLORS["IS"], 1),
     (51, 56, "ermB", COLORS["AMR"], 1),
     (58, 63, "mefA", COLORS["AMR"], -1),
     (65, 70, "tetM", COLORS["AMR"], 1),
@@ -345,7 +351,7 @@ genes_3 = [
 for x1, x2, label, color, d in genes_3:
     draw_gene_arrow(ax_b, x1, x2, y3, color, label, d)
 
-draw_bracket(ax_b, 18, 49, y3, "Composite Transposon (IS256-flanked)")
+draw_bracket(ax_b, 18, 49, y3, "Pseudo-compound transposon (direct-orientation IS256 pair)")
 
 # Add legend for gene colours
 legend_b = [
