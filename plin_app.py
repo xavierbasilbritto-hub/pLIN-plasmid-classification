@@ -1524,53 +1524,60 @@ def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
     return fig
 
 
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  OUTBREAK / CLONE DETECTION
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_outbreak_clusters(plin_df, integrated_df):
-    """Flag potential outbreak clusters: plasmids sharing same pLIN strain code (F)
-    AND identical AMR resistance profile.
+    """Flag potential outbreak clusters: plasmids sharing the same full pLIN
+    strain-level code (i.e. identical down to L6). Matching AMR resistance
+    profile is attached as supplementary evidence when available, but is not
+    required — a shared pLIN code alone is sufficient evidence of a likely
+    shared plasmid, since pLIN already reflects whole-plasmid similarity.
 
     Returns list of dicts with cluster info.
     """
-    if integrated_df is None or len(integrated_df) == 0:
+    if plin_df is None or len(plin_df) == 0 or "pLIN" not in plin_df.columns:
         return []
 
-    df = integrated_df.copy()
+    df = plin_df.copy()
 
-    # Create AMR fingerprint: sorted set of AMR genes
-    if "AMR_genes" in df.columns:
-        df["_amr_fingerprint"] = df["AMR_genes"].fillna("").apply(
-            lambda x: "|".join(sorted(g.strip() for g in x.split(";") if g.strip()))
+    # Merge in AMR gene calls when available, purely for supplementary evidence.
+    if integrated_df is not None and len(integrated_df) > 0 and "AMR_genes" in integrated_df.columns:
+        amr_lookup = integrated_df.groupby("plasmid_id")["AMR_genes"].apply(
+            lambda s: "; ".join(sorted({g.strip() for x in s.fillna("") for g in x.split(";") if g.strip()}))
         )
+        df["_amr_genes_str"] = df["plasmid_id"].map(amr_lookup).fillna("")
     else:
-        df["_amr_fingerprint"] = ""
-
-    # Group by strain cluster (bin_F) + AMR fingerprint
-    if "bin_F" not in df.columns:
-        # Extract from pLIN code
-        df["bin_F"] = df["pLIN"].apply(lambda x: x.split(".")[-1] if isinstance(x, str) else "")
+        df["_amr_genes_str"] = ""
 
     clusters = []
-    grouped = df.groupby(["bin_F", "_amr_fingerprint"])
-    for (strain_f, amr_fp), group in grouped:
-        if len(group) >= 2 and amr_fp:  # At least 2 plasmids with same AMR
-            plasmids = group["plasmid_id"].tolist()
-            amr_genes = [g.strip() for g in amr_fp.split("|") if g.strip()]
-            plin_code = group["pLIN"].iloc[0]
-            clusters.append({
-                "strain_cluster": int(strain_f) if str(strain_f).isdigit() else strain_f,
-                "pLIN": plin_code,
-                "n_plasmids": len(group),
-                "plasmids": plasmids,
-                "amr_genes": amr_genes,
-                "n_amr_genes": len(amr_genes),
-                "risk_level": "HIGH" if len(amr_genes) >= 3 else "MODERATE",
-            })
+    for plin_code, group in df.groupby("pLIN"):
+        if len(group) < 2 or not isinstance(plin_code, str):
+            continue
+        if plin_code == "UNCLASSIFIED" or "NEW" in plin_code:
+            continue  # Divergent/novel codes are not a shared-plasmid match
 
-    # Sort by risk
-    clusters.sort(key=lambda c: (-c["n_amr_genes"], -c["n_plasmids"]))
+        plasmids = group["plasmid_id"].tolist()
+        amr_genes = sorted({
+            g.strip() for x in group["_amr_genes_str"] for g in x.split(";") if g.strip()
+        })
+        amr_consistent = group["_amr_genes_str"].nunique(dropna=False) == 1 and bool(amr_genes)
+
+        clusters.append({
+            "pLIN": plin_code,
+            "n_plasmids": len(group),
+            "plasmids": plasmids,
+            "amr_genes": amr_genes,
+            "n_amr_genes": len(amr_genes),
+            "amr_profile_consistent": amr_consistent,
+            "risk_level": "HIGH" if len(amr_genes) >= 3 else ("MODERATE" if amr_genes else "INFO"),
+        })
+
+    # Sort by cluster size first (the primary evidence), then AMR burden
+    clusters.sort(key=lambda c: (-c["n_plasmids"], -c["n_amr_genes"]))
     return clusters
 
 
@@ -1930,11 +1937,36 @@ def compare_linkage_methods(vectors, thresholds=None):
 
 
 PLIN_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_assignments.tsv")
+REFERENCE_VECTORS_PATH = os.path.join(_APP_DIR, "output", "reference_kmer_vectors.npz")
+REFERENCE_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_reference_assignments.tsv")
 
 
 @st.cache_data(show_spinner=False)
 def _load_reference_for_query():
-    """Load training vectors and pLIN codes for nearest-neighbour query mode."""
+    """Load reference vectors and pLIN codes for nearest-neighbour query mode.
+
+    Uses the full reference database (72,556+ plasmids from PLSDB + training)
+    rather than just the smaller training set, so that nearest-neighbour lookups
+    match the published case-study results (e.g. Swiss VIM-1 outbreak validation).
+    Vectors and pLIN assignments are joined explicitly by plasmid_id, since the
+    two files are not stored in the same row order.
+    """
+    if os.path.exists(REFERENCE_VECTORS_PATH) and os.path.exists(REFERENCE_ASSIGNMENTS_PATH):
+        ref_vecs = np.load(REFERENCE_VECTORS_PATH, allow_pickle=True)
+        X_ref = ref_vecs["vectors"].astype(np.float64)
+        ref_ids = ref_vecs["ids"]
+
+        assign_df = pd.read_csv(REFERENCE_ASSIGNMENTS_PATH, sep="\t")
+        assign_df = assign_df.set_index("plasmid_id")
+
+        # Align assignment rows to the vector order by plasmid_id; drop any
+        # vectors that have no corresponding pLIN assignment.
+        aligned = assign_df.reindex(ref_ids)
+        keep_mask = aligned["pLIN"].notna().to_numpy()
+        X_ref = X_ref[keep_mask]
+        plin_df = aligned.loc[keep_mask].reset_index().rename(columns={"index": "plasmid_id"})
+        return X_ref, plin_df
+
     if not os.path.exists(CLASSIFIER_PATH) or not os.path.exists(PLIN_ASSIGNMENTS_PATH):
         return None, None
     ref_data = np.load(CLASSIFIER_PATH, allow_pickle=True)
@@ -3014,16 +3046,11 @@ def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_
     if df["_collection_date"].isna().all():
         return []
 
-    # Create AMR fingerprint
+    # Gather AMR genes per plasmid, purely as supplementary evidence (not required).
     if "AMR_genes" in df.columns:
-        df["_amr_fingerprint"] = df["AMR_genes"].fillna("").apply(
-            lambda x: "|".join(sorted(g.strip() for g in x.split(";") if g.strip()))
-        )
+        df["_amr_genes_str"] = df["AMR_genes"].fillna("")
     else:
-        df["_amr_fingerprint"] = ""
-
-    if "bin_F" not in df.columns:
-        df["bin_F"] = df["pLIN"].apply(lambda x: x.split(".")[-1] if isinstance(x, str) else "")
+        df["_amr_genes_str"] = ""
 
     # Merge location if available
     location_col = None
@@ -3033,10 +3060,12 @@ def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_
             break
 
     clusters = []
-    grouped = df.groupby(["bin_F", "_amr_fingerprint"])
-    for (strain_f, amr_fp), group in grouped:
-        if len(group) < 2:
+    for plin_code, group in df.groupby("pLIN"):
+        if len(group) < 2 or not isinstance(plin_code, str):
             continue
+        if plin_code == "UNCLASSIFIED" or "NEW" in plin_code:
+            continue  # Divergent/novel codes are not a shared-plasmid match
+
         # Filter to those with valid dates
         dated = group.dropna(subset=["_collection_date"])
         if len(dated) < 2:
@@ -3046,8 +3075,9 @@ def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_
         date_range = (dated["_collection_date"].max() - dated["_collection_date"].min()).days
         if date_range <= time_window_days:
             plasmids = dated["plasmid_id"].tolist()
-            amr_genes = [g.strip() for g in amr_fp.split("|") if g.strip()] if amr_fp else []
-            plin_code = dated["pLIN"].iloc[0]
+            amr_genes = sorted({
+                g.strip() for x in dated["_amr_genes_str"] for g in x.split(";") if g.strip()
+            })
 
             # Gather location info
             locations = []
@@ -3061,7 +3091,6 @@ def detect_temporal_outbreak_clusters(plin_df, integrated_df, metadata_df, time_
                    "HIGH" if len(amr_genes) >= 3 or date_range <= 7 else "MODERATE"
 
             clusters.append({
-                "strain_cluster": int(strain_f) if str(strain_f).isdigit() else strain_f,
                 "pLIN": plin_code,
                 "n_plasmids": len(dated),
                 "plasmids": plasmids,
@@ -4942,21 +4971,27 @@ if run_btn and uploaded_files:
             st.error(str(e))
             st.stop()
     else:
-        # Multi-plasmid mode: de novo pairwise clustering
-        progress.progress(40, text=f"Clustering ({linkage_method} linkage) & assigning pLIN codes...")
-        plin_codes, cluster_assignments, Z, dist_condensed = assign_plin_codes(
-            vectors, linkage_method=linkage_method, thresholds=active_thresholds
-        )
-        st.session_state.query_metadata = None
-
-        # Also run query mode for reference-based pLIN codes
+        # Multi-plasmid mode: pLIN codes are reference-anchored (each contig
+        # inherits its code from its own nearest reference-database neighbour),
+        # so results are reproducible and consistent with single-contig query
+        # mode and with previously published/reference-based runs. De novo
+        # pairwise clustering (Z/dist_condensed) is still computed separately,
+        # purely to drive the dendrogram/heatmap visualisation of relatedness
+        # among the uploaded contigs themselves.
+        progress.progress(40, text="Assigning pLIN codes via nearest-neighbour lookup...")
         try:
-            _, _, query_metadata = assign_plin_query_mode(
+            plin_codes, cluster_assignments, query_metadata = assign_plin_query_mode(
                 vectors, records, thresholds=active_thresholds
             )
             st.session_state.query_metadata = query_metadata
-        except FileNotFoundError:
-            pass  # Reference data not available; skip query mode
+        except FileNotFoundError as e:
+            st.error(str(e))
+            st.stop()
+
+        progress.progress(45, text=f"Clustering ({linkage_method} linkage) for visualisation...")
+        _, _, Z, dist_condensed = assign_plin_codes(
+            vectors, linkage_method=linkage_method, thresholds=active_thresholds
+        )
 
     strain_clusters = list(cluster_assignments["F"])
     st.session_state.linkage_method_used = linkage_method
@@ -6040,6 +6075,8 @@ with tab_clado:
         plt.close(fig)
 
 
+
+
 # ── TAB 4: AMR Analysis ─────────────────────────────────────────────────────
 
 with tab_amr:
@@ -6199,15 +6236,21 @@ with tab_epi:
             if outbreak_clusters:
                 st.metric("Suspected Outbreak Clusters", len(outbreak_clusters))
 
+                risk_icons = {"HIGH": "🔴", "MODERATE": "🟡", "INFO": "🔵"}
                 for i, cluster in enumerate(outbreak_clusters):
-                    risk_color = "🔴" if cluster["risk_level"] == "HIGH" else "🟡"
+                    risk_color = risk_icons.get(cluster["risk_level"], "🔵")
                     with st.expander(
                         f"{risk_color} Cluster {i+1}: pLIN {cluster['pLIN']} "
                         f"({cluster['n_plasmids']} plasmids, {cluster['n_amr_genes']} AMR genes)"
                     ):
                         st.markdown(f"**Risk level:** {cluster['risk_level']}")
-                        st.markdown(f"**L6 cluster (F):** {cluster['strain_cluster']}")
-                        st.markdown(f"**Shared AMR genes:** {', '.join(cluster['amr_genes'])}")
+                        st.markdown(f"**Shared pLIN code:** {cluster['pLIN']}")
+                        if cluster["amr_genes"]:
+                            consistency = "identical across all plasmids" if cluster["amr_profile_consistent"] \
+                                else "genes pooled — profiles differ slightly between plasmids"
+                            st.markdown(f"**Shared AMR genes ({consistency}):** {', '.join(cluster['amr_genes'])}")
+                        else:
+                            st.markdown("**Shared AMR genes:** none detected / AMRFinderPlus not run")
                         st.markdown(f"**Plasmids:**")
                         for p in cluster["plasmids"]:
                             st.markdown(f"  - `{p}`")
@@ -6215,8 +6258,14 @@ with tab_epi:
                 if any(c["risk_level"] == "HIGH" for c in outbreak_clusters):
                     st.error(
                         "**HIGH-RISK outbreak cluster(s) detected.** "
-                        "Plasmids sharing identical L6-level pLIN codes AND "
+                        "Plasmids sharing identical pLIN codes AND "
                         "the same AMR resistance profile may indicate clonal spread."
+                    )
+                elif any(c["risk_level"] == "INFO" for c in outbreak_clusters):
+                    st.info(
+                        "Plasmids sharing an identical pLIN code were found (likely the same plasmid), "
+                        "but no AMR gene data is available to corroborate resistance profile. "
+                        "Run AMRFinderPlus for stronger evidence."
                     )
             else:
                 st.info(
@@ -6275,7 +6324,7 @@ with tab_epi:
         if temporal_clusters:
             st.divider()
             st.subheader("Temporal Outbreak Clusters")
-            st.caption("Plasmids sharing L6 code + AMR profile + collection dates within 30-day window")
+            st.caption("Plasmids sharing an identical pLIN code with collection dates within a 30-day window (matching AMR genes shown as supporting evidence)")
             st.metric("Temporal Outbreak Clusters", len(temporal_clusters))
 
             for i, tc in enumerate(temporal_clusters):
