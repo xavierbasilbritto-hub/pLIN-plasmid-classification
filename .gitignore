@@ -72,6 +72,16 @@ generate_figures.py
 generate_manuscript_figures.py
 generate_figure20_contig_classification.py
 manuscript_draft.py
+create_conference_abstract.py
+create_draigon_annual_meeting_pptx.py
+create_draigon_pptx.py
+create_manuscript_pptx.py
+create_manuscript_tables_excel.py
+create_review_package.py
+create_swiss_vim1_pptx.py
+generate_demo_video.py
+generate_manuscript_docx.py
+regenerate_table_s1.py
 evaluate_crispr_host.py
 
 # One-off utility scripts (not part of the tool)
