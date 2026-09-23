@@ -66,8 +66,8 @@ LEVEL_NAMES = {
     "B": "L2 (Subfamily)",
     "C": "L3 (Cluster)",
     "D": "L4 (Subcluster)",
-    "E": "L5 (Clone)",
-    "F": "L6 (Strain)",
+    "E": "L5 (Clone group)",
+    "F": "L6 (Lineage)",
 }
 
 

@@ -50,8 +50,8 @@ PLIN_THRESHOLDS = {
     "B": 0.100,   # ~90% ANI — L2 (Subfamily)
     "C": 0.050,   # ~95% ANI — L3 (Cluster)
     "D": 0.020,   # ~98% ANI — L4 (Subcluster)
-    "E": 0.010,   # ~99% ANI — L5 (Clone)
-    "F": 0.001,   # ~99.9% ANI — L6 (Strain)
+    "E": 0.010,   # ~99% ANI — L5 (Clone group)
+    "F": 0.001,   # ~99.9% ANI — L6 (Lineage)
 }
 
 # Inc classification thresholds (from plin_app.py)

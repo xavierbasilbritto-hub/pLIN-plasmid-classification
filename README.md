@@ -312,14 +312,14 @@ All external tools are **optional** — pLIN works without them but gains additi
 | L2 | B | d <= 0.100 | ~90% | Subfamily |
 | L3 | C | d <= 0.050 | ~95% | Cluster (species-level) |
 | L4 | D | d <= 0.020 | ~98% | Subcluster |
-| L5 | E | d <= 0.010 | ~99% | Clone complex |
-| L6 | F | d <= 0.001 | ~99.9% | Strain / Outbreak |
+| L5 | E | d <= 0.010 | ~99% | Clone group |
+| L6 | F | d <= 0.001 | ~99.9% | Lineage / Outbreak |
 
 ### Example pLIN Code
 ```
 1.1.3.5.12.45
-| | | | |  +-- L6: Strain-level cluster (d <= 0.001)
-| | | | +---- L5: Clone complex (d <= 0.010)
+| | | | |  +-- L6: Lineage-level cluster (d <= 0.001)
+| | | | +---- L5: Clone group (d <= 0.010)
 | | | +------ L4: Subcluster (d <= 0.020)
 | | +-------- L3: Cluster (d <= 0.050)
 | +---------- L2: Subfamily (d <= 0.100)

@@ -42,8 +42,8 @@ PLIN_THRESHOLDS = {
     "B": 0.100,   # ~90% ANI — L2 (Subfamily)
     "C": 0.050,   # ~95% ANI — L3 (Cluster)
     "D": 0.020,   # ~98% ANI — L4 (Subcluster)
-    "E": 0.010,   # ~99% ANI — L5 (Clone)
-    "F": 0.001,   # ~99.9% ANI — L6 (Strain / Outbreak)
+    "E": 0.010,   # ~99% ANI — L5 (Clone group)
+    "F": 0.001,   # ~99.9% ANI — L6 (Lineage / Outbreak)
 }
 
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")

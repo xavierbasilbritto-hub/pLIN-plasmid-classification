@@ -254,7 +254,7 @@ def main():
     ax_b.set_ylim(-0.6, n_plasmids - 0.4)
     ax_b.set_xticks(range(6))
     ax_b.set_xticklabels(["L1\nFamily", "L2\nSubfam.", "L3\nCluster",
-                           "L4\nSubclst.", "L5\nClone\ncomplex", "L6\nStrain"],
+                           "L4\nSubclst.", "L5\nClone\ngroup", "L6\nLineage"],
                           fontsize=8)
     ax_b.set_yticks(range(n_plasmids))
     ax_b.set_yticklabels(plasmid_labels, fontsize=8)

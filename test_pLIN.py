@@ -35,8 +35,8 @@ PLIN_THRESHOLDS = {
     "B": 0.100,   # ~90% ANI — Subfamily
     "C": 0.050,   # ~95% ANI — Cluster
     "D": 0.020,   # ~98% ANI — Subcluster
-    "E": 0.010,   # ~99% ANI — Clone
-    "F": 0.001,   # ~99.9% ANI — Strain / Outbreak
+    "E": 0.010,   # ~99% ANI — Clone group
+    "F": 0.001,   # ~99.9% ANI — Lineage / Outbreak
 }
 
 OUTPUT_DIR = os.path.join(BASE_DIR, "output", "test")
