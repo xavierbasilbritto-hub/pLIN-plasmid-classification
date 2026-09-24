@@ -384,7 +384,7 @@ ax_f.spines["left"].set_visible(False)
 ax_f.spines["top"].set_visible(False)
 
 # ── Main title ───────────────────────────────────────────────────────────────
-fig.suptitle("Figure 14: Analytical Module Validation Summary — Expanded Classifier,\n"
+fig.suptitle("Figure 13: Analytical Module Validation Summary — Expanded Classifier,\n"
              "Quality Assessment, Novelty Detection, and Mobile Genetic Element Analysis",
              fontsize=13, fontweight="bold", y=1.01)
 
@@ -508,7 +508,7 @@ rect17 = plt.Rectangle((gp_start_17 - 0.5, gp_start_17 - 0.5),
                         fill=False, edgecolor="cyan", linewidth=2, linestyle="--")
 ax.add_patch(rect17)
 
-fig17.suptitle("Figure 15: Novel Inc/Rep Group Discovery — Training Data, "
+fig17.suptitle("Figure 14: Novel Inc/Rep Group Discovery — Training Data, "
                "Performance, and Taxonomic Separation",
                fontsize=12, fontweight="bold", y=1.02)
 
@@ -728,7 +728,7 @@ cbar19.set_label("Adjusted Rand Index (ARI)", fontsize=8)
 
 ax.set_title("B) Linkage Method Comparison (L8)\nClustering Agreement", fontweight="bold")
 
-fig19.suptitle("Figure 16: Adaptive Thresholds and Cluster Stability",
+fig19.suptitle("Figure 15: Adaptive Thresholds and Cluster Stability",
                fontsize=12, fontweight="bold", y=1.02)
 
 out19 = os.path.join(FIG_DIR, "figure16_cluster_stability.png")

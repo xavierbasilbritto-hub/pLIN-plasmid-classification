@@ -232,7 +232,7 @@ def main():
     ax_c = fig.add_subplot(gs[1, 1])
     plot_panel_c(ax_c, study_df)
 
-    fig.suptitle("Figure 13. Combined Chromosomal-Plasmid Typing: Transmission Mode Discrimination",
+    fig.suptitle("Figure 12. Combined Chromosomal-Plasmid Typing: Transmission Mode Discrimination",
                  fontsize=14, fontweight="bold", y=0.97)
 
     # Save

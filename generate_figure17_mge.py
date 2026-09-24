@@ -369,7 +369,7 @@ ax_b.text(100, -0.5, "Arrow direction indicates\ngene orientation", ha="right",
           va="top", fontsize=7, color="#7f8c8d", fontstyle="italic")
 
 # ── Super title ──────────────────────────────────────────────────────────────
-fig.suptitle("Figure 17: Mobile Genetic Element Boundary Detection",
+fig.suptitle("Figure 16: Mobile Genetic Element Boundary Detection",
              fontsize=14, fontweight="bold", y=0.97)
 
 # ── Save ─────────────────────────────────────────────────────────────────────

@@ -337,12 +337,13 @@ def main():
     ax_c.spines["right"].set_visible(False)
     ax_c.set_ylim(0, max(max(values_671), max(values_860)) * 1.25)
 
-    # Clinical significance box
-    ax_c.text(0.02, 0.02,
+    # Clinical significance box — placed below the plot area (outside the axes)
+    # so it never overlaps a bar regardless of the underlying values.
+    ax_c.text(0.5, -0.30,
               "pLIN 1947: specialist KPC-2 lineage (1 Inc group, 100% $bla_{KPC-2}$)\n"
               "pLIN 13: broad MDR hub (5 Inc groups, 44% $mcr$, 61% $sul1$)",
               transform=ax_c.transAxes, fontsize=7.5, color=DARK_BLUE,
-              style="italic", va="bottom",
+              style="italic", ha="center", va="top",
               bbox=dict(boxstyle="round,pad=0.4", facecolor="#E3F2FD",
                         edgecolor=BLUE, alpha=0.85))
 
