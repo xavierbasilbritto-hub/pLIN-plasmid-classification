@@ -1538,7 +1538,7 @@ def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
 # hand for Supplementary Table S5 during peer review, now a reusable feature
 # rather than a one-off validation script.
 
-def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_align_len=500):
+def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_identity=90.0):
     """Pairwise blastn alignment between all selected plasmids.
 
     Parameters
@@ -1550,8 +1550,14 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ali
         Subset of plasmid_ids to align, all pairwise combinations.
     blastn_binary : str, optional
         Path to blastn; auto-detected via detect_blastn() if not given.
-    min_align_len : int
-        Discard HSPs shorter than this (bp) as noise.
+    min_identity : float
+        Discard HSPs below this percent identity. Matches the Methods
+        definition used for the manuscript's own BLAST validation
+        (Supplementary Table S5): "non-overlapping alignment blocks at
+        >=90% identity". Without this floor, low-identity fragmentary
+        HSPs (paralogous repeats, IS-element copies shared incidentally)
+        pull the weighted identity down several points below what the
+        manuscript reports for the same plasmid pairs.
 
     Returns
     -------
@@ -1638,7 +1644,7 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ali
                         continue
                     qstart, qend, sstart, send, length, pident, evalue = line.split("\t")
                     length = int(length)
-                    if length < min_align_len:
+                    if float(pident) < min_identity:
                         continue
                     hsps.append({
                         "plasmid_1": qid, "plasmid_2": sid,
@@ -1669,19 +1675,37 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ali
                             merged.append((s, e))
                     return sum(e - s for s, e in merged)
 
+                def _non_overlapping_by_length(query_hsps):
+                    # Repeat regions and IS-element copies produce many
+                    # overlapping HSPs on the same coordinates; summing
+                    # length*identity over all of them over-counts the
+                    # repeat and drags the weighted identity down. Greedily
+                    # keep the longest HSP first, then any subsequent HSP
+                    # only if its query span doesn't overlap one already
+                    # kept, matching "non-overlapping alignment blocks" in
+                    # the Methods.
+                    kept = []
+                    for h in sorted(query_hsps, key=lambda h: -h["length_bp"]):
+                        if not any(h["q_start"] < k["q_end"] and k["q_start"] < h["q_end"] for k in kept):
+                            kept.append(h)
+                    return kept
+
                 weighted_identity_num = 0.0
                 if hsps:
                     q_covered = _merged_union([(h["q_start"], h["q_end"]) for h in hsps])
                     s_covered = _merged_union([(h["s_start"], h["s_end"]) for h in hsps])
                     covered_of_shorter = q_covered if len(qseq) <= len(sseq) else s_covered
-                    weighted_identity_num = sum(h["length_bp"] * h["pct_identity"] for h in hsps)
+                    non_overlapping = _non_overlapping_by_length(hsps)
+                    total_non_overlapping_bp = sum(h["length_bp"] for h in non_overlapping)
+                    weighted_identity_num = sum(h["length_bp"] * h["pct_identity"] for h in non_overlapping)
                 else:
                     covered_of_shorter = 0
+                    total_non_overlapping_bp = 0
 
                 shorter_len = min(len(qseq), len(sseq))
                 coverage_pct = round(100 * covered_of_shorter / shorter_len, 1) if shorter_len else 0.0
-                total_aligned_bp = sum(h["length_bp"] for h in hsps)
-                weighted_identity = round(weighted_identity_num / total_aligned_bp, 2) if total_aligned_bp else None
+                weighted_identity = (round(weighted_identity_num / total_non_overlapping_bp, 2)
+                                     if total_non_overlapping_bp else None)
 
                 pair_rows.append({
                     "plasmid_1": qid, "plasmid_2": sid,
