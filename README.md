@@ -36,6 +36,13 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 
 ## Installation
 
+> **Just want to use the app, no Python setup?** Download a standalone
+> desktop build for macOS, Windows, or Linux from the
+> [Releases](../../releases) page — no separate Python install required.
+> See the [Desktop App User Manual](desktop_app/USER_MANUAL.md) for
+> download, install, and usage instructions. The steps below are for
+> running pLIN from source instead.
+
 ### Prerequisites
 
 - **Python 3.10 or higher** (Python 3.11+ recommended)
