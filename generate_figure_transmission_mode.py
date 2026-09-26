@@ -42,6 +42,20 @@ SPECIES_COLORS = {
     "Acinetobacter baumannii": "#4E342E",
 }
 
+# Display-only relabelling for raw L6 suffix codes that predate a later
+# pLIN renumbering pass. This mirrors the same fix already applied in
+# generate_figure14_outbreak_validation.py (Figure 11): the underlying
+# data file (retrospective_host_plasmid_validation.tsv) still carries the
+# pre-renumbering raw codes "1.1.2.4.7.1947" and "1.1.2.4.7.13", but the
+# manuscript text and Figure 11 refer to these same lineages as pLIN 671
+# and pLIN 860 respectively. Only the rendered text label is remapped
+# here; the raw "plin" values are still used unchanged for all matching,
+# grouping, and positioning logic.
+STALE_PLIN_DISPLAY_MAP = {
+    "1947": "671",
+    "13": "860",
+}
+
 
 def load_validation_data():
     """Load retrospective validation results."""
@@ -111,7 +125,8 @@ def plot_panel_a(ax, enriched_df, study_df):
         ax.scatter(0.8, y, s=80, c="#43A047", edgecolors="black",
                    linewidth=0.5, zorder=5, marker="s")
         plin_short = str(plin).split(".")[-1] if "." in str(plin) else str(plin)
-        ax.text(0.85, y, f"pLIN {plin_short}", ha="left", va="center", fontsize=6)
+        plin_display = STALE_PLIN_DISPLAY_MAP.get(plin_short, plin_short)
+        ax.text(0.85, y, f"pLIN {plin_display}", ha="left", va="center", fontsize=6)
 
     # Labels
     ax.text(0.2, n_st + 0.5, "MLST ST", ha="center", fontsize=9, fontweight="bold")
@@ -178,12 +193,25 @@ def plot_panel_c(ax, study_df):
     clonal_correct = study_df["clonal_correct"].sum()
     hgt_detected = (study_df["hgt_pairs"] > 0).sum()
     clonal_detected = (study_df["clonal_pairs"] > 0).sum()
-    total_species = study_df["n_species"].max()
+
+    # Recomputed directly from the per-study species/ST lists (each cell is
+    # a "; "-separated string) rather than hardcoded, so this table cannot
+    # silently go stale if the underlying study set changes. Previously
+    # this used literal "7" / "20", which did not match the true union of
+    # species and STs across the 13 studies (6 species, 17 STs).
+    species_set = set()
+    for s in study_df["species"]:
+        species_set.update(x.strip() for x in str(s).split(";") if x.strip())
+    st_set = set()
+    for s in study_df["STs"]:
+        st_set.update(x.strip() for x in str(s).split(";") if x.strip())
+    total_species = len(species_set)
+    total_sts = len(st_set)
 
     metrics = [
         ("Studies evaluated", f"{n_studies}"),
-        ("Host species", f"7"),
-        ("Unique MLST STs", f"20"),
+        ("Host species", f"{total_species}"),
+        ("Unique MLST STs", f"{total_sts}"),
         ("Overall concordance", f"{concordant}/{n_studies} ({100*concordant/n_studies:.1f}%)"),
         ("Multi-ST detection", f"{multi_st_correct}/{n_studies} ({100*multi_st_correct/n_studies:.1f}%)"),
         ("Clonal detection", f"{clonal_correct}/{n_studies} ({100*clonal_correct/n_studies:.1f}%)"),
