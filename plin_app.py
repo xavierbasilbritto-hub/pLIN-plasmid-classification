@@ -90,6 +90,27 @@ TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 CLASSIFIER_PATH = os.path.join(_APP_DIR, "data", "inc_classifier.npz")
 CENTROID_PATH = os.path.join(_APP_DIR, "data", "inc_centroids.npz")
+ENCODER_PATH = os.path.join(_APP_DIR, "data", "inc_encoder.pt")
+ENCODER_METADATA_PATH = os.path.join(_APP_DIR, "data", "inc_encoder_metadata.json")
+
+
+def _encoder_available():
+    """Whether the optional contrastive-encoder classifier is installed
+    (torch present) and its trained artifact exists. KNN remains the
+    default classifier regardless; this only gates whether the encoder
+    appears as a selectable alternative. See
+    output/encoder_vs_knn_validation_result.json for the independent,
+    leak-free cross-validation this option's reported accuracy comes
+    from (92.7% vs KNN's 91.1%, macro-F1 0.692 vs 0.666 — a consistent
+    but modest improvement, not the earlier unverified 93.3%/0.723
+    figure that had no underlying analysis behind it)."""
+    if not (os.path.exists(ENCODER_PATH) and os.path.exists(ENCODER_METADATA_PATH)):
+        return False
+    try:
+        import torch  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 def _get_inc_groups():
     """Load Inc group names from classifier data, with Auto-detect and Other."""
@@ -250,6 +271,52 @@ def load_inc_classifier():
         group_names = [str(g) for g in data["group_names"]]
         return group_names, data["centroids"]
     return None, None
+
+
+@st.cache_resource(show_spinner=False)
+def load_inc_encoder():
+    """Load the optional contrastive-encoder Inc-group classifier, if
+    available (see _encoder_available()). Returns (group_names, model,
+    X_train_embedded, y_train, metadata) or (None, None, None, None, None)
+    if unavailable. KNN (load_inc_classifier above) remains the default
+    classification path regardless of whether this loads successfully."""
+    if not _encoder_available():
+        return None, None, None, None, None
+    import json as _json
+    import torch as _torch
+    from validate_encoder_vs_knn import ContrastiveEncoder as _ContrastiveEncoder
+
+    checkpoint = _torch.load(ENCODER_PATH, map_location="cpu", weights_only=False)
+    model = _ContrastiveEncoder(
+        in_dim=checkpoint["in_dim"], hidden_dim=checkpoint["hidden_dim"],
+        embed_dim=checkpoint["embed_dim"],
+    )
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
+    with open(ENCODER_METADATA_PATH) as f:
+        metadata = _json.load(f)
+    return (checkpoint["group_names"], model, checkpoint["X_train_embedded"],
+            checkpoint["y_train"], metadata)
+
+
+def classify_inc_group_via_encoder(query_vectors, model, X_train_embedded, y_train, group_names, k=5):
+    """Classify query 4-mer vectors via the encoder's learned embedding
+    space, using the identical k=5 cosine-distance distance-weighted KNN
+    vote as the raw-4-mer classifier — the only difference from
+    load_inc_classifier's path is which feature space the vote happens
+    in, exactly matching the comparison methodology in
+    validate_encoder_vs_knn.py so the two options are genuinely
+    comparable, not confounded by an unrelated change in classification
+    rule."""
+    import torch as _torch
+    with _torch.no_grad():
+        query_t = _torch.tensor(query_vectors, dtype=_torch.float32)
+        query_embedded = model(query_t).numpy()
+    knn = KNeighborsClassifier(n_neighbors=k, metric="cosine", weights="distance")
+    knn.fit(X_train_embedded, y_train)
+    pred_idx = knn.predict(query_embedded)
+    proba = knn.predict_proba(query_embedded)
+    return pred_idx, proba
 
 
 @st.cache_resource(show_spinner=False)
@@ -2001,16 +2068,29 @@ def detect_nt_device():
 #  CORE PIPELINE FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 
-def parse_uploaded_fastas(uploaded_files, inc_type):
-    """Parse uploaded FASTA files. Auto-detects Inc group when inc_type='Auto-detect'."""
+def parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=False):
+    """Parse uploaded FASTA files. Auto-detects Inc group when inc_type='Auto-detect'.
+
+    The primary classification path (classify_inc_group, below) is always
+    KNN on raw 4-mer composition, regardless of use_encoder_classifier —
+    it is the validated default and carries the richer secondary-signal
+    logic (BLAST fallback for ambiguous large plasmids, confusion-pair
+    flagging, etc.) that the encoder path does not replicate. When
+    use_encoder_classifier is True and the optional encoder artifact is
+    available, an ADDITIONAL, clearly-labelled encoder prediction is
+    computed alongside the KNN result as a second opinion — it never
+    overrides or replaces the primary inc_type call."""
     auto_detect = (inc_type == "Auto-detect")
     group_names, classifier = None, None
     cv_data = load_cv_metrics()
+    encoder_group_names, encoder_model, encoder_X_train, encoder_y_train, encoder_metadata = (None, None, None, None, None)
     if auto_detect:
         group_names, classifier = load_inc_classifier()
         if group_names is None:
             auto_detect = False
             inc_type = "Unknown"
+        elif use_encoder_classifier:
+            encoder_group_names, encoder_model, encoder_X_train, encoder_y_train, encoder_metadata = load_inc_encoder()
 
     records = []
     for uf in uploaded_files:
@@ -2065,6 +2145,24 @@ def parse_uploaded_fastas(uploaded_files, inc_type):
                     else:
                         rec_dict["inc_confusion_pair"] = False
                         rec_dict["inc_confusion_note"] = ""
+
+                    # Optional encoder second opinion (never overrides the
+                    # primary KNN-based inc_type call above) — see
+                    # parse_uploaded_fastas' docstring.
+                    if encoder_model is not None:
+                        try:
+                            vec = _kmer_vector_single(seq).reshape(1, -1).astype(np.float32)
+                            enc_pred_idx, enc_proba = classify_inc_group_via_encoder(
+                                vec, encoder_model, encoder_X_train, encoder_y_train, encoder_group_names)
+                            enc_best_idx = int(enc_pred_idx[0])
+                            rec_dict["inc_encoder_prediction"] = encoder_group_names[enc_best_idx]
+                            rec_dict["inc_encoder_confidence"] = round(float(enc_proba[0][enc_best_idx]), 4)
+                            rec_dict["inc_encoder_agrees_with_knn"] = (
+                                encoder_group_names[enc_best_idx] == rec_dict["inc_type"])
+                        except Exception as _enc_err:
+                            rec_dict["inc_encoder_prediction"] = None
+                            rec_dict["inc_encoder_confidence"] = None
+                            rec_dict["inc_encoder_agrees_with_knn"] = None
                 else:
                     rec_dict["inc_type"] = inc_type
 
@@ -4736,8 +4834,42 @@ if not st.session_state.analysis_done:
         inc_type = st.selectbox(
             "Incompatibility Group",
             INC_GROUPS, index=0,
-            help=f"'Auto-detect' uses a KNN classifier trained on {len(INC_GROUPS) - 2} Inc/Rep groups to identify Inc group per sequence",
+            help=f"'Auto-detect' uses a classifier trained on {len(INC_GROUPS) - 2} Inc/Rep groups to identify Inc group per sequence",
         )
+        if inc_type == "Auto-detect":
+            encoder_ready = _encoder_available()
+            classifier_choice = st.radio(
+                "Classifier",
+                ["KNN (default)", "Contrastive encoder (experimental)"],
+                index=0,
+                horizontal=True,
+                disabled=not encoder_ready,
+                help=(
+                    "KNN (k=5, cosine distance on raw 4-mer composition) is the "
+                    "validated default used throughout the accompanying manuscript "
+                    "(91.1% CV accuracy, 28 groups) and is fully interpretable: "
+                    "every call traces to its actual nearest-neighbour training "
+                    "plasmids. The contrastive-encoder option learns a nonlinear "
+                    "embedding before the same k=5 cosine-KNN vote; independent, "
+                    "leak-free 5-fold cross-validation shows it improves overall "
+                    "accuracy (92.7% vs 91.1%) and macro-F1 (0.692 vs 0.666) with "
+                    "19 of 28 groups improving and 8 declining slightly (largest "
+                    "-0.016 F1, none catastrophic) — see "
+                    "output/encoder_vs_knn_validation_result.json for the full, "
+                    "reproducible per-class comparison. Use it if you have doubts "
+                    "about a specific KNN call and want a second opinion from a "
+                    "different feature space, not as a wholesale replacement: "
+                    "adding a brand-new Inc/Rep group requires retraining the "
+                    "encoder (train_inc_encoder.py), while KNN only needs a "
+                    "FASTA folder drop."
+                    + ("" if encoder_ready else " (Not available: install torch, "
+                       "then run `python train_inc_encoder.py` once to enable "
+                       "this option.)"),
+                ),
+            )
+            use_encoder_classifier = classifier_choice.startswith("Contrastive")
+        else:
+            use_encoder_classifier = False
         linkage_method = st.selectbox(
             "Linkage Method",
             LINKAGE_METHODS, index=0,
@@ -5060,7 +5192,7 @@ if run_btn and uploaded_files:
     progress.progress(5, text="Parsing FASTA files & detecting Inc groups..." if inc_type == "Auto-detect"
                       else "Parsing FASTA files...")
     try:
-        records = parse_uploaded_fastas(uploaded_files, inc_type)
+        records = parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=use_encoder_classifier)
         if len(records) < 1:
             st.error("No valid sequences found in uploaded files.")
             st.stop()

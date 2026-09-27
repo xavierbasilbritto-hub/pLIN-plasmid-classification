@@ -1,0 +1,180 @@
+{
+  "generated_utc": "2026-09-27T10:27:41.462989+00:00",
+  "methodology": "Leak-free stratified k-fold CV. Both conditions use an identical k=5, cosine-distance, distance-weighted KNN vote as the classification rule; the only difference is the feature space (raw 256-dim 4-mer frequencies vs. a contrastive encoder's learned embedding). The encoder is trained from scratch on each fold's training split only and never sees the held-out test fold during training.",
+  "n_folds": 5,
+  "encoder_epochs": 60,
+  "encoder_embed_dim": 64,
+  "encoder_hidden_dim": 128,
+  "seed": 42,
+  "pooled_results": {
+    "knn_accuracy": 0.9104865667946019,
+    "knn_macro_f1": 0.6654553440184955,
+    "encoder_accuracy": 0.9274483100160951,
+    "encoder_macro_f1": 0.6917179991029362,
+    "delta_accuracy": 0.01696174322149313,
+    "delta_macro_f1": 0.0262626550844407
+  },
+  "per_fold_results": [
+    {
+      "fold": 0,
+      "n_test": 1616,
+      "knn_accuracy": 0.9077970297029703,
+      "knn_macro_f1": 0.6492190882406167,
+      "encoder_accuracy": 0.9245049504950495,
+      "encoder_macro_f1": 0.6985575186420808
+    },
+    {
+      "fold": 1,
+      "n_test": 1616,
+      "knn_accuracy": 0.9121287128712872,
+      "knn_macro_f1": 0.6763877641184077,
+      "encoder_accuracy": 0.9300742574257426,
+      "encoder_macro_f1": 0.6858585774397197
+    },
+    {
+      "fold": 2,
+      "n_test": 1615,
+      "knn_accuracy": 0.9188854489164087,
+      "knn_macro_f1": 0.6841633330913373,
+      "encoder_accuracy": 0.9343653250773993,
+      "encoder_macro_f1": 0.6751585475116767
+    },
+    {
+      "fold": 3,
+      "n_test": 1615,
+      "knn_accuracy": 0.9009287925696594,
+      "knn_macro_f1": 0.6138716041920469,
+      "encoder_accuracy": 0.923219814241486,
+      "encoder_macro_f1": 0.6737702754499999
+    },
+    {
+      "fold": 4,
+      "n_test": 1615,
+      "knn_accuracy": 0.9126934984520124,
+      "knn_macro_f1": 0.6780777946843303,
+      "encoder_accuracy": 0.9250773993808049,
+      "encoder_macro_f1": 0.6854193162198295
+    }
+  ],
+  "per_class_f1": {
+    "ColE": {
+      "knn": 0.5161290322580645,
+      "encoder": 0.6285714285714286
+    },
+    "ColRNAI": {
+      "knn": 0.8735632183908046,
+      "encoder": 0.8571428571428571
+    },
+    "IncA": {
+      "knn": 0.5,
+      "encoder": 0.5185185185185185
+    },
+    "IncAC2": {
+      "knn": 0.7741935483870968,
+      "encoder": 0.7647058823529411
+    },
+    "IncC": {
+      "knn": 0.4375,
+      "encoder": 0.42857142857142855
+    },
+    "IncF": {
+      "knn": 0.22580645161290322,
+      "encoder": 0.21428571428571427
+    },
+    "IncFIB": {
+      "knn": 0.4358974358974359,
+      "encoder": 0.42105263157894735
+    },
+    "IncFIBK": {
+      "knn": 0.2,
+      "encoder": 0.21052631578947367
+    },
+    "IncFIC": {
+      "knn": 0.7741935483870968,
+      "encoder": 0.8888888888888888
+    },
+    "IncFII": {
+      "knn": 0.9596078013428541,
+      "encoder": 0.9683151359451937
+    },
+    "IncHI1": {
+      "knn": 0.3333333333333333,
+      "encoder": 0.45161290322580644
+    },
+    "IncHI2": {
+      "knn": 0.6363636363636364,
+      "encoder": 0.65625
+    },
+    "IncI": {
+      "knn": 0.0,
+      "encoder": 0.1111111111111111
+    },
+    "IncI1": {
+      "knn": 0.65625,
+      "encoder": 0.6545454545454545
+    },
+    "IncI2": {
+      "knn": 0.8679245283018868,
+      "encoder": 0.8571428571428571
+    },
+    "IncN": {
+      "knn": 0.9111721611721612,
+      "encoder": 0.9477035015916325
+    },
+    "IncR": {
+      "knn": 0.14814814814814814,
+      "encoder": 0.14814814814814814
+    },
+    "IncX1": {
+      "knn": 0.9092208720514653,
+      "encoder": 0.9384934346924672
+    },
+    "IncX3": {
+      "knn": 0.9203539823008849,
+      "encoder": 0.9380530973451328
+    },
+    "IncX4": {
+      "knn": 0.9565217391304348,
+      "encoder": 0.9795918367346939
+    },
+    "repAci1": {
+      "knn": 0.8546255506607929,
+      "encoder": 0.9106382978723404
+    },
+    "repAci_large": {
+      "knn": 0.9234449760765551,
+      "encoder": 0.9514563106796117
+    },
+    "repEF_conj": {
+      "knn": 0.7064676616915423,
+      "encoder": 0.7263157894736842
+    },
+    "repEF_res": {
+      "knn": 0.7521367521367521,
+      "encoder": 0.7478991596638656
+    },
+    "repPae_large": {
+      "knn": 0.8767772511848341,
+      "encoder": 0.8942307692307693
+    },
+    "repPae_small": {
+      "knn": 0.7715355805243446,
+      "encoder": 0.8086642599277978
+    },
+    "repSA_large": {
+      "knn": 0.9212598425196851,
+      "encoder": 0.9365079365079365
+    },
+    "repSA_small": {
+      "knn": 0.7903225806451613,
+      "encoder": 0.8091603053435115
+    }
+  },
+  "comparison_to_previously_unverified_claim": {
+    "unverified_claim_source": "output/pLIN_Classifier_KNN_vs_Encoder_Discussion.docx (hardcoded in create_classifier_comparison_pptx.py, no training code or CV logs existed)",
+    "unverified_claim_accuracy": 0.933,
+    "unverified_claim_macro_f1": 0.723,
+    "this_scripts_genuine_result_accuracy": 0.9274483100160951,
+    "this_scripts_genuine_result_macro_f1": 0.6917179991029362
+  }
+}

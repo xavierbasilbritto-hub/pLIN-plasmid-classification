@@ -1,0 +1,18 @@
+{
+  "generated_utc": "2026-09-27T11:16:57.472304+00:00",
+  "architecture": "ContrastiveEncoder (see validate_encoder_vs_knn.py): 256 -> 128 (ReLU, BatchNorm) -> 64 (L2-normalised)",
+  "training": "Supervised contrastive loss, 60 epochs, seed=42, trained on the full 8,077-plasmid training set.",
+  "genuine_cv_performance": {
+    "note": "These figures come from validate_encoder_vs_knn.py's independent, leak-free 5-fold cross-validation (encoder retrained from scratch each fold, never sees its own test fold) \u2014 NOT from evaluating this final artifact on the data it was trained on, which would be optimistic. This is the accuracy a user should expect from the encoder option, not a number specific to this exact saved file.",
+    "knn_baseline_accuracy": 0.9104865667946019,
+    "knn_baseline_macro_f1": 0.6654553440184955,
+    "encoder_cv_accuracy": 0.9274483100160951,
+    "encoder_cv_macro_f1": 0.6917179991029362,
+    "n_cv_folds": 5
+  },
+  "known_limitations": [
+    "Adding a NEW Inc/Rep group (one not in the 28 currently trained on) requires retraining this encoder from scratch \u2014 unlike the raw-4-mer KNN classifier, where a new group is a FASTA folder drop and a training-data rebuild with no model retraining needed. The encoder option should be treated as unavailable/stale for any group added after this file's generated_utc timestamp until retrained.",
+    "Per-class effect is not uniform: 8 of 28 classes showed a small F1 decline (largest -0.016) relative to KNN in cross-validation, though none catastrophically. See output/encoder_vs_knn_validation_result.json for the full per-class breakdown before relying on the encoder for a specific Inc group.",
+    "Embedding stability across independent retrains (e.g. after adding training data) has not been separately measured \u2014 a retrained encoder's embedding geometry may shift, unlike KNN's raw 4-mer feature space, which cannot change under retraining."
+  ]
+}
