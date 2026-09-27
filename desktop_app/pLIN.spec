@@ -62,6 +62,18 @@ hiddenimports += [
     "Bio.SeqIO",
     "Bio.Seq",
     "Bio.SeqRecord",
+    # matplotlib picks its rendering backend at runtime via
+    # importlib.import_module() (e.g. fig.savefig(..., format="pdf")),
+    # which PyInstaller's static analysis cannot see. plin_app.py's
+    # fig_to_bytes() saves figures as both "png" and "pdf", so both
+    # backends must be declared explicitly or the PDF path raises
+    # ModuleNotFoundError: No module named 'matplotlib.backends.backend_pdf'
+    # the first time a user downloads a PDF or the "download all results"
+    # ZIP (which also crashes mid-export, before finishing the AMR figures).
+    "matplotlib.backends.backend_agg",
+    "matplotlib.backends.backend_pdf",
+    "matplotlib.backends.backend_svg",
+    "matplotlib.backends.backend_ps",
 ]
 datas += collect_data_files("Bio")
 
