@@ -23,6 +23,13 @@ on:
       - "v*"
   workflow_dispatch: {}
 
+# The release job needs write access to create a GitHub Release and
+# attach files to it; this repo's default workflow token permissions are
+# read-only, which silently fails that step ("Resource not accessible by
+# integration") without this explicit grant.
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
