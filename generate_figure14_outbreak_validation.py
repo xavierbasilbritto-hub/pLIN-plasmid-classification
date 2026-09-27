@@ -108,14 +108,14 @@ def main():
     print(f"  Training plasmids: {len(integrated_df)}")
 
     # Compute lineage profiles for Panel C
-    p671 = compute_lineage_profile("1.1.2.4.7.1947", integrated_df)
-    p860 = compute_lineage_profile("1.1.2.4.7.13", integrated_df)
-    print(f"  pLIN 671: n={p671['n']}, mean_amr={p671['mean_amr']:.1f}, "
-          f"Inc groups={p671['n_inc']}, mcr={p671['mcr_pct']:.0f}%, "
-          f"top gene={p671['top_gene']} ({p671['top_gene_pct']:.0f}%)")
-    print(f"  pLIN 860: n={p860['n']}, mean_amr={p860['mean_amr']:.1f}, "
-          f"Inc groups={p860['n_inc']}, mcr={p860['mcr_pct']:.0f}%, "
-          f"top gene={p860['top_gene']} ({p860['top_gene_pct']:.0f}%)")
+    p1947 = compute_lineage_profile("1.1.2.4.7.1947", integrated_df)
+    p13 = compute_lineage_profile("1.1.2.4.7.13", integrated_df)
+    print(f"  pLIN 1947: n={p1947['n']}, mean_amr={p1947['mean_amr']:.1f}, "
+          f"Inc groups={p1947['n_inc']}, mcr={p1947['mcr_pct']:.0f}%, "
+          f"top gene={p1947['top_gene']} ({p1947['top_gene_pct']:.0f}%)")
+    print(f"  pLIN 13: n={p13['n']}, mean_amr={p13['mean_amr']:.1f}, "
+          f"Inc groups={p13['n_inc']}, mcr={p13['mcr_pct']:.0f}%, "
+          f"top gene={p13['top_gene']} ({p13['top_gene_pct']:.0f}%)")
 
     # ── Create figure ─────────────────────────────────────────────────────────
     fig = plt.figure(figsize=(18, 14))
@@ -145,17 +145,17 @@ def main():
               color=GRAY, ha="right", va="bottom")
 
     # Annotate key plasmids
-    # CP104944 → pLIN 671 (exact match)
+    # CP104944 → pLIN 1947 (exact match)
     cp104944_row = val_df[val_df["accession"] == "CP104944"].iloc[0]
-    ax_a.annotate("CP104944\npLIN 671 (KPC-2 hotspot)",
+    ax_a.annotate("CP104944\npLIN 1947 (KPC-2 hotspot)",
                   xy=(cp104944_row["nn_distance"], cp104944_row["confidence"]),
                   xytext=(0.0015, 90),
                   fontsize=7.5, fontweight="bold", color=DARK_BLUE,
                   arrowprops=dict(arrowstyle="->", color=DARK_BLUE, lw=1.2))
 
-    # CP022533 → pLIN 860 (MDR hub)
+    # CP022533 → pLIN 13 (MDR hub)
     cp022_row = val_df[val_df["accession"] == "CP022533"].iloc[0]
-    ax_a.annotate("CP022533\npLIN 860 (MDR hub)",
+    ax_a.annotate("CP022533\npLIN 13 (MDR hub)",
                   xy=(cp022_row["nn_distance"], cp022_row["confidence"]),
                   xytext=(0.002, 82),
                   fontsize=7.5, fontweight="bold", color=TEAL,
@@ -302,17 +302,17 @@ def main():
 
     metrics = ["Reference\nmembers (n)", "Mean AMR\ngenes", "Inc groups\n(n)",
                "$mcr$ prevalence\n(%)"]
-    values_671 = [p671["n"], p671["mean_amr"], p671["n_inc"], p671["mcr_pct"]]
-    values_860 = [p860["n"], p860["mean_amr"], p860["n_inc"], p860["mcr_pct"]]
+    values_1947 = [p1947["n"], p1947["mean_amr"], p1947["n_inc"], p1947["mcr_pct"]]
+    values_13 = [p13["n"], p13["mean_amr"], p13["n_inc"], p13["mcr_pct"]]
 
     x = np.arange(len(metrics))
     width = 0.32
 
-    bars1 = ax_c.bar(x - width / 2, values_671, width, color=BLUE,
-                     label="pLIN 671 (IncN, KPC-2 hotspot)",
+    bars1 = ax_c.bar(x - width / 2, values_1947, width, color=BLUE,
+                     label="pLIN 1947 (IncN, KPC-2 hotspot)",
                      edgecolor="white", linewidth=0.8)
-    bars2 = ax_c.bar(x + width / 2, values_860, width, color=RED,
-                     label="pLIN 860 (multi-Inc MDR hub)",
+    bars2 = ax_c.bar(x + width / 2, values_13, width, color=RED,
+                     label="pLIN 13 (multi-Inc MDR hub)",
                      edgecolor="white", linewidth=0.8)
 
     # Value labels on bars
@@ -335,13 +335,13 @@ def main():
     ax_c.legend(fontsize=8, loc="upper center", frameon=True, fancybox=True)
     ax_c.spines["top"].set_visible(False)
     ax_c.spines["right"].set_visible(False)
-    ax_c.set_ylim(0, max(max(values_671), max(values_860)) * 1.25)
+    ax_c.set_ylim(0, max(max(values_1947), max(values_13)) * 1.25)
 
     # Clinical significance box — placed below the plot area (outside the axes)
     # so it never overlaps a bar regardless of the underlying values.
     ax_c.text(0.5, -0.30,
-              "pLIN 671: specialist KPC-2 lineage (1 Inc group, 100% $bla_{KPC-2}$)\n"
-              "pLIN 860: broad MDR hub (5 Inc groups, 44% $mcr$, 61% $sul1$)",
+              "pLIN 1947: specialist KPC-2 lineage (1 Inc group, 100% $bla_{KPC-2}$)\n"
+              "pLIN 13: broad MDR hub (5 Inc groups, 44% $mcr$, 61% $sul1$)",
               transform=ax_c.transAxes, fontsize=7.5, color=DARK_BLUE,
               style="italic", ha="center", va="top",
               bbox=dict(boxstyle="round,pad=0.4", facecolor="#E3F2FD",

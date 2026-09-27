@@ -42,19 +42,17 @@ SPECIES_COLORS = {
     "Acinetobacter baumannii": "#4E342E",
 }
 
-# Display-only relabelling for raw L6 suffix codes that predate a later
-# pLIN renumbering pass. This mirrors the same fix already applied in
-# generate_figure14_outbreak_validation.py (Figure 11): the underlying
-# data file (retrospective_host_plasmid_validation.tsv) still carries the
-# pre-renumbering raw codes "1.1.2.4.7.1947" and "1.1.2.4.7.13", but the
-# manuscript text and Figure 11 refer to these same lineages as pLIN 671
-# and pLIN 860 respectively. Only the rendered text label is remapped
-# here; the raw "plin" values are still used unchanged for all matching,
-# grouping, and positioning logic.
-STALE_PLIN_DISPLAY_MAP = {
-    "1947": "671",
-    "13": "860",
-}
+# NOTE: raw L6 suffix codes "1947" and "13" (from
+# retrospective_host_plasmid_validation.tsv) ARE the correct, current
+# pLIN codes for these two lineages -- confirmed by exhaustive
+# independent verification (biological-signature identification,
+# chronological/git provenance analysis, and a full from-scratch
+# pipeline rerun with 100% reproducibility against the current,
+# GitHub-committed reference database). A prior version of this script
+# incorrectly remapped these to "671"/"860", which were themselves
+# traced to an orphaned, never-git-committed intermediate file and are
+# WRONG. No display remapping is applied; the raw pLIN suffix is shown
+# as-is.
 
 
 def load_validation_data():
@@ -125,8 +123,7 @@ def plot_panel_a(ax, enriched_df, study_df):
         ax.scatter(0.8, y, s=80, c="#43A047", edgecolors="black",
                    linewidth=0.5, zorder=5, marker="s")
         plin_short = str(plin).split(".")[-1] if "." in str(plin) else str(plin)
-        plin_display = STALE_PLIN_DISPLAY_MAP.get(plin_short, plin_short)
-        ax.text(0.85, y, f"pLIN {plin_display}", ha="left", va="center", fontsize=6)
+        ax.text(0.85, y, f"pLIN {plin_short}", ha="left", va="center", fontsize=6)
 
     # Labels
     ax.text(0.2, n_st + 0.5, "MLST ST", ha="center", fontsize=9, fontweight="bold")
