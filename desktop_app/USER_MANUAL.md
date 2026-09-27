@@ -90,9 +90,26 @@ don't see that capability until the tool is present:
 | CRISPR host inference | MinCED + BLAST+ | `conda install -c bioconda minced blast` |
 | Chromosomal MLST typing | mlst | `conda install -c bioconda mlst` |
 | Nucleotide Transformer (LLM) | transformers, torch | `pip install transformers torch` (not included in the standalone build; run from source if you need this) |
+| Contrastive-encoder classifier (optional second opinion) | torch, plus a one-time training step | `pip install torch`, then run `python train_inc_encoder.py` once from a source checkout of the repository (this trains and saves the encoder artifact; it does not need to be repeated after that) |
 
 If you install one of these tools after already launching pLIN, quit and
 restart the app so it can detect the newly-installed tool.
+
+### A note on the classifier choice
+
+pLIN's default classifier is KNN (k-nearest-neighbour on raw tetranucleotide
+composition, 91.1% cross-validated accuracy) — fully interpretable, and what
+the accompanying manuscript's validation is built on. When you select
+"Auto-detect" for the Incompatibility Group, a **Classifier** option appears
+letting you additionally try a contrastive-encoder classifier as a second
+opinion when you have doubts about a specific call. Independent, leak-free
+cross-validation shows the encoder modestly outperforms KNN overall (92.7%
+accuracy, macro-F1 0.692 vs. KNN's 0.666), improving 19 of 28 replicon
+groups and declining slightly on 8 (largest change: −0.016 F1, nothing
+catastrophic). It never overrides the primary KNN result — it adds an
+additional prediction alongside it. This option only appears if torch is
+installed and the encoder has been trained (see the table above); it is
+not required for normal use.
 
 ---
 
