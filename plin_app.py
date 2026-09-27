@@ -2361,6 +2361,10 @@ def _load_reference_for_query():
         ref_ids = ref_vecs["ids"]
 
         assign_df = pd.read_csv(REFERENCE_ASSIGNMENTS_PATH, sep="\t")
+        # A handful of plasmids (e.g. E. faecium plasmids typed under both
+        # repEF_conj and repEF_res) appear twice with the same pLIN code;
+        # .reindex() requires a unique index, so keep the first occurrence.
+        assign_df = assign_df.drop_duplicates(subset="plasmid_id", keep="first")
         assign_df = assign_df.set_index("plasmid_id")
 
         # Align assignment rows to the vector order by plasmid_id; drop any
