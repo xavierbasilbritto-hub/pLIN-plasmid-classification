@@ -38,6 +38,14 @@ datas += [
     (os.path.join(REPO_ROOT, "data", "inc_classifier.npz"), "data"),
     (os.path.join(REPO_ROOT, "data", "inc_centroids.npz"), "data"),
     (os.path.join(REPO_ROOT, "output", "pLIN_assignments.tsv"), "output"),
+    # Full 79,305-plasmid expanded reference database, so "query mode"
+    # (looking up a newly-uploaded plasmid's nearest neighbour) runs
+    # against the full database rather than just the 8,077-plasmid
+    # training set — see _load_reference_for_query() in plin_app.py,
+    # which already prefers these two files over the smaller training-set
+    # fallback when both are present.
+    (os.path.join(REPO_ROOT, "output", "pLIN_reference_assignments.tsv"), "output"),
+    (os.path.join(REPO_ROOT, "output", "reference_kmer_vectors.npz"), "output"),
     (os.path.join(REPO_ROOT, "assets"), "assets"),
     (os.path.join(REPO_ROOT, ".streamlit", "config.toml"), ".streamlit"),
 ]
