@@ -4838,34 +4838,45 @@ if not st.session_state.analysis_done:
         )
         if inc_type == "Auto-detect":
             encoder_ready = _encoder_available()
+            _classifier_help = (
+                "KNN (k=5, cosine distance on raw 4-mer composition) is the "
+                "validated default used throughout the accompanying manuscript "
+                "(91.1% CV accuracy, 28 groups) and is fully interpretable: "
+                "every call traces to its actual nearest-neighbour training "
+                "plasmids. The contrastive-encoder option learns a nonlinear "
+                "embedding before the same k=5 cosine-KNN vote; independent, "
+                "leak-free 5-fold cross-validation shows it improves overall "
+                "accuracy (92.7% vs 91.1%) and macro-F1 (0.692 vs 0.666) with "
+                "19 of 28 groups improving and 8 declining slightly (largest "
+                "-0.016 F1, none catastrophic) — see "
+                "output/encoder_vs_knn_validation_result.json for the full, "
+                "reproducible per-class comparison. Use it if you have doubts "
+                "about a specific KNN call and want a second opinion from a "
+                "different feature space, not as a wholesale replacement: "
+                "adding a brand-new Inc/Rep group requires retraining the "
+                "encoder (train_inc_encoder.py), while KNN only needs a "
+                "FASTA folder drop."
+            )
+            if not encoder_ready:
+                _classifier_help += (
+                    " (Not available: install torch, then run "
+                    "`python train_inc_encoder.py` once to enable this option.)"
+                )
+            # Defensive str() + explicit key: some Streamlit builds have been
+            # observed to raise `TypeError: expected string or bytes-like
+            # object` inside textwrap.dedent() when a widget's `help` value
+            # is not a plain str at call time (e.g. a stale, differently-typed
+            # cached value tied to an auto-generated widget key across a
+            # rerun). An explicit key avoids any key collision, and str()
+            # guarantees dedent() always receives a real string.
             classifier_choice = st.radio(
                 "Classifier",
                 ["KNN (default)", "Contrastive encoder (experimental)"],
                 index=0,
                 horizontal=True,
                 disabled=not encoder_ready,
-                help=(
-                    "KNN (k=5, cosine distance on raw 4-mer composition) is the "
-                    "validated default used throughout the accompanying manuscript "
-                    "(91.1% CV accuracy, 28 groups) and is fully interpretable: "
-                    "every call traces to its actual nearest-neighbour training "
-                    "plasmids. The contrastive-encoder option learns a nonlinear "
-                    "embedding before the same k=5 cosine-KNN vote; independent, "
-                    "leak-free 5-fold cross-validation shows it improves overall "
-                    "accuracy (92.7% vs 91.1%) and macro-F1 (0.692 vs 0.666) with "
-                    "19 of 28 groups improving and 8 declining slightly (largest "
-                    "-0.016 F1, none catastrophic) — see "
-                    "output/encoder_vs_knn_validation_result.json for the full, "
-                    "reproducible per-class comparison. Use it if you have doubts "
-                    "about a specific KNN call and want a second opinion from a "
-                    "different feature space, not as a wholesale replacement: "
-                    "adding a brand-new Inc/Rep group requires retraining the "
-                    "encoder (train_inc_encoder.py), while KNN only needs a "
-                    "FASTA folder drop."
-                    + ("" if encoder_ready else " (Not available: install torch, "
-                       "then run `python train_inc_encoder.py` once to enable "
-                       "this option.)"),
-                ),
+                help=str(_classifier_help),
+                key="pLIN_classifier_choice_radio",
             )
             use_encoder_classifier = classifier_choice.startswith("Contrastive")
         else:
