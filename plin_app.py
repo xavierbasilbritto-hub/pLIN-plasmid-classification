@@ -2528,19 +2528,26 @@ def detect_amrfinder():
     except Exception:
         pass
 
-    # 2. Check conda envs
+    # 2. Check conda base installs and named envs. A binary installed with
+    # `conda install` (no -n/--name given) lands directly in <root>/bin/,
+    # not inside an envs/<name>/bin/ subfolder, so both layouts are checked.
     if not binary:
         home = os.path.expanduser("~")
-        search_dirs = [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
+        conda_roots = [
+            os.path.join(home, "miniconda3"),
+            os.path.join(home, "miniforge3"),
+            os.path.join(home, "anaconda3"),
+            os.path.join(home, "mambaforge"),
         ]
-        for base in search_dirs:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "amrfinder")
+        for root in conda_roots:
+            candidate = os.path.join(root, "bin", "amrfinder")
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                binary = candidate
+                break
+            envs_dir = os.path.join(root, "envs")
+            if os.path.isdir(envs_dir):
+                for env in sorted(os.listdir(envs_dir)):
+                    candidate = os.path.join(envs_dir, env, "bin", "amrfinder")
                     if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                         binary = candidate
                         break
@@ -2562,8 +2569,16 @@ def detect_amrfinder():
 
 
 def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=None):
-    """Run AMRFinderPlus on uploaded FASTA files."""
+    """Run AMRFinderPlus on uploaded FASTA files.
+
+    Returns (results_df, errors) where errors is a list of
+    "filename: reason" strings for any file AMRFinderPlus failed on
+    (non-zero exit, timeout, or an unparseable/missing output), so the
+    caller can warn the user instead of an AMR table silently coming
+    back empty with no explanation.
+    """
     all_results = []
+    errors = []
     total = len(uploaded_files)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -2579,20 +2594,24 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
                 cmd.extend(["-d", database])
 
             try:
-                subprocess.run(cmd, capture_output=True, timeout=300)
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
                 if os.path.isfile(out_path):
                     df = pd.read_csv(out_path, sep="\t")
                     df.insert(0, "source_file", uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", ""))
                     all_results.append(df)
-            except Exception:
-                pass
+                else:
+                    stderr_tail = proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else f"exit code {proc.returncode}"
+                    errors.append(f"{uf.name}: {stderr_tail}")
+            except subprocess.TimeoutExpired:
+                errors.append(f"{uf.name}: timed out after 300s")
+            except Exception as e:
+                errors.append(f"{uf.name}: {e}")
 
             if progress_callback:
                 progress_callback((idx + 1) / total)
 
-    if all_results:
-        return pd.concat(all_results, ignore_index=True)
-    return pd.DataFrame()
+    results_df = pd.concat(all_results, ignore_index=True) if all_results else pd.DataFrame()
+    return results_df, errors
 
 
 def integrate_plin_amr(plin_df, amr_df):
@@ -5520,7 +5539,13 @@ if run_btn and uploaded_files:
         def amr_cb(pct):
             progress.progress(int(60 + pct * 30), text=f"AMRFinderPlus: {int(pct * 100)}%")
 
-        amr_df = run_amrfinder_on_files(uploaded_files, amr_binary, amr_db, amr_cb)
+        amr_df, amr_errors = run_amrfinder_on_files(uploaded_files, amr_binary, amr_db, amr_cb)
+        if amr_errors:
+            st.warning(
+                "AMRFinderPlus failed on {}/{} file(s), so their AMR results are missing "
+                "below: {}".format(len(amr_errors), len(uploaded_files), "; ".join(amr_errors)),
+                icon="⚠️",
+            )
 
     st.session_state.amr_df = amr_df
 
