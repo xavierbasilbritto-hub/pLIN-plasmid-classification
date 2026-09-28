@@ -2571,21 +2571,37 @@ def _find_tool_in_wsl(name):
     plain PATH/conda-directory scan on the Windows side can never find
     them even when correctly installed. This runs `which <name>` inside
     a WSL login shell (so profile/conda-init scripts that set PATH have
-    actually run) and returns its Linux-side path if found, else None.
-    Always returns None on non-Windows, where this bridge is irrelevant.
+    actually run).
+
+    Returns (path_or_None, reason). reason is None on success; on
+    failure it names the specific step that failed (wsl.exe missing,
+    timeout, non-zero exit, or "not on PATH inside WSL") rather than
+    collapsing every failure into an uninformative "not found" — this
+    was previously a bare try/except that swallowed the actual error,
+    making a genuinely broken WSL bridge indistinguishable from the
+    tool simply not being installed anywhere.
     """
     if os.name != "nt":
-        return None
+        return None, None
     try:
         result = subprocess.run(
             ["wsl.exe", "-e", "bash", "-lc", f"which {name}"],
             capture_output=True, text=True, timeout=15,
         )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip().splitlines()[-1]
-    except Exception:
-        pass
-    return None
+    except FileNotFoundError:
+        return None, "wsl.exe not found — WSL does not appear to be installed on this PC"
+    except subprocess.TimeoutExpired:
+        return None, "wsl.exe timed out after 15s — WSL may be starting up slowly or unresponsive"
+    except Exception as e:
+        return None, f"could not run wsl.exe: {e}"
+
+    if result.returncode == 0 and result.stdout.strip():
+        return result.stdout.strip().splitlines()[-1], None
+    stderr_tail = result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
+    return None, (
+        f"{name!r} not on PATH inside WSL's login shell"
+        + (f" (stderr: {stderr_tail})" if stderr_tail else "")
+    )
 
 
 def _wsl_path_for_windows_path(win_path):
@@ -2608,12 +2624,17 @@ def _wsl_path_for_windows_path(win_path):
 def detect_amrfinder():
     """Auto-detect AMRFinderPlus binary and database.
 
-    Returns (binary, database). On Windows, if no native binary is found
-    (expected — bioconda has no win-64 build of AMRFinderPlus), also
-    checks whether it's available inside WSL; if so, both values are
-    returned prefixed with "wsl:" as a sentinel that tells
-    run_amrfinder_on_files() to route the call through wsl.exe rather
-    than invoking a native Windows path directly.
+    Returns (binary, database, wsl_diagnostic). On Windows, if no native
+    binary is found (expected — bioconda has no win-64 build of
+    AMRFinderPlus), also checks whether it's available inside WSL; if
+    so, binary/database are returned prefixed with "wsl:" as a sentinel
+    that tells run_amrfinder_on_files() to route the call through
+    wsl.exe rather than invoking a native Windows path directly.
+    wsl_diagnostic is None unless the WSL bridge was attempted and
+    failed, in which case it names the specific step that failed (see
+    _find_tool_in_wsl), so the UI can show a real reason instead of a
+    bare "not found" that looks identical whether WSL is broken or the
+    tool is simply not installed anywhere.
     """
     binary = _find_tool_binary("amrfinder")
     database = None
@@ -2638,10 +2659,10 @@ def detect_amrfinder():
                 if versions:
                     database = os.path.join(db_base, versions[-1])
                     break
-        return binary, database
+        return binary, database, None
 
     if os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("amrfinder")
+        wsl_binary, wsl_reason = _find_tool_in_wsl("amrfinder")
         if wsl_binary:
             # wsl_binary is .../bin/amrfinder (Linux conda layout); the
             # database sits at <env-root>/share/amrfinderplus/data/<version>/,
@@ -2667,9 +2688,10 @@ def detect_amrfinder():
                         wsl_database = f"{prefix}/share/amrfinderplus/data/{latest_version}"
             except Exception:
                 pass
-            return f"wsl:{wsl_binary}", (f"wsl:{wsl_database}" if wsl_database else None)
+            return f"wsl:{wsl_binary}", (f"wsl:{wsl_database}" if wsl_database else None), None
+        return binary, database, wsl_reason
 
-    return binary, database
+    return binary, database, None
 
 
 def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=None):
@@ -2777,7 +2799,7 @@ def detect_prodigal():
     through wsl.exe."""
     binary = _find_tool_binary("prodigal")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("prodigal")
+        wsl_binary, _ = _find_tool_in_wsl("prodigal")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -2935,7 +2957,7 @@ def detect_mobsuite():
     prefixed "wsl:" for the caller to route through wsl.exe."""
     binary = _find_tool_binary("mob_typer")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("mob_typer")
+        wsl_binary, _ = _find_tool_in_wsl("mob_typer")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -2988,7 +3010,7 @@ def detect_mash():
     "wsl:" for the caller to route through wsl.exe."""
     binary = _find_tool_binary("mash")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("mash")
+        wsl_binary, _ = _find_tool_in_wsl("mash")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -3142,7 +3164,7 @@ def detect_fastani():
     "wsl:" for the caller to route through wsl.exe."""
     binary = _find_tool_binary("fastANI")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("fastANI")
+        wsl_binary, _ = _find_tool_in_wsl("fastANI")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -3221,7 +3243,7 @@ def detect_minimap2():
     "wsl:" for the caller to route through wsl.exe."""
     binary = _find_tool_binary("minimap2")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("minimap2")
+        wsl_binary, _ = _find_tool_in_wsl("minimap2")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -3691,7 +3713,7 @@ def detect_minced():
     to route through wsl.exe."""
     binary = _find_tool_binary("minced")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("minced")
+        wsl_binary, _ = _find_tool_in_wsl("minced")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -3766,7 +3788,7 @@ def detect_mlst():
     route through wsl.exe."""
     binary = _find_tool_binary("mlst")
     if not binary and os.name == "nt":
-        wsl_binary = _find_tool_in_wsl("mlst")
+        wsl_binary, _ = _find_tool_in_wsl("mlst")
         if wsl_binary:
             binary = f"wsl:{wsl_binary}"
     return binary
@@ -4787,7 +4809,7 @@ else:
     st.caption("Plasmid Lineage Identification Number System — Upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
-amr_binary, amr_db = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed — run_amrfinder_on_files() handles that
+amr_binary, amr_db, amr_wsl_diagnostic = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed — run_amrfinder_on_files() handles that
 
 # The 7 tools below have no execution path wired up for a "wsl:"-prefixed
 # binary yet (unlike AMRFinderPlus), so a WSL-only hit is reported as
@@ -4928,6 +4950,12 @@ if not st.session_state.analysis_done:
         if amr_binary:
             run_amr = st.checkbox("Run AMRFinderPlus", value=True,
                                   help="Detect AMR, stress, and virulence genes using NCBI's AMRFinderPlus")
+        elif amr_wsl_diagnostic:
+            st.warning(
+                f"AMRFinderPlus not found — WSL bridge failed: {amr_wsl_diagnostic}",
+                icon="⚠️",
+            )
+            run_amr = False
         else:
             st.warning("AMRFinderPlus not found", icon="⚠️")
             run_amr = False
