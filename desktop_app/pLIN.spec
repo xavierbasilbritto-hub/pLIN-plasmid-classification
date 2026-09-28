@@ -48,6 +48,10 @@ datas += [
     (os.path.join(REPO_ROOT, "output", "reference_kmer_vectors.npz"), "output"),
     (os.path.join(REPO_ROOT, "assets"), "assets"),
     (os.path.join(REPO_ROOT, ".streamlit", "config.toml"), ".streamlit"),
+    # Ready-to-run example dataset (the Swiss VIM-1 outbreak cluster from
+    # the manuscript's case study, ~3MB) so a first-time user can try the
+    # app immediately without needing their own FASTA files.
+    (os.path.join(REPO_ROOT, "sample_data", "swiss_vim1_outbreak"), "sample_data/swiss_vim1_outbreak"),
 ]
 
 hiddenimports = []
