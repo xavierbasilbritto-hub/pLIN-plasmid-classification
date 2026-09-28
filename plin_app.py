@@ -2560,6 +2560,16 @@ def _find_tool_binary(name):
     return None
 
 
+def _run_in_wsl(bash_args, timeout=15):
+    """Run a bash command inside WSL via wsl.exe. Returns a CompletedProcess,
+    or raises the same exceptions subprocess.run() would (FileNotFoundError,
+    TimeoutExpired, etc.) — callers handle those."""
+    return subprocess.run(
+        ["wsl.exe", "-e", "bash"] + bash_args,
+        capture_output=True, text=True, timeout=timeout,
+    )
+
+
 def _find_tool_in_wsl(name):
     """Check whether a tool is available inside WSL, from native Windows.
 
@@ -2569,25 +2579,35 @@ def _find_tool_in_wsl(name):
     exists). On Windows, a `conda install -c bioconda ...` for these
     tools only succeeds inside WSL (Windows Subsystem for Linux), so a
     plain PATH/conda-directory scan on the Windows side can never find
-    them even when correctly installed. This runs `which <name>` inside
-    a WSL login shell (so profile/conda-init scripts that set PATH have
-    actually run).
+    them even when correctly installed.
+
+    Two layers, since neither alone is reliable across WSL/conda setups:
+
+    1. `bash -lic "which <name>"` — a login *and* interactive shell, so
+       PATH is set up the same way as a real interactive WSL terminal
+       regardless of whether the user's conda-init block ended up in
+       ~/.bashrc (only sourced for interactive shells) or a profile
+       file (~/.bash_profile/~/.profile, only sourced for login
+       shells) — a plain login-only shell (`-lc`, tried in earlier
+       versions) misses whichever one it's NOT in, which is why this
+       previously failed with "not on PATH inside WSL's login shell"
+       even for a correctly-installed AMRFinderPlus.
+    2. If that still finds nothing (e.g. .bashrc has a hard early-return
+       for non-interactive contexts that even `-i` doesn't satisfy when
+       there's no real TTY), fall back to scanning common conda install
+       locations directly in the WSL filesystem — the same layout
+       _find_tool_binary() already checks on native Windows/Unix.
 
     Returns (path_or_None, reason). reason is None on success; on
-    failure it names the specific step that failed (wsl.exe missing,
-    timeout, non-zero exit, or "not on PATH inside WSL") rather than
-    collapsing every failure into an uninformative "not found" — this
-    was previously a bare try/except that swallowed the actual error,
-    making a genuinely broken WSL bridge indistinguishable from the
-    tool simply not being installed anywhere.
+    failure it names the specific step that failed, so a genuinely
+    broken WSL bridge stays distinguishable from the tool simply not
+    being installed anywhere.
     """
     if os.name != "nt":
         return None, None
+
     try:
-        result = subprocess.run(
-            ["wsl.exe", "-e", "bash", "-lc", f"which {name}"],
-            capture_output=True, text=True, timeout=15,
-        )
+        result = _run_in_wsl(["-lic", f"which {name}"])
     except FileNotFoundError:
         return None, "wsl.exe not found — WSL does not appear to be installed on this PC"
     except subprocess.TimeoutExpired:
@@ -2597,9 +2617,30 @@ def _find_tool_in_wsl(name):
 
     if result.returncode == 0 and result.stdout.strip():
         return result.stdout.strip().splitlines()[-1], None
+
+    # Fallback: scan common conda install locations directly, bypassing
+    # shell init files entirely.
+    find_cmd = (
+        "for root in \"$HOME/miniconda3\" \"$HOME/miniforge3\" "
+        "\"$HOME/anaconda3\" \"$HOME/mambaforge\"; do "
+        f"[ -x \"$root/bin/{name}\" ] && echo \"$root/bin/{name}\" && exit; "
+        f"for envdir in \"$root\"/envs/*; do "
+        f"[ -x \"$envdir/bin/{name}\" ] && echo \"$envdir/bin/{name}\" && exit; "
+        "done; "
+        "done"
+    )
+    try:
+        fallback_result = _run_in_wsl(["-c", find_cmd])
+    except Exception:
+        fallback_result = None
+
+    if fallback_result and fallback_result.returncode == 0 and fallback_result.stdout.strip():
+        return fallback_result.stdout.strip().splitlines()[-1], None
+
     stderr_tail = result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
     return None, (
-        f"{name!r} not on PATH inside WSL's login shell"
+        f"{name!r} not on PATH inside an interactive WSL login shell, and not "
+        f"found in any conda install under $HOME either"
         + (f" (stderr: {stderr_tail})" if stderr_tail else "")
     )
 
@@ -2672,17 +2713,11 @@ def detect_amrfinder():
             wsl_database = None
             try:
                 db_dir_cmd = f"dirname $(dirname {wsl_binary})"
-                prefix_result = subprocess.run(
-                    ["wsl.exe", "-e", "bash", "-lc", db_dir_cmd],
-                    capture_output=True, text=True, timeout=15,
-                )
+                prefix_result = _run_in_wsl(["-c", db_dir_cmd])
                 if prefix_result.returncode == 0 and prefix_result.stdout.strip():
                     prefix = prefix_result.stdout.strip()
                     ls_cmd = f"ls -1 {prefix}/share/amrfinderplus/data/ 2>/dev/null | sort | tail -1"
-                    ls_result = subprocess.run(
-                        ["wsl.exe", "-e", "bash", "-lc", ls_cmd],
-                        capture_output=True, text=True, timeout=15,
-                    )
+                    ls_result = _run_in_wsl(["-c", ls_cmd])
                     if ls_result.returncode == 0 and ls_result.stdout.strip():
                         latest_version = ls_result.stdout.strip()
                         wsl_database = f"{prefix}/share/amrfinderplus/data/{latest_version}"
