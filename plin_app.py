@@ -2511,65 +2511,178 @@ def build_results_df(records, plin_codes, cluster_assignments):
     return pd.DataFrame(rows)
 
 
+def _find_tool_binary(name):
+    """Cross-platform search for an external bioinformatics tool's binary.
+
+    Checks PATH first (via shutil.which(), which correctly resolves
+    .exe/.bat on Windows via PATHEXT and is not a Unix-only `which`
+    shell-out), then falls back to scanning common conda install
+    locations. Conda lays a binary out differently per OS: Unix uses
+    <root-or-env>/bin/<name>; Windows commonly uses
+    <root-or-env>\\Scripts\\<name>.exe for Python-wrapped tools or
+    <root-or-env>\\Library\\bin\\<name>.exe for compiled ones, so all
+    three layouts are checked there. Returns the found path, or None.
+    """
+    found = shutil.which(name)
+    if found:
+        return found
+
+    home = os.path.expanduser("~")
+    conda_roots = [
+        os.path.join(home, "miniconda3"),
+        os.path.join(home, "miniforge3"),
+        os.path.join(home, "anaconda3"),
+        os.path.join(home, "mambaforge"),
+    ]
+    exe_name = f"{name}.exe" if os.name == "nt" else name
+    subpaths = (
+        [os.path.join("Scripts", exe_name), os.path.join("Library", "bin", exe_name)]
+        if os.name == "nt" else [os.path.join("bin", name)]
+    )
+
+    def _check_root(root):
+        for subpath in subpaths:
+            candidate = os.path.join(root, subpath)
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+        return None
+
+    for root in conda_roots:
+        hit = _check_root(root)
+        if hit:
+            return hit
+        envs_dir = os.path.join(root, "envs")
+        if os.path.isdir(envs_dir):
+            for env in sorted(os.listdir(envs_dir)):
+                hit = _check_root(os.path.join(envs_dir, env))
+                if hit:
+                    return hit
+    return None
+
+
+def _find_tool_in_wsl(name):
+    """Check whether a tool is available inside WSL, from native Windows.
+
+    Bioconda — the channel AMRFinderPlus, minimap2, mlst, MOB-suite,
+    FastANI, MinCED, and Prodigal are all distributed through — has no
+    native Windows build for any of them (confirmed: no win-64 channel
+    exists). On Windows, a `conda install -c bioconda ...` for these
+    tools only succeeds inside WSL (Windows Subsystem for Linux), so a
+    plain PATH/conda-directory scan on the Windows side can never find
+    them even when correctly installed. This runs `which <name>` inside
+    a WSL login shell (so profile/conda-init scripts that set PATH have
+    actually run) and returns its Linux-side path if found, else None.
+    Always returns None on non-Windows, where this bridge is irrelevant.
+    """
+    if os.name != "nt":
+        return None
+    try:
+        result = subprocess.run(
+            ["wsl.exe", "-e", "bash", "-lc", f"which {name}"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().splitlines()[-1]
+    except Exception:
+        pass
+    return None
+
+
+def _wsl_path_for_windows_path(win_path):
+    """Convert a native Windows path to the equivalent /mnt/c/... path WSL
+    sees, so a file written by pLIN.exe can be read/written by a tool
+    running inside WSL without copying it across the WSL/Windows boundary."""
+    result = subprocess.run(
+        ["wsl.exe", "-e", "wslpath", "-a", win_path],
+        capture_output=True, text=True, timeout=15,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"wslpath failed to convert {win_path!r}: {result.stderr}")
+    return result.stdout.strip()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  AMRFINDERPLUS FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_amrfinder():
-    """Auto-detect AMRFinderPlus binary and database."""
-    binary = None
+    """Auto-detect AMRFinderPlus binary and database.
+
+    Returns (binary, database). On Windows, if no native binary is found
+    (expected — bioconda has no win-64 build of AMRFinderPlus), also
+    checks whether it's available inside WSL; if so, both values are
+    returned prefixed with "wsl:" as a sentinel that tells
+    run_amrfinder_on_files() to route the call through wsl.exe rather
+    than invoking a native Windows path directly.
+    """
+    binary = _find_tool_binary("amrfinder")
     database = None
 
-    # 1. Check PATH
-    try:
-        result = subprocess.run(["which", "amrfinder"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-
-    # 2. Check conda base installs and named envs. A binary installed with
-    # `conda install` (no -n/--name given) lands directly in <root>/bin/,
-    # not inside an envs/<name>/bin/ subfolder, so both layouts are checked.
-    if not binary:
-        home = os.path.expanduser("~")
-        conda_roots = [
-            os.path.join(home, "miniconda3"),
-            os.path.join(home, "miniforge3"),
-            os.path.join(home, "anaconda3"),
-            os.path.join(home, "mambaforge"),
-        ]
-        for root in conda_roots:
-            candidate = os.path.join(root, "bin", "amrfinder")
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                binary = candidate
-                break
-            envs_dir = os.path.join(root, "envs")
-            if os.path.isdir(envs_dir):
-                for env in sorted(os.listdir(envs_dir)):
-                    candidate = os.path.join(envs_dir, env, "bin", "amrfinder")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
-
-    # Find database
+    # Find the database: it lives at <conda-env-root>/share/amrfinderplus/data/.
+    # The binary's distance from that root differs by OS/layout (Unix:
+    # <root>/bin/amrfinder, one level down; Windows: <root>/Scripts/amrfinder.exe
+    # or <root>/Library/bin/amrfinder.exe, one or two levels down), so every
+    # plausible root is tried rather than assuming a fixed directory depth.
     if binary:
-        prefix = os.path.dirname(os.path.dirname(binary))
-        db_base = os.path.join(prefix, "share", "amrfinderplus", "data")
-        if os.path.isdir(db_base):
-            versions = sorted(
-                [d for d in os.listdir(db_base) if d.startswith("20") and os.path.isdir(os.path.join(db_base, d))]
-            )
-            if versions:
-                database = os.path.join(db_base, versions[-1])
+        binary_dir = os.path.dirname(binary)
+        candidate_roots = [
+            os.path.dirname(binary_dir),  # .../bin/amrfinder or .../Scripts/amrfinder.exe
+            os.path.dirname(os.path.dirname(binary_dir)),  # .../Library/bin/amrfinder.exe
+        ]
+        for prefix in candidate_roots:
+            db_base = os.path.join(prefix, "share", "amrfinderplus", "data")
+            if os.path.isdir(db_base):
+                versions = sorted(
+                    [d for d in os.listdir(db_base) if d.startswith("20") and os.path.isdir(os.path.join(db_base, d))]
+                )
+                if versions:
+                    database = os.path.join(db_base, versions[-1])
+                    break
+        return binary, database
+
+    if os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("amrfinder")
+        if wsl_binary:
+            # wsl_binary is .../bin/amrfinder (Linux conda layout); the
+            # database sits at <env-root>/share/amrfinderplus/data/<version>/,
+            # i.e. two directories up from the binary, then down into
+            # share/amrfinderplus/data. List that directory inside WSL and
+            # take the lexicographically-latest dated version folder.
+            wsl_database = None
+            try:
+                db_dir_cmd = f"dirname $(dirname {wsl_binary})"
+                prefix_result = subprocess.run(
+                    ["wsl.exe", "-e", "bash", "-lc", db_dir_cmd],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if prefix_result.returncode == 0 and prefix_result.stdout.strip():
+                    prefix = prefix_result.stdout.strip()
+                    ls_cmd = f"ls -1 {prefix}/share/amrfinderplus/data/ 2>/dev/null | sort | tail -1"
+                    ls_result = subprocess.run(
+                        ["wsl.exe", "-e", "bash", "-lc", ls_cmd],
+                        capture_output=True, text=True, timeout=15,
+                    )
+                    if ls_result.returncode == 0 and ls_result.stdout.strip():
+                        latest_version = ls_result.stdout.strip()
+                        wsl_database = f"{prefix}/share/amrfinderplus/data/{latest_version}"
+            except Exception:
+                pass
+            return f"wsl:{wsl_binary}", (f"wsl:{wsl_database}" if wsl_database else None)
 
     return binary, database
 
 
 def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=None):
     """Run AMRFinderPlus on uploaded FASTA files.
+
+    binary/database may carry a "wsl:" prefix (see detect_amrfinder()),
+    meaning AMRFinderPlus only exists inside WSL on this Windows machine
+    (bioconda has no native Windows build). In that case the FASTA/output
+    files, which tempfile.TemporaryDirectory() places on the native
+    Windows filesystem, are addressed from inside WSL via their
+    /mnt/c/... equivalent so the WSL-side process can read/write them
+    directly — no copying across the WSL/Windows boundary is needed,
+    since WSL mounts the Windows filesystem at /mnt/<drive>/.
 
     Returns (results_df, errors) where errors is a list of
     "filename: reason" strings for any file AMRFinderPlus failed on
@@ -2581,6 +2694,10 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
     errors = []
     total = len(uploaded_files)
 
+    use_wsl = isinstance(binary, str) and binary.startswith("wsl:")
+    real_binary = binary[len("wsl:"):] if use_wsl else binary
+    real_database = database[len("wsl:"):] if (use_wsl and database) else database
+
     with tempfile.TemporaryDirectory() as tmpdir:
         for idx, uf in enumerate(uploaded_files):
             fasta_path = os.path.join(tmpdir, uf.name)
@@ -2589,12 +2706,23 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
 
             out_path = os.path.join(tmpdir, f"{uf.name}.amr.tsv")
 
-            cmd = [binary, "-n", fasta_path, "--plus", "-o", out_path]
-            if database:
-                cmd.extend(["-d", database])
-
             try:
-                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if use_wsl:
+                    wsl_fasta = _wsl_path_for_windows_path(fasta_path)
+                    wsl_out = _wsl_path_for_windows_path(out_path)
+                    cmd_str = f"{real_binary} -n {wsl_fasta} --plus -o {wsl_out}"
+                    if real_database:
+                        cmd_str += f" -d {real_database}"
+                    proc = subprocess.run(
+                        ["wsl.exe", "-e", "bash", "-lc", cmd_str],
+                        capture_output=True, text=True, timeout=300,
+                    )
+                else:
+                    cmd = [real_binary, "-n", fasta_path, "--plus", "-o", out_path]
+                    if real_database:
+                        cmd.extend(["-d", real_database])
+                    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+
                 if os.path.isfile(out_path):
                     df = pd.read_csv(out_path, sep="\t")
                     df.insert(0, "source_file", uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", ""))
@@ -2643,36 +2771,15 @@ def integrate_plin_amr(plin_df, amr_df):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_prodigal():
-    """Auto-detect Prodigal binary."""
-    binary = None
-
-    # 1. Check PATH
-    try:
-        result = subprocess.run(["which", "prodigal"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-
-    # 2. Check conda envs
-    if not binary:
-        home = os.path.expanduser("~")
-        search_dirs = [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]
-        for base in search_dirs:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "prodigal")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
-
+    """Auto-detect Prodigal binary. On Windows, falls back to WSL (see
+    _find_tool_in_wsl) since bioconda has no native win-64 build; a WSL
+    hit is returned prefixed "wsl:" for run_prodigal_on_files() to route
+    through wsl.exe."""
+    binary = _find_tool_binary("prodigal")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("prodigal")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -2823,36 +2930,14 @@ def run_prodigal_on_files(uploaded_files, binary, progress_callback=None):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_mobsuite():
-    """Auto-detect MOBsuite (mob_typer) binary."""
-    binary = None
-
-    # 1. Check PATH
-    try:
-        result = subprocess.run(["which", "mob_typer"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-
-    # 2. Check conda envs
-    if not binary:
-        home = os.path.expanduser("~")
-        search_dirs = [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]
-        for base in search_dirs:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "mob_typer")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
-
+    """Auto-detect MOBsuite (mob_typer) binary. On Windows, falls back to
+    WSL since bioconda has no native win-64 build; a WSL hit is returned
+    prefixed "wsl:" for the caller to route through wsl.exe."""
+    binary = _find_tool_binary("mob_typer")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("mob_typer")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -2898,30 +2983,14 @@ def run_mobsuite_on_files(uploaded_files, binary, progress_callback=None):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_mash():
-    """Auto-detect Mash binary."""
-    binary = None
-    try:
-        result = subprocess.run(["which", "mash"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-    if not binary:
-        home = os.path.expanduser("~")
-        for base in [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "mash")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
+    """Auto-detect Mash binary. On Windows, falls back to WSL since
+    bioconda has no native win-64 build; a WSL hit is returned prefixed
+    "wsl:" for the caller to route through wsl.exe."""
+    binary = _find_tool_binary("mash")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("mash")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -3068,30 +3137,14 @@ def check_ani_concordance(plin_df, mash_df):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_fastani():
-    """Auto-detect FastANI binary."""
-    binary = None
-    try:
-        result = subprocess.run(["which", "fastANI"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-    if not binary:
-        home = os.path.expanduser("~")
-        for base in [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "fastANI")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
+    """Auto-detect FastANI binary. On Windows, falls back to WSL since
+    bioconda has no native win-64 build; a WSL hit is returned prefixed
+    "wsl:" for the caller to route through wsl.exe."""
+    binary = _find_tool_binary("fastANI")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("fastANI")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -3163,30 +3216,14 @@ def run_fastani(uploaded_files, fastani_binary, progress_callback=None):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_minimap2():
-    """Auto-detect minimap2 binary."""
-    binary = None
-    try:
-        result = subprocess.run(["which", "minimap2"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-    if not binary:
-        home = os.path.expanduser("~")
-        for base in [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "minimap2")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
+    """Auto-detect minimap2 binary. On Windows, falls back to WSL since
+    bioconda has no native win-64 build; a WSL hit is returned prefixed
+    "wsl:" for the caller to route through wsl.exe."""
+    binary = _find_tool_binary("minimap2")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("minimap2")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -3648,45 +3685,15 @@ def estimate_evolutionary_rate(snp_df, metadata_df, records):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def detect_minced():
-    """Auto-detect MinCED (Mining CRISPRs in Environmental Datasets) binary."""
-    binary = None
-    try:
-        result = subprocess.run(["which", "minced"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-
-    if not binary:
-        home = os.path.expanduser("~")
-        search_dirs = [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]
-        for base in search_dirs:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "minced")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
-
-    if not binary:
-        home = os.path.expanduser("~")
-        for prefix in [
-            os.path.join(home, "miniforge3", "bin", "minced"),
-            os.path.join(home, "miniconda3", "bin", "minced"),
-            os.path.join(home, "anaconda3", "bin", "minced"),
-            os.path.join(home, "mambaforge", "bin", "minced"),
-        ]:
-            if os.path.isfile(prefix) and os.access(prefix, os.X_OK):
-                binary = prefix
-                break
-
+    """Auto-detect MinCED (Mining CRISPRs in Environmental Datasets)
+    binary. On Windows, falls back to WSL since bioconda has no native
+    win-64 build; a WSL hit is returned prefixed "wsl:" for the caller
+    to route through wsl.exe."""
+    binary = _find_tool_binary("minced")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("minced")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -3753,42 +3760,15 @@ def detect_blastn():
 
 
 def detect_mlst():
-    """Auto-detect mlst (Torsten Seemann's MLST tool) binary."""
-    binary = None
-    try:
-        result = subprocess.run(["which", "mlst"], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            binary = result.stdout.strip()
-    except Exception:
-        pass
-
-    if not binary:
-        home = os.path.expanduser("~")
-        for base in [
-            os.path.join(home, "miniconda3", "envs"),
-            os.path.join(home, "miniforge3", "envs"),
-            os.path.join(home, "anaconda3", "envs"),
-            os.path.join(home, "mambaforge", "envs"),
-        ]:
-            if os.path.isdir(base):
-                for env in sorted(os.listdir(base)):
-                    candidate = os.path.join(base, env, "bin", "mlst")
-                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                        binary = candidate
-                        break
-            if binary:
-                break
-
-    if not binary:
-        home = os.path.expanduser("~")
-        for prefix in [
-            os.path.join(home, "miniforge3", "bin", "mlst"),
-            os.path.join(home, "miniconda3", "bin", "mlst"),
-        ]:
-            if os.path.isfile(prefix) and os.access(prefix, os.X_OK):
-                binary = prefix
-                break
-
+    """Auto-detect mlst (Torsten Seemann's MLST tool) binary. On
+    Windows, falls back to WSL since bioconda has no native win-64
+    build; a WSL hit is returned prefixed "wsl:" for the caller to
+    route through wsl.exe."""
+    binary = _find_tool_binary("mlst")
+    if not binary and os.name == "nt":
+        wsl_binary = _find_tool_in_wsl("mlst")
+        if wsl_binary:
+            binary = f"wsl:{wsl_binary}"
     return binary
 
 
@@ -4807,29 +4787,52 @@ else:
     st.caption("Plasmid Lineage Identification Number System — Upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
-amr_binary, amr_db = detect_amrfinder()
+amr_binary, amr_db = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed — run_amrfinder_on_files() handles that
+
+# The 7 tools below have no execution path wired up for a "wsl:"-prefixed
+# binary yet (unlike AMRFinderPlus), so a WSL-only hit is reported as
+# unavailable for now rather than being passed through to code that
+# would try to run a Linux path as a native command and fail confusingly.
+_wsl_only_tools_found = []
+
+def _resolve_or_flag_wsl_only(binary, tool_label):
+    if isinstance(binary, str) and binary.startswith("wsl:"):
+        _wsl_only_tools_found.append(tool_label)
+        return None
+    return binary
 
 # Prodigal detection
-prodigal_binary = detect_prodigal()
+prodigal_binary = _resolve_or_flag_wsl_only(detect_prodigal(), "Prodigal")
 
 # MOBsuite detection
-mobsuite_binary = detect_mobsuite()
+mobsuite_binary = _resolve_or_flag_wsl_only(detect_mobsuite(), "MOB-suite")
 
 # Mash detection (ANI estimation)
-mash_binary = detect_mash()
+mash_binary = _resolve_or_flag_wsl_only(detect_mash(), "Mash")
 
 # FastANI detection (true ANI computation)
-fastani_binary = detect_fastani()
+fastani_binary = _resolve_or_flag_wsl_only(detect_fastani(), "FastANI")
 
 # minimap2 detection (SNP sub-typing)
-minimap2_binary = detect_minimap2()
+minimap2_binary = _resolve_or_flag_wsl_only(detect_minimap2(), "minimap2")
 
 # CRISPR Host Inference tool detection
-minced_binary = detect_minced()
+minced_binary = _resolve_or_flag_wsl_only(detect_minced(), "MinCED")
 blastn_binary, makeblastdb_binary = detect_blastn()
 
 # MLST chromosomal typing detection
-mlst_binary = detect_mlst()
+mlst_binary = _resolve_or_flag_wsl_only(detect_mlst(), "mlst")
+
+if _wsl_only_tools_found:
+    st.info(
+        f"Found in WSL but not yet supported from the desktop app: "
+        f"{', '.join(_wsl_only_tools_found)}. These tools are only "
+        f"distributed for Linux/macOS (no native Windows build exists), "
+        f"and running them via WSL from this app isn't wired up yet — "
+        f"AMRFinderPlus is the only WSL-bridged tool so far. Run pLIN from "
+        f"inside WSL directly if you need these features now.",
+        icon="ℹ️",
+    )
 
 # Ollama detection for DRAGNOME Buddy
 ollama_available, ollama_models = detect_ollama()
