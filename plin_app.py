@@ -93,7 +93,7 @@ TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 # in query mode is only reproducible against the exact database version
 # that assigned it (see USER_MANUAL.md's "Will two colleagues get the
 # same code" section).
-PLIN_APP_VERSION = "3.2.1"
+PLIN_APP_VERSION = "3.2.3"
 
 # Paths to precomputed Inc-group classifier data
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
