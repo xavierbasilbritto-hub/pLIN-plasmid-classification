@@ -2437,12 +2437,15 @@ def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
         # Build pLIN code level by level
         code_parts = []
         diverged = False
+        diverged_at_level = None
         for level, thresh in zip(bin_labels, thresholds_list):
             if not diverged and nn_dist <= thresh:
                 # Inherit neighbour's code at this level
                 bin_val = int(nn_row[f"bin_{level}"])
             else:
                 # New branch — assign new unique ID
+                if not diverged:
+                    diverged_at_level = level
                 diverged = True
                 max_ids[level] += 1
                 bin_val = max_ids[level]
@@ -2451,11 +2454,21 @@ def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
 
         plin_codes.append(".".join(code_parts))
 
+        # is_new_plin: True if the query's finest-level (L6) code required a
+        # freshly-minted ID rather than inheriting an existing one in full —
+        # i.e. no plasmid already in the database shares this exact 6-level
+        # code. False means the query's complete pLIN code already exists in
+        # the reference database (it matches, at L6 resolution, a plasmid
+        # already on record). new_plin_level names the first (coarsest) level
+        # at which the query diverged from its nearest neighbour, or None if
+        # it never diverged (full L1-L6 match, i.e. an existing pLIN).
         query_metadata.append({
             "nn_plasmid": nn_row["plasmid_id"],
             "nn_distance": round(nn_dist, 6),
             "nn_inc_type": nn_row["inc_type"],
             "nn_plin": nn_row["pLIN"],
+            "is_new_plin": diverged,
+            "new_plin_level": diverged_at_level,
         })
 
     # Convert lists to arrays for compatibility
@@ -5548,6 +5561,18 @@ if run_btn and uploaded_files:
         plin_df["nn_distance"] = [m["nn_distance"] for m in qm]
         plin_df["nn_inc_type"] = [m["nn_inc_type"] for m in qm]
         plin_df["nn_plin"] = [m["nn_plin"] for m in qm]
+        # New vs. existing pLIN: is_new_plin is True when this plasmid's full
+        # L1-L6 code required at least one freshly-minted ID (no plasmid
+        # already in the reference database shares this exact code); False
+        # means the complete code already exists on record. new_plin_level
+        # names the coarsest level at which the query first diverged from its
+        # nearest neighbour (None if it matched fully, i.e. an existing pLIN).
+        plin_df["is_new_plin"] = [m.get("is_new_plin", False) for m in qm]
+        plin_df["new_plin_level"] = [m.get("new_plin_level") for m in qm]
+        plin_df["pLIN_status"] = [
+            ("New pLIN" if m.get("is_new_plin", False) else "Existing pLIN")
+            for m in qm
+        ]
 
     # Mark incomplete plasmids — they keep AMR/mobility results but no pLIN code
     plin_eligible = st.session_state.get("_plin_eligible_ids")
@@ -6327,7 +6352,7 @@ with tab_results:
 
         # Add query-mode columns if available
         if "nn_plasmid" in df.columns:
-            display_cols += [c for c in ["nn_plasmid", "nn_distance", "nn_inc_type", "nn_plin"]
+            display_cols += [c for c in ["pLIN_status", "nn_plasmid", "nn_distance", "nn_inc_type", "nn_plin"]
                             if c in df.columns and c not in display_cols]
 
         # Search filter
