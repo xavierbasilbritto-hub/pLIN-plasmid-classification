@@ -15,6 +15,7 @@
 # Build (run from the PLASMID_TOOL repo root, not from desktop_app/):
 #   pyinstaller desktop_app/pLIN.spec --noconfirm
 
+import glob
 import os
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata, collect_submodules
 
@@ -22,7 +23,56 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(SPEC)),
 
 block_cipher = None
 
+binaries = []
 datas = []
+
+# Bundled AMRFinderPlus (macOS/Linux builds only — see build-desktop-app.yml
+# for why Windows is excluded: bioconda has no native win-64 build). The CI
+# workflow installs AMRFinderPlus into its own conda env before this spec
+# runs and exports that env's root as PLIN_AMRFINDER_ENV_DIR; locally, a
+# developer can set the same variable (e.g. to their own conda env root,
+# such as ~/miniforge3) to build a bundle that includes it. If the variable
+# is unset, this app builds exactly as before (AMRFinderPlus detected on
+# the user's own system at runtime, per plin_app.py's detect_amrfinder()).
+amrfinder_env_dir = os.environ.get("PLIN_AMRFINDER_ENV_DIR")
+if amrfinder_env_dir and os.path.isdir(amrfinder_env_dir):
+    bundled_bin_dest = "amrfinder_bin"
+    # amrfinder itself, its own internal helper binaries (amr_report,
+    # fasta_check, etc. — confirmed by running a real end-to-end scan
+    # against a bundled build and observing exactly which missing binary
+    # it shelled out for next; there is no documented complete list), and
+    # the external blastn/blastp/blastx/hmmsearch it also depends on — see
+    # plin_app.py's run_amrfinder_on_files(), which passes
+    # --blast_bin/--hmmer_bin explicitly at this same bundled path rather
+    # than relying on PATH, since a packaged app should not depend on the
+    # end user's PATH containing anything.
+    for tool in (
+        "amrfinder", "amr_report", "amrfinder_index", "amrfinder_update",
+        "dna_mutation", "fasta2parts", "fasta_check", "gff_check",
+        "blastn", "blastp", "blastx", "tblastn", "hmmsearch",
+    ):
+        tool_path = os.path.join(amrfinder_env_dir, "bin", tool)
+        if os.path.isfile(tool_path):
+            binaries.append((tool_path, bundled_bin_dest))
+        else:
+            print(f"WARNING: bundled-AMRFinderPlus tool not found, skipping: {tool_path}")
+
+    # AMRFinderPlus's gene database (~242MB) — a dated subdirectory of
+    # share/amrfinderplus/data/. Bundle the lexicographically-latest one,
+    # matching plin_app.py's own detect_amrfinder() version-selection logic.
+    db_root = os.path.join(amrfinder_env_dir, "share", "amrfinderplus", "data")
+    db_versions = sorted(
+        d for d in glob.glob(os.path.join(db_root, "*"))
+        if os.path.isdir(d) and os.path.basename(d).startswith("20")
+    )
+    if db_versions:
+        latest_db = db_versions[-1]
+        datas.append((latest_db, os.path.join("amrfinder_db", os.path.basename(latest_db))))
+    else:
+        print(f"WARNING: no AMRFinderPlus database version found under {db_root}")
+else:
+    print("PLIN_AMRFINDER_ENV_DIR not set — building without a bundled AMRFinderPlus "
+          "(app will fall back to detecting a system install at runtime, as before).")
 datas += collect_data_files("streamlit")
 datas += copy_metadata("streamlit")
 datas += copy_metadata("altair")  # streamlit's charting dep also introspects its own metadata
@@ -84,7 +134,7 @@ datas += collect_data_files("Bio")
 a = Analysis(
     ["launcher.py"],
     pathex=[os.path.dirname(os.path.abspath(SPEC))],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
@@ -137,7 +187,7 @@ app = BUNDLE(
     bundle_identifier="com.umcg.plin",
     info_plist={
         "NSHighResolutionCapable": "True",
-        "CFBundleShortVersionString": "3.1.0",
+        "CFBundleShortVersionString": "3.2.0",
         "CFBundleName": "pLIN",
         "NSRequiresAquaSystemAppearance": "False",
     },

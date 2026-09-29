@@ -2675,8 +2675,43 @@ def _wsl_path_for_windows_path(win_path):
 #  AMRFINDERPLUS FUNCTIONS
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _bundled_amrfinder():
+    """Check for an AMRFinderPlus bundled directly inside this app's own
+    install (macOS/Linux desktop builds only — see desktop_app/pLIN.spec
+    and build-desktop-app.yml; no such bundle exists on Windows, since
+    bioconda has no native win-64 AMRFinderPlus build to bundle in the
+    first place). Returns (binary, database) if found, else (None, None).
+
+    Bundled here means literally shipped inside the app so a user never
+    needs to install anything themselves — this is checked before falling
+    back to detect_amrfinder()'s system-wide search.
+    """
+    bin_dir = os.path.join(_APP_DIR, "amrfinder_bin")
+    binary = os.path.join(bin_dir, "amrfinder")
+    if not (os.path.isfile(binary) and os.access(binary, os.X_OK)):
+        return None, None
+
+    db_root = os.path.join(_APP_DIR, "amrfinder_db")
+    if not os.path.isdir(db_root):
+        return None, None
+    versions = sorted(
+        d for d in os.listdir(db_root)
+        if d.startswith("20") and os.path.isdir(os.path.join(db_root, d))
+    )
+    if not versions:
+        return None, None
+    return binary, os.path.join(db_root, versions[-1])
+
+
 def detect_amrfinder():
     """Auto-detect AMRFinderPlus binary and database.
+
+    Checks for a bundled copy inside this app's own install first (see
+    _bundled_amrfinder()) — the whole point of bundling is that a user
+    should never need to think about installing anything, so it takes
+    priority over anything found on the system. Only if no bundled copy
+    exists does this fall back to searching the system (PATH, then common
+    conda install locations).
 
     Returns (binary, database, wsl_diagnostic). On Windows, if no native
     binary is found (expected — bioconda has no win-64 build of
@@ -2690,6 +2725,10 @@ def detect_amrfinder():
     bare "not found" that looks identical whether WSL is broken or the
     tool is simply not installed anywhere.
     """
+    bundled_binary, bundled_database = _bundled_amrfinder()
+    if bundled_binary:
+        return bundled_binary, bundled_database, None
+
     binary = _find_tool_binary("amrfinder")
     database = None
 
@@ -2768,6 +2807,16 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
     real_binary = binary[len("wsl:"):] if use_wsl else binary
     real_database = database[len("wsl:"):] if (use_wsl and database) else database
 
+    # A bundled AMRFinderPlus (see _bundled_amrfinder()) ships its own
+    # blastn/blastp/blastx/tblastn/hmmsearch alongside it, in the same
+    # directory as the amrfinder binary itself, rather than relying on
+    # PATH (which a packaged app should never depend on) — pass that
+    # directory explicitly so amrfinder finds them.
+    is_bundled = (not use_wsl) and real_binary and os.path.dirname(real_binary).endswith(
+        os.path.join("", "amrfinder_bin")
+    )
+    bundled_tool_dir = os.path.dirname(real_binary) if is_bundled else None
+
     with tempfile.TemporaryDirectory() as tmpdir:
         for idx, uf in enumerate(uploaded_files):
             fasta_path = os.path.join(tmpdir, uf.name)
@@ -2791,6 +2840,8 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
                     cmd = [real_binary, "-n", fasta_path, "--plus", "-o", out_path]
                     if real_database:
                         cmd.extend(["-d", real_database])
+                    if bundled_tool_dir:
+                        cmd.extend(["--blast_bin", bundled_tool_dir, "--hmmer_bin", bundled_tool_dir])
                     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
                 if os.path.isfile(out_path):

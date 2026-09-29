@@ -16,6 +16,17 @@ name: Build pLIN desktop app
 #   downloadable from the workflow run's summary page for 90 days. If
 #   triggered by a version tag, they are also attached to a GitHub Release
 #   for that tag automatically.
+#
+# AMRFinderPlus bundling (macOS/Linux only):
+#   bioconda ships a native AMRFinderPlus build for macOS and Linux but not
+#   for Windows, so on those two platforms this workflow installs
+#   AMRFinderPlus (plus its own BLAST+/HMMER dependencies and gene
+#   database) into a dedicated conda env before the PyInstaller build, and
+#   points the build at it via the PLIN_AMRFINDER_ENV_DIR environment
+#   variable, which desktop_app/pLIN.spec reads to copy those binaries and
+#   the database into the app bundle. Windows continues to rely on the
+#   existing WSL bridge (see plin_app.py's detect_amrfinder()) rather than
+#   a bundled binary, since none exists for native win-64.
 
 on:
   push:
@@ -58,7 +69,38 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build with PyInstaller
+      # Bundled AMRFinderPlus: macOS and Linux only (see note above). This
+      # runs in its own conda env (separate from the PyInstaller build's
+      # own Python/pip setup above) purely to obtain the AMRFinderPlus
+      # binary, its BLAST+/HMMER dependencies, and its gene database as
+      # files on disk for the spec file to copy — nothing from this env is
+      # imported into the Python build itself.
+      - name: Set up Miniconda for AMRFinderPlus (macOS/Linux)
+        if: matrix.os != 'windows-latest'
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: amrfinder-bundle
+          channels: bioconda,conda-forge
+
+      - name: Install AMRFinderPlus into the bundle env (macOS/Linux)
+        if: matrix.os != 'windows-latest'
+        shell: bash -el {0}
+        run: |
+          conda install -y -n amrfinder-bundle ncbi-amrfinderplus
+          AMRFINDER_ENV_DIR="$CONDA_PREFIX"
+          "$AMRFINDER_ENV_DIR/bin/amrfinder" -u
+          echo "PLIN_AMRFINDER_ENV_DIR=$AMRFINDER_ENV_DIR" >> "$GITHUB_ENV"
+          "$AMRFINDER_ENV_DIR/bin/amrfinder" --version
+
+      - name: Build with PyInstaller (macOS/Linux, with bundled AMRFinderPlus env active)
+        if: matrix.os != 'windows-latest'
+        shell: bash -el {0}
+        run: |
+          pyinstaller desktop_app/pLIN.spec --noconfirm
+
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
           pyinstaller desktop_app/pLIN.spec --noconfirm
 
