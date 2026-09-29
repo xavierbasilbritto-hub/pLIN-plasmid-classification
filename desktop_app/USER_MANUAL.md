@@ -170,6 +170,40 @@ Click **🔄 Clear & Reset** at any point to start over with new files.
   HIGH/MODERATE/INFO based on shared AMR gene burden. This is the module
   that turns a permanent code into an actionable surveillance signal —
   see the accompanying manuscript's Discussion for why this matters.
+
+  **If your isolates span multiple bacterial species or multiple Inc/Rep
+  types**, check **Run MLST typing** in Step 2 and upload each isolate's
+  assembled host genome (chromosome) alongside its plasmid FASTA — the
+  app can auto-split a combined chromosome+plasmid assembly into its
+  plasmid and chromosome contigs first if you upload it as one file (see
+  "Contig Classification" in the Results tab). This enables
+  **Pathogen-Plasmid Integration (MLST + pLIN)**, which combines
+  chromosomal sequence type (ST) with pLIN code to distinguish two
+  distinct outbreak signatures: **clonal spread** (same ST, same pLIN —
+  one strain moving between patients) versus **horizontal plasmid
+  transfer** (different STs or species, same pLIN — the plasmid itself
+  spreading between different bacterial hosts, a real and clinically
+  important outbreak pattern in its own right, independent of Inc/Rep
+  typing since pLIN clusters by whole-plasmid composition rather than
+  replicon family alone). A "Horizontal Transfer" count greater than
+  zero here is itself a suspicion signal worth escalating: it means the
+  same plasmid lineage was found in genuinely different bacterial
+  backgrounds, which single-species or single-Inc-type surveillance
+  would not catch. This exact pattern — a shared plasmid lineage
+  disseminating across species and replicon-type boundaries — is what
+  the bundled Swiss VIM-1 sample dataset demonstrates (see "Sample data"
+  above), and has been validated against 13 independent, published
+  multi-species outbreak studies.
+
+  **Genome-plasmid linking note:** the app links each uploaded genome
+  file to its plasmid by matching shared filename text (e.g.
+  `sample01_genome.fasta` links to `sample01_plasmid.fasta`), or via a
+  metadata CSV/TSV with a genome-name column and a `plasmid_id` column
+  if your filenames don't share a common identifier. If MLST typing
+  completes but no "Pathogen-Plasmid Integration" section appears
+  afterwards, check for a warning about this — it means typing succeeded
+  but no genome could be matched to a plasmid, so double-check your
+  filenames share an identifiable token or provide a metadata file.
 - **CRISPR Host** — plasmid-host association inference via CRISPR spacer
   matching, if MinCED/BLAST+ are installed and host genomes were
   uploaded.
@@ -186,7 +220,56 @@ set, or explicitly choose to compare against the built-in database, pLIN
 runs in **query mode**: it assigns your plasmid's code via
 nearest-neighbour lookup against the bundled reference database rather
 than clustering your plasmids from scratch. The Overview tab tells you
-clearly when this is happening.
+clearly when this is happening. The **pLIN status** column in your
+results (see section 4 below) tells you whether each result matched an
+existing database entry or was assigned a new code.
+
+#### Will two colleagues get the same code for the same plasmid?
+
+**If the plasmid already matches something in the reference database:
+yes, always.** The database file the app reads from is a fixed snapshot
+— it isn't modified by running the app, and it doesn't change between a
+morning run and an evening run, or between your computer and a
+colleague's. The same DNA sequence always produces the same 4-mer
+fingerprint, which always finds the same nearest database match, which
+always yields the same inherited code. Two people running the same
+already-catalogued plasmid, on different computers, at different times,
+get identical results — this is true as long as you're both running the
+same app version (see below for why that matters).
+
+**If the plasmid is genuinely new — not yet in anyone's reference
+database — the two of you can get *different* numbers**, even for the
+exact same sequence. A brand-new code isn't looked up; it's minted on
+the spot as "one higher than the highest number this app instance
+currently sees in its own copy of the database," entirely in memory, for
+that run only. It is never written back to the database or shared with
+anyone else's copy of the app. So:
+
+- Running it twice on the *same* computer, same app install, same day,
+  gives the same new number both times (nothing else changed in between).
+- Running it on two different computers, or after either of you updates
+  to a newer app release with an expanded database, can give two
+  *different* new numbers for what is biologically the identical
+  plasmid — because each app instance is counting up from its own
+  locally-held database snapshot, independently, with no coordination
+  between installs.
+
+**Practical rule of thumb:** treat a matching, "Existing pLIN" result as
+a permanent, shareable identifier you can compare across your team and
+across time without hesitation. Treat a "New pLIN" result as
+provisional and specific to that one run — useful for seeing how
+divergent a plasmid is from anything currently known, but not yet a
+stable label to compare between colleagues or sessions. If two of you
+need to confirm whether your own novel outbreak strains are the same
+lineage as each other, the reliable way is to compare the `nn_plasmid`,
+`nn_distance`, and `new_plin_level` columns for each result (which
+reference plasmid each one matched, how closely, and at what hierarchy
+level it diverged) rather than comparing the raw new pLIN numbers
+directly — or, simplest of all, upload both sequences together in the
+same run, so they share one counter and get consistent numbers relative
+to each other. A newly-discovered lineage only becomes a truly
+permanent, shareable pLIN code once it's incorporated into a future
+official database update.
 
 ---
 
@@ -211,6 +294,15 @@ coarser levels (L1–L4) are designed to stay essentially permanent as the
 reference database grows; the finest level (L6) can occasionally resolve
 into finer sub-structure as more sequences are added, rather than being
 silently renumbered.
+
+**pLIN status column.** Every query-mode result also reports whether its
+code is "Existing pLIN" (the plasmid's full six-level code already
+matches a plasmid already in the reference database) or "New pLIN" (it
+required at least one freshly-minted digit, with `new_plin_level` naming
+the first, coarsest level at which it diverged from its nearest
+database match). This distinction matters for reproducibility across
+computers and over time — see "Will two colleagues get the same code for
+the same plasmid?" in section 3 above.
 
 ---
 

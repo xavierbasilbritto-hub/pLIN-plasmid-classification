@@ -86,6 +86,15 @@ STRAIN_COLORS = [
 
 TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 
+# Bumped on every release that changes the reference database, the
+# classifier, or code-assignment behaviour, so exported results can be
+# traced back to exactly which app build produced them (see
+# get_run_provenance()) — this matters because a "new" pLIN code minted
+# in query mode is only reproducible against the exact database version
+# that assigned it (see USER_MANUAL.md's "Will two colleagues get the
+# same code" section).
+PLIN_APP_VERSION = "3.2.0"
+
 # Paths to precomputed Inc-group classifier data
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 CLASSIFIER_PATH = os.path.join(_APP_DIR, "data", "inc_classifier.npz")
@@ -2343,6 +2352,82 @@ def compare_linkage_methods(vectors, thresholds=None):
 PLIN_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_assignments.tsv")
 REFERENCE_VECTORS_PATH = os.path.join(_APP_DIR, "output", "reference_kmer_vectors.npz")
 REFERENCE_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_reference_assignments.tsv")
+
+
+@st.cache_data(show_spinner=False)
+def get_run_provenance():
+    """Build a small metadata block recording what this run was actually
+    computed against: app version, reference database size, AMRFinderPlus
+    database version (if bundled/detected), and a generation timestamp.
+
+    This is written into every export path (TSV header comments, the ZIP
+    bundle's manifest.json, and the JSON report) so a results file can
+    always be traced back to exactly which database version produced it —
+    essential for outbreak investigations spanning multiple runs, users,
+    or app versions, since a freshly-minted "New pLIN" code is only
+    reproducible against the exact database that assigned it (see
+    USER_MANUAL.md).
+
+    Cached per Streamlit session (the underlying files don't change while
+    the app is running), not recomputed on every export.
+    """
+    from datetime import datetime, timezone
+
+    n_reference_plasmids = None
+    if os.path.isfile(REFERENCE_ASSIGNMENTS_PATH):
+        try:
+            ids = pd.read_csv(REFERENCE_ASSIGNMENTS_PATH, sep="\t", usecols=["plasmid_id"])
+            n_reference_plasmids = int(ids["plasmid_id"].nunique())
+        except Exception:
+            pass
+
+    amrfinder_db_version = None
+    try:
+        _, amr_db_path, _ = detect_amrfinder()
+        if amr_db_path:
+            real_db_path = amr_db_path[len("wsl:"):] if amr_db_path.startswith("wsl:") else amr_db_path
+            amrfinder_db_version = os.path.basename(real_db_path.rstrip("/"))
+    except Exception:
+        pass
+
+    return {
+        "plin_app_version": PLIN_APP_VERSION,
+        "reference_database_plasmid_count": n_reference_plasmids,
+        "amrfinder_database_version": amrfinder_db_version,
+        "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+def provenance_header_lines(provenance, comment_char="#"):
+    """Render a provenance dict as a block of comment lines suitable for
+    prepending to a TSV export, e.g.:
+        # pLIN app version: 3.2.0
+        # Reference database: 133,305 plasmids
+        # AMRFinderPlus database: 2026-08-07.1
+        # Generated: 2026-09-29T14:32:07Z
+    """
+    lines = [f"{comment_char} pLIN app version: {provenance['plin_app_version']}"]
+    if provenance.get("reference_database_plasmid_count") is not None:
+        lines.append(
+            f"{comment_char} Reference database: "
+            f"{provenance['reference_database_plasmid_count']:,} plasmids"
+        )
+    if provenance.get("amrfinder_database_version"):
+        lines.append(f"{comment_char} AMRFinderPlus database: {provenance['amrfinder_database_version']}")
+    lines.append(f"{comment_char} Generated: {provenance['generated_utc']}")
+    return "\n".join(lines) + "\n"
+
+
+def tsv_with_provenance(df, provenance, **to_csv_kwargs):
+    """Render a DataFrame as TSV with a provenance comment-header prepended.
+    Pandas ignores leading '#' comment lines when the file is re-read with
+    the default read_csv() settings only if comment='#' is passed; readers
+    that don't pass that (Excel, a plain text editor) simply see a few
+    human-readable header lines above the real table, which is the point.
+    """
+    to_csv_kwargs.setdefault("sep", "\t")
+    to_csv_kwargs.setdefault("index", False)
+    return provenance_header_lines(provenance) + df.to_csv(**to_csv_kwargs)
 
 
 @st.cache_data(show_spinner=False)
@@ -5801,6 +5886,19 @@ if run_btn and uploaded_files:
                 )
                 st.session_state.transmission_pairs_df = transmission_pairs_df
                 st.session_state.transmission_summary = transmission_summary
+            else:
+                # Not a silent skip: MLST typing succeeded but no genome could
+                # be linked to any plasmid, so the pathogen-plasmid transmission
+                # analysis (clonal spread vs horizontal transfer) cannot run at
+                # all. build_genome_plasmid_mapping() links files by shared
+                # filename tokens (e.g. "sample01_genome.fasta" <->
+                # "sample01_plasmid.fasta") or a metadata CSV's genome column;
+                # if neither matches anything, this would otherwise fail with
+                # no visible explanation, right where a real outbreak
+                # investigation needs this analysis most.
+                st.session_state.transmission_pairs_df = None
+                st.session_state.transmission_summary = None
+                st.session_state.mlst_genome_plasmid_link_failed = True
 
     # Step 6: Integration
     progress.progress(94, text="Integrating results...")
@@ -7121,6 +7219,20 @@ with tab_epi:
                 mc3.metric("Schemes Detected", mlst_df[mlst_df["scheme"] != "-"]["scheme"].nunique())
                 st.dataframe(mlst_df, use_container_width=True, hide_index=True)
 
+            if st.session_state.get("mlst_genome_plasmid_link_failed"):
+                st.warning(
+                    "**MLST typing succeeded, but no host genome could be linked to any "
+                    "plasmid, so transmission-mode analysis (clonal spread vs. horizontal "
+                    "plasmid transfer) could not run.** Genomes and plasmids are linked by "
+                    "shared filename text — e.g. `sample01_genome.fasta` links to "
+                    "`sample01_plasmid.fasta` because both contain \"sample01\" — or by "
+                    "uploading a metadata CSV/TSV with a genome-name column and a "
+                    "`plasmid_id` column. Check that your uploaded genome and plasmid "
+                    "filenames share a common identifier, or provide a metadata file, "
+                    "then re-run the analysis.",
+                    icon="⚠️",
+                )
+
             if transmission_pairs is not None and len(transmission_pairs) > 0 and transmission_summary:
                 with st.expander("Transmission Mode Analysis", expanded=True):
                     tc1, tc2, tc3, tc4 = st.columns(4)
@@ -7601,20 +7713,29 @@ with tab_export:
 
         with col1:
             st.subheader("Tables")
+            run_provenance = get_run_provenance()
+            st.caption(
+                f"pLIN v{run_provenance['plin_app_version']} · "
+                f"{run_provenance['reference_database_plasmid_count']:,} reference plasmids · "
+                f"generated {run_provenance['generated_utc']}"
+                if run_provenance.get("reference_database_plasmid_count") is not None else
+                f"pLIN v{run_provenance['plin_app_version']} · generated {run_provenance['generated_utc']}"
+            )
+
             # pLIN results
-            plin_csv = st.session_state.plin_df.to_csv(sep="\t", index=False).encode()
+            plin_csv = tsv_with_provenance(st.session_state.plin_df, run_provenance).encode()
             st.download_button("📥 pLIN Assignments (TSV)", plin_csv,
                                "pLIN_assignments.tsv", "text/tab-separated-values")
 
             # Integrated results
             if st.session_state.integrated_df is not None:
-                int_csv = st.session_state.integrated_df.to_csv(sep="\t", index=False).encode()
+                int_csv = tsv_with_provenance(st.session_state.integrated_df, run_provenance).encode()
                 st.download_button("📥 Integrated pLIN + AMR (TSV)", int_csv,
                                    "pLIN_AMR_integrated.tsv", "text/tab-separated-values")
 
             # Raw AMR
             if st.session_state.amr_df is not None and len(st.session_state.amr_df) > 0:
-                amr_csv = st.session_state.amr_df.to_csv(sep="\t", index=False).encode()
+                amr_csv = tsv_with_provenance(st.session_state.amr_df, run_provenance).encode()
                 st.download_button("📥 AMR Detections (TSV)", amr_csv,
                                    "amrfinder_results.tsv", "text/tab-separated-values")
 
@@ -7662,7 +7783,7 @@ with tab_export:
                                    "mlst_results.tsv", "text/tab-separated-values")
             trans_pairs = st.session_state.get("transmission_pairs_df")
             if trans_pairs is not None and len(trans_pairs) > 0:
-                tp_csv = trans_pairs.to_csv(sep="\t", index=False).encode()
+                tp_csv = tsv_with_provenance(trans_pairs, run_provenance).encode()
                 st.download_button("📥 Transmission Mode Analysis (TSV)", tp_csv,
                                    "transmission_mode_analysis.tsv", "text/tab-separated-values")
 
@@ -7779,8 +7900,10 @@ with tab_export:
         st.subheader("Download All (ZIP)")
         if st.button("📦 Generate ZIP Bundle"):
             with st.spinner("Creating ZIP..."):
+                zip_provenance = get_run_provenance()
                 zip_buf = io.BytesIO()
                 with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+                    zf.writestr("manifest.json", json.dumps(zip_provenance, indent=2))
                     zf.writestr("pLIN_assignments.tsv",
                                 st.session_state.plin_df.to_csv(sep="\t", index=False))
                     if st.session_state.integrated_df is not None:
