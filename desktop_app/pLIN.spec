@@ -17,11 +17,34 @@
 
 import glob
 import os
+import re
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata, collect_submodules
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(SPEC)), ".."))
 
 block_cipher = None
+
+
+def _read_plin_app_version():
+    """Read PLIN_APP_VERSION from plin_app.py's source text via regex,
+    rather than importing the module (which would pull in Streamlit,
+    pandas, etc. into the PyInstaller spec's own execution context).
+    Single source of truth: bump PLIN_APP_VERSION in plin_app.py, and both
+    the app's own provenance stamps (see get_run_provenance()) and this
+    bundle's CFBundleShortVersionString stay in sync automatically,
+    instead of two hardcoded strings drifting apart (as happened between
+    v3.2.0 and v3.2.1, where this string was left stale after a release).
+    """
+    plin_app_path = os.path.join(REPO_ROOT, "plin_app.py")
+    with open(plin_app_path, "r") as f:
+        for line in f:
+            m = re.match(r'^PLIN_APP_VERSION\s*=\s*"([^"]+)"', line)
+            if m:
+                return m.group(1)
+    raise RuntimeError("Could not find PLIN_APP_VERSION in plin_app.py")
+
+
+PLIN_APP_VERSION = _read_plin_app_version()
 
 binaries = []
 datas = []
@@ -187,7 +210,7 @@ app = BUNDLE(
     bundle_identifier="com.umcg.plin",
     info_plist={
         "NSHighResolutionCapable": "True",
-        "CFBundleShortVersionString": "3.2.0",
+        "CFBundleShortVersionString": PLIN_APP_VERSION,
         "CFBundleName": "pLIN",
         "NSRequiresAquaSystemAppearance": "False",
     },
