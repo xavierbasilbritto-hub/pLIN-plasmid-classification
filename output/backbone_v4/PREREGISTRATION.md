@@ -109,4 +109,16 @@ prominence as those that favour it.
 
 ## Deviations
 
-(none yet)
+1. 2026-10-02, before any evaluation. Case not covered above: plasmids with
+   no predicted protein cannot be compared by containment. They receive
+   L1–L4 = 0 and are coded at L5–L6 by 4-mer composition within that bucket.
+   Their number is reported. Reason: implementation detail; no data on any
+   tool's performance had been seen.
+2. 2026-10-02, before any evaluation. Proteins are predicted with pyrodigal
+   3.7.0 (metagenomic mode) for every plasmid instead of the Prodigal binary.
+   Reason: the binary crashed (segmentation fault) on 2 of 30 randomly chosen
+   database plasmids, first seen on AF318175.1. On the 28 it handled,
+   pyrodigal gave identical proteins for 21 and exactly one extra protein for
+   7. A single predictor for all plasmids avoids mixing two, and pyrodigal is
+   what the app uses for query plasmids. No data on any tool's performance
+   had been seen.
