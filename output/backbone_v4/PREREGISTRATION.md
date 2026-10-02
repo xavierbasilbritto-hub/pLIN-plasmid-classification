@@ -122,3 +122,23 @@ prominence as those that favour it.
    7. A single predictor for all plasmids avoids mixing two, and pyrodigal is
    what the app uses for query plasmids. No data on any tool's performance
    had been seen.
+3. 2026-10-02, AFTER the first evaluation had been run and seen. While
+   implementing query mode, re-querying 200 database plasmids from sequence
+   reproduced only 87.5% of their L6 codes, because MMseqs2 had split
+   10,309 identical protein sequences (218,604 protein copies, 1.8%) across
+   different families. Every identical sequence is now placed in its lowest
+   family ID (`plin_v4.py canonicalize`), the codes were rebuilt and the
+   evaluation was re-run with the unchanged rules; re-querying then
+   reproduces 100% of codes. Both evaluations are kept and reported
+   (`evaluation_raw/` and `evaluation/`): L3 = 0.40 in both; endpoint 1
+   difference +0.142 [+0.035, +0.346] before and +0.152 [+0.038, +0.352]
+   after; endpoint 2 not non-inferior in either. Reason: correctness of the
+   nomenclature (identical proteins must share a family), not performance.
+4. 2026-10-02, after the first evaluation but before mge-cluster was run.
+   mge-cluster (Arredondo-Alonso et al. 2023) is added as a secondary
+   comparator: accuracy on the test half (model built on all 2,000
+   evaluation plasmids, default settings) and label stability (model on
+   snapshot A, then `--existing` for all plasmids, and a rebuilt model).
+   Reason: a literature check found it is the closest published method
+   offering consistent labels for new plasmids. It does not enter the
+   primary endpoints or the gates.
