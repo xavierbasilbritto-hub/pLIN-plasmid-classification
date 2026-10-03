@@ -1,4 +1,4 @@
-# pLIN Quick Start Guide — Linux
+# pLIN Quick Start Guide: Linux
 
 **For reviewers with no bioinformatics experience.**
 **Time needed: 20-30 minutes (mostly waiting for downloads).**
@@ -7,7 +7,7 @@
 
 ## What is pLIN?
 
-pLIN is a web application that runs on your computer. You will open it in your web browser (Chrome, Firefox, or Edge) — just like any website, except it runs locally on your machine. Nothing is uploaded to the internet.
+pLIN is a web application that runs on your computer. You will open it in your web browser (Chrome, Firefox, or Edge), just like any website, except it runs locally on your machine. Nothing is uploaded to the internet.
 
 You give it plasmid DNA sequence files, and it:
 - Classifies them into groups (Inc/Rep types)
@@ -22,7 +22,7 @@ You give it plasmid DNA sequence files, and it:
 You need:
 - **Ubuntu 20.04+**, **Debian 11+**, **Fedora 36+**, **CentOS 8+**, **Arch Linux**, or **RHEL 8+**
 - At least **5 GB** of free disk space
-- **sudo access** (administrator privileges — you will be asked for your password)
+- **sudo access** (administrator privileges: you will be asked for your password)
 - An **internet connection** (only needed during setup)
 - About **20-30 minutes** of time
 
@@ -59,21 +59,21 @@ sudo dnf install -y git curl wget unzip
 sudo pacman -Sy --noconfirm git curl wget unzip
 ```
 
-When asked for your password, type it and press Enter. **Nothing appears on screen while you type your password** — this is normal.
+When asked for your password, type it and press Enter. **Nothing appears on screen while you type your password**, this is normal.
 
 ---
 
 ## Step 3: Unzip the pLIN Package
 
-You received a file called `pLIN_v3.0.0_Linux.zip`.
+Download the source code from GitHub (green **Code** button, then **Download ZIP**): you get `pLIN-plasmid-classification-main.zip`.
 
 1. Find the ZIP file (likely in your **Downloads** folder)
 2. Unzip it using Terminal:
 
 ```bash
 cd ~/Downloads
-unzip pLIN_v3.0.0_Linux.zip -d pLIN_v3.0.0_Linux
-cd pLIN_v3.0.0_Linux
+unzip pLIN-plasmid-classification-main.zip
+cd pLIN-plasmid-classification-main
 ```
 
 > **Note:** If you saved the ZIP somewhere else, adjust the path accordingly.
@@ -98,8 +98,8 @@ Miniconda manages Python and scientific software packages.
 conda --version
 ```
 
-- If you see `conda 24.x.x` — **skip to Step 5**
-- If you see "command not found" — install it:
+- If you see `conda 24.x.x`: **skip to Step 5**
+- If you see "command not found": install it:
 
 **For 64-bit Intel/AMD systems (most common):**
 ```bash
@@ -128,7 +128,7 @@ Now initialize conda:
 Navigate back to the pLIN folder:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_Linux
+cd ~/Downloads/pLIN-plasmid-classification-main
 ```
 
 **Verify it worked:**
@@ -153,8 +153,8 @@ chmod +x pLIN_Linux.sh
 **What to expect:**
 - It may ask for your **sudo password** (to install system packages like Java)
 - You will see `[INFO]` and `[OK]` messages as things install
-- Some items may show `[WARN] Could not install` — **this is fine**, these are optional tools
-- **This takes 15-30 minutes** — let it run, do not close Terminal
+- Some items may show `[WARN] Could not install`, **this is fine**, these are optional tools
+- **This takes 15-30 minutes**: let it run, do not close Terminal
 - When finished, you will see:
 
 ```
@@ -192,7 +192,7 @@ The package includes 22 test plasmid files. Let's use a few to verify everything
 
 1. In the pLIN web interface, click **"Browse files"** (in the upload area)
 2. Navigate to the `test_plasmids/IncX/` folder inside your pLIN folder
-   - Typically: `Downloads > pLIN_v3.0.0_Linux > test_plasmids > IncX`
+   - Typically: `Downloads > pLIN-plasmid-classification-main > test_plasmids > IncX`
 3. Select these 3 files:
    - `IncX3_JN247852.fasta`
    - `SP12_P2.fasta`
@@ -205,7 +205,7 @@ You should see "3 files uploaded" with the file names listed.
 
 1. Leave all sidebar settings at their defaults
 2. Click the **"Run Analysis"** button
-3. Wait 10-30 seconds — you will see a progress bar
+3. Wait 10-30 seconds: you will see a progress bar
 
 ### 7c. Check the Results
 
@@ -221,7 +221,7 @@ You should see "3 files uploaded" with the file names listed.
 
 **Export tab:**
 - Click **"Download pLIN Assignments (TSV)"**
-- A `.tsv` file downloads — open it in a text editor or LibreOffice Calc
+- A `.tsv` file downloads: open it in a text editor or LibreOffice Calc
 - Verify it has columns: `plasmid_id`, `inc_type`, `length_bp`, `pLIN`
 
 ---
@@ -241,7 +241,7 @@ When you are done testing:
 Next time you want to use pLIN, you only need two commands:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_Linux
+cd ~/Downloads/pLIN-plasmid-classification-main
 ./pLIN_Linux.sh --launch
 ```
 
@@ -318,7 +318,7 @@ amrfinder --update
 | `requirements.txt` | List of Python packages needed |
 | `data/inc_classifier.npz` | Classification model (trained on 8,077 plasmids) |
 | `data/inc_centroids.npz` | Group centroids for distance calculation |
-| `output/pLIN_assignments.tsv` | Reference database (79,305 plasmid assignments) |
+| `output/pLIN_assignments.tsv` | pLIN v3 (legacy) codes; the v4.1 database is downloaded separately into `data/plin_v41/` (see README) |
 | `test_plasmids/IncX/*.fasta` | 22 sample plasmid sequences for testing |
 | `REVIEWER_GUIDE.md` | Detailed feature validation checklist |
 | `Dockerfile` | For Docker-based installation (alternative) |
@@ -336,7 +336,7 @@ If you prefer Docker, this avoids all manual dependency installation:
 
 2. Run pLIN:
    ```bash
-   cd ~/Downloads/pLIN_v3.0.0_Linux
+   cd ~/Downloads/pLIN-plasmid-classification-main
    docker compose up --build
    ```
 

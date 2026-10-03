@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Detect IS elements in pLIN training plasmids using blastn against
 curated IS element reference sequences from ISfinder/NCBI.
 
 Outputs:
-  output/mge_detection/is_element_hits.tsv       — all IS hits per plasmid
-  output/mge_detection/is_family_counts.tsv      — IS family × organism category
-  output/mge_detection/composite_transposons.tsv — IS pairs flanking AMR genes
-  output/mge_detection/is_summary.json           — summary statistics
+  output/mge_detection/is_element_hits.tsv: all IS hits per plasmid
+  output/mge_detection/is_family_counts.tsv: IS family × organism category
+  output/mge_detection/composite_transposons.tsv: IS pairs flanking AMR genes
+  output/mge_detection/is_summary.json: summary statistics
 """
 
 import os
@@ -68,7 +68,7 @@ IS_REFERENCES = {
 # IS6-family elements form pseudo-compound transposon structures from
 # DIRECT-orientation copies rather than the inverted-repeat pairing of a
 # canonical composite transposon (Harmer & Hall, Microbiol Mol Biol Rev
-# 2024, e0011922 — cited as Ref 20 in the manuscript). For these elements
+# 2024, e0011922: cited as Ref 20 in the manuscript). For these elements
 # specifically, detect_composite_transposons() requires same-orientation
 # flanking pairs; other IS families are not restricted by orientation here
 # since the manuscript makes no equivalent mechanistic claim about them.
@@ -205,7 +205,7 @@ def scan_plasmids_for_IS(is_db_path, training_dir, out_tsv):
 
                 # BLAST outfmt 6 convention: sstart > send means the hit
                 # aligns to the minus strand of the subject (IS reference)
-                # relative to the query (plasmid) — i.e. the IS copy sits
+                # relative to the query (plasmid): i.e. the IS copy sits
                 # in reverse orientation on the plasmid. This lets us tell
                 # direct- from inverted-orientation IS pairs, which matters
                 # for IS6-family elements (IS26, IS256): only direct-

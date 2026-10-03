@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 pLIN Assignment Script
 Assigns plasmid Lineage Identification Numbers to all sequences in the training folders.
-Uses tetranucleotide (4-mer) composition-based cosine distance + single-linkage clustering.
+Uses tetranucleotide (4-mer) composition-based cosine distance + incremental
+founder assignment (plin_founder.py): plasmids are processed in accession
+order and, at each level, join the nearest cluster founder within that level's
+threshold or found a new cluster. Codes never change when plasmids are added,
+and clusters cannot chain (see plin_founder.py and benchmark_plin_schemes.py).
+
+The founder tree is saved to data/plin_founder_tree_training.npz; the
+reference pipeline (assign_pLIN_reference.py) extends that tree rather than
+re-clustering, so training codes are preserved in every release.
 """
 
 import os
@@ -14,10 +22,9 @@ import subprocess
 import numpy as np
 import pandas as pd
 from datetime import datetime, timezone
-from itertools import product as iter_product
-from scipy.spatial.distance import pdist, squareform
-from scipy.cluster.hierarchy import linkage, fcluster
 from Bio import SeqIO
+
+from plin_founder import PLIN_THRESHOLDS, FounderTree, canonical_order, kmer_vector
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 
@@ -35,18 +42,8 @@ def _discover_inc_types():
 
 INC_TYPES = _discover_inc_types()
 
-# pLIN hierarchical thresholds (cosine distance on 4-mer frequencies)
-# Mapped from ANI-based thresholds to composition-distance equivalents
-PLIN_THRESHOLDS = {
-    "A": 0.150,   # ~85% ANI — L1 (Broad plasmid family)
-    "B": 0.100,   # ~90% ANI — L2 (Subfamily)
-    "C": 0.050,   # ~95% ANI — L3 (Cluster)
-    "D": 0.020,   # ~98% ANI — L4 (Subcluster)
-    "E": 0.010,   # ~99% ANI — L5 (Clone group)
-    "F": 0.001,   # ~99.9% ANI — L6 (Lineage / Outbreak)
-}
-
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")
+FOUNDER_TREE_FILE = os.path.join(BASE_DIR, "data", "plin_founder_tree_training.npz")
 
 # Training-folder provenance labels retained as-is in `inc_type` for
 # traceability. `resolved_inc_type` maps them onto current PlasmidFinder
@@ -97,31 +94,6 @@ def run_version_stamp():
     }
 
 
-def stable_cluster_ids(raw_labels, member_keys):
-    """Renumber scipy fcluster labels into a deterministic scheme.
-
-    scipy.cluster.hierarchy.fcluster assigns cluster-ID integers based on
-    internal linkage-tree traversal order, which is not guaranteed stable
-    across runs (it can shift with input ordering, library version, or
-    floating-point tie-breaking) even when cluster MEMBERSHIP is identical.
-    That non-determinism silently renumbers every pLIN code on re-run.
-
-    Here we renumber clusters by sorting on each cluster's lexicographically
-    smallest member key (e.g. plasmid accession), so cluster 1 is always
-    "the cluster containing the alphabetically-first member", reproducibly,
-    regardless of how fcluster happened to label it internally.
-    """
-    raw_labels = np.asarray(raw_labels)
-    cluster_min_key = {}
-    for raw_id, key in zip(raw_labels, member_keys):
-        if raw_id not in cluster_min_key or key < cluster_min_key[raw_id]:
-            cluster_min_key[raw_id] = key
-
-    ordered_raw_ids = sorted(cluster_min_key, key=lambda rid: cluster_min_key[rid])
-    remap = {raw_id: new_id for new_id, raw_id in enumerate(ordered_raw_ids, start=1)}
-    return np.array([remap[rid] for rid in raw_labels])
-
-
 # ── Step 1: Load sequences ────────────────────────────────────────────────────
 
 def load_all_sequences():
@@ -148,57 +120,44 @@ def load_all_sequences():
 # ── Step 2: Compute 4-mer composition vectors ─────────────────────────────────
 
 def compute_kmer_vectors(records, k=4):
-    """Compute normalised tetranucleotide frequency vectors."""
-    bases = "ACGT"
-    all_kmers = ["".join(p) for p in iter_product(bases, repeat=k)]
-
+    """Compute tetranucleotide frequency vectors (plin_founder.kmer_vector)."""
     print(f"  Computing {k}-mer frequency vectors for {len(records)} plasmids ...")
-    vectors = np.zeros((len(records), len(all_kmers)), dtype=np.float64)
-
+    vectors = np.zeros((len(records), 4 ** k), dtype=np.float64)
     for idx, rec in enumerate(records):
-        seq = rec["sequence"].upper()
-        total = max(len(seq) - k + 1, 1)
-        for ki, kmer in enumerate(all_kmers):
-            vectors[idx, ki] = seq.count(kmer) / total
+        vectors[idx] = kmer_vector(rec["sequence"], k)
         if (idx + 1) % 1000 == 0:
             print(f"    {idx+1}/{len(records)} done")
-
     print(f"  Vectors shape: {vectors.shape}\n")
     return vectors
 
 
-# ── Step 3: Pairwise distance + single-linkage clustering ─────────────────────
+# ── Step 3: Founder assignment ────────────────────────────────────────────────
 
 def assign_plin_codes(records, vectors):
-    """
-    Cluster plasmids at each pLIN threshold using single-linkage
-    and build hierarchical pLIN codes.
-    """
-    print("  Computing pairwise cosine distances ...")
-    dist_condensed = pdist(vectors, metric="cosine")
-    print(f"  {len(dist_condensed)} pairwise distances computed\n")
+    """Assign founder-based pLIN codes in canonical (accession) order.
 
-    Z = linkage(dist_condensed, method="single")
-
+    A plasmid ID present in two training folders (21 multi-replicon
+    E. faecium plasmids) has an identical vector in both, so its second
+    occurrence joins the first one's clusters at distance 0.
+    """
     bin_labels = list(PLIN_THRESHOLDS.keys())
-    bin_thresholds = list(PLIN_THRESHOLDS.values())
-    member_keys = [rec["plasmid_id"] for rec in records]
+    keys = [rec["plasmid_id"] for rec in records]
+    tree = FounderTree(PLIN_THRESHOLDS)
+    codes = [None] * len(records)
+    for n_done, i in enumerate(canonical_order(keys), start=1):
+        codes[i], _, _ = tree.assign(vectors[i], key=keys[i])
+        if n_done % 2000 == 0:
+            print(f"    {n_done}/{len(records)} assigned")
 
-    cluster_assignments = {}
-    for bname, thresh in zip(bin_labels, bin_thresholds):
-        raw_clusters = fcluster(Z, t=thresh, criterion="distance")
-        clusters = stable_cluster_ids(raw_clusters, member_keys)
-        cluster_assignments[bname] = clusters
-        n_clusters = len(set(clusters))
-        print(f"  Bin {bname} (d ≤ {thresh:.3f}): {n_clusters:>5} clusters")
+    cluster_assignments = {b: np.array([c[j] for c in codes]) for j, b in enumerate(bin_labels)}
+    for b, thresh in PLIN_THRESHOLDS.items():
+        print(f"  Bin {b} (d ≤ {thresh:.3f}): {len(set(cluster_assignments[b])):>5} clusters")
 
-    # Build pLIN codes
-    n = len(records)
-    plin_codes = []
-    for i in range(n):
-        code_parts = [str(cluster_assignments[b][i]) for b in bin_labels]
-        plin_codes.append(".".join(code_parts))
+    os.makedirs(os.path.dirname(FOUNDER_TREE_FILE), exist_ok=True)
+    tree.to_npz(FOUNDER_TREE_FILE)
+    print(f"  Founder tree saved to: {FOUNDER_TREE_FILE}")
 
+    plin_codes = [".".join(map(str, c)) for c in codes]
     return plin_codes, cluster_assignments
 
 
@@ -229,7 +188,7 @@ def build_results(records, plin_codes, cluster_assignments):
 
 def main():
     print("=" * 70)
-    print("pLIN Assignment — Plasmid Lineage Identification Numbers")
+    print("pLIN Assignment: Plasmid Lineage Identification Numbers")
     print("=" * 70)
 
     print("\n[1/4] Loading sequences ...")

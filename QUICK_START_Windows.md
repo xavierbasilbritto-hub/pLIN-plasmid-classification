@@ -1,4 +1,4 @@
- # pLIN Quick Start Guide — Windows
+ # pLIN Quick Start Guide: Windows
     
 **For reviewers with no bioinformatics experience.**
 **Time needed: 25-40 minutes (mostly waiting for downloads).**
@@ -7,7 +7,7 @@
 
 ## What is pLIN?
 
-pLIN is a web application that runs on your computer. You will open it in your web browser (Chrome, Edge, or Firefox) — just like any website, except it runs locally on your PC. Nothing is uploaded to the internet.
+pLIN is a web application that runs on your computer. You will open it in your web browser (Chrome, Edge, or Firefox), just like any website, except it runs locally on your PC. Nothing is uploaded to the internet.
 
 You give it plasmid DNA sequence files, and it:
 - Classifies them into groups (Inc/Rep types)
@@ -34,7 +34,7 @@ Git is a tool for downloading software. You may already have it.
 **Check if you already have it:**
 1. Press **Windows key + R**, type `cmd`, press Enter
 2. Type `git --version` and press Enter
-3. If you see `git version 2.x.x` — **skip to Step 2**
+3. If you see `git version 2.x.x`: **skip to Step 2**
 
 **If you don't have it:**
 1. Open your web browser and go to: **https://git-scm.com/download/win**
@@ -53,7 +53,7 @@ Miniconda manages Python and scientific software. You may already have it.
 **Check if you already have it:**
 1. Click the **Start Menu** (Windows icon at the bottom-left)
 2. Type **Anaconda Prompt**
-3. If you see "Anaconda Prompt" in the results — **skip to Step 3**
+3. If you see "Anaconda Prompt" in the results, **skip to Step 3**
 
 **If you don't have it:**
 1. Open your web browser and go to: **https://docs.conda.io/en/latest/miniconda.html**
@@ -64,7 +64,7 @@ Miniconda manages Python and scientific software. You may already have it.
 6. Keep the default install location and click **Next**
 7. On the **Advanced Options** screen:
    - **CHECK the box** that says **"Add Miniconda3 to my PATH environment variable"**
-   - (It says "Not recommended" — ignore that warning, we need this)
+   - (It says "Not recommended": ignore that warning, we need this)
 8. Click **Install**
 9. Wait for installation to finish
 10. Click **Finish**
@@ -81,7 +81,7 @@ This is the command window you will use for all remaining steps.
 
 A black window with a blinking cursor will appear. This is your command prompt.
 
-> **Important:** Always use **Anaconda Prompt** for pLIN commands — not regular Command Prompt or PowerShell.
+> **Important:** Always use **Anaconda Prompt** for pLIN commands, not regular Command Prompt or PowerShell.
 
 > **Tip:** You will copy-paste commands from this guide. To paste in Anaconda Prompt, **right-click** inside the window.
 
@@ -89,20 +89,20 @@ A black window with a blinking cursor will appear. This is your command prompt.
 
 ## Step 4: Unzip the pLIN Package
 
-You received a file called `pLIN_v3.0.0_Windows.zip`.
+Download the source code from GitHub (green **Code** button, then **Download ZIP**): you get `pLIN-plasmid-classification-main.zip`.
 
 1. Find the ZIP file (likely in your **Downloads** folder)
 2. **Right-click** the ZIP file and choose **"Extract All..."**
-3. Click **Extract** (this creates a folder called `pLIN_v3.0.0_Windows`)
+3. Click **Extract** (this creates a folder called `pLIN-plasmid-classification-main`)
 4. In Anaconda Prompt, navigate to that folder:
 
 ```cmd
-cd %USERPROFILE%\Downloads\pLIN_v3.0.0_Windows
+cd %USERPROFILE%\Downloads\pLIN-plasmid-classification-main
 ```
 
 > **Note:** If you saved the ZIP somewhere else, adjust the path. For example, if it is on your Desktop:
 > ```cmd
-> cd %USERPROFILE%\Desktop\pLIN_v3.0.0_Windows
+> cd %USERPROFILE%\Desktop\pLIN-plasmid-classification-main
 > ```
 
 5. Verify you are in the right folder:
@@ -125,8 +125,8 @@ pLIN_Windows.bat --install
 
 **What to expect:**
 - You will see `[INFO]` and `[OK]` messages as things install
-- Some items may show `[WARN] Could not install` — **this is fine**, these are optional tools
-- **This takes 15-30 minutes** — let it run, do not close the window
+- Some items may show `[WARN] Could not install`, **this is fine**, these are optional tools
+- **This takes 15-30 minutes**: let it run, do not close the window
 - When finished, you will see:
 
 ```
@@ -165,7 +165,7 @@ The package includes 22 test plasmid files. Let's use a few to verify everything
 
 1. In the pLIN web interface, click **"Browse files"** (in the upload area)
 2. Navigate to the `test_plasmids\IncX\` folder inside your pLIN folder
-   - Typically: `Downloads > pLIN_v3.0.0_Windows > test_plasmids > IncX`
+   - Typically: `Downloads > pLIN-plasmid-classification-main > test_plasmids > IncX`
 3. Select these 3 files:
    - `IncX3_JN247852.fasta`
    - `SP12_P2.fasta`
@@ -178,7 +178,7 @@ You should see "3 files uploaded" with the file names listed.
 
 1. Leave all sidebar settings at their defaults
 2. Click the **"Run Analysis"** button
-3. Wait 10-30 seconds — you will see a progress bar
+3. Wait 10-30 seconds: you will see a progress bar
 
 ### 7c. Check the Results
 
@@ -194,7 +194,7 @@ You should see "3 files uploaded" with the file names listed.
 
 **Export tab:**
 - Click **"Download pLIN Assignments (TSV)"**
-- A `.tsv` file downloads — open it in Excel or Notepad
+- A `.tsv` file downloads: open it in Excel or Notepad
 - Verify it has columns: `plasmid_id`, `inc_type`, `length_bp`, `pLIN`
 
 ---
@@ -218,7 +218,7 @@ Next time you want to use pLIN:
 2. Navigate to the pLIN folder:
 
 ```cmd
-cd %USERPROFILE%\Downloads\pLIN_v3.0.0_Windows
+cd %USERPROFILE%\Downloads\pLIN-plasmid-classification-main
 ```
 
 3. Launch:
@@ -245,7 +245,7 @@ Miniconda was not added to PATH. Two options:
 
 You are not in the correct folder. Run:
 ```cmd
-cd %USERPROFILE%\Downloads\pLIN_v3.0.0_Windows
+cd %USERPROFILE%\Downloads\pLIN-plasmid-classification-main
 dir plin_app.py
 ```
 If you see `plin_app.py`, try the command again.
@@ -298,7 +298,7 @@ WSL2 lets you run Linux inside Windows. This gives you full tool support.
 4. After restart, Ubuntu will open automatically and ask you to create a username and password
 5. In the Ubuntu window, run:
    ```bash
-   cd /mnt/c/Users/YOUR_USERNAME/Downloads/pLIN_v3.0.0_Windows
+   cd /mnt/c/Users/YOUR_USERNAME/Downloads/pLIN-plasmid-classification-main
    chmod +x pLIN_Linux.sh
    ./pLIN_Linux.sh --install
    ./pLIN_Linux.sh --launch
@@ -308,12 +308,12 @@ WSL2 lets you run Linux inside Windows. This gives you full tool support.
 ### Option B: Docker Desktop
 
 1. Download Docker Desktop from: **https://www.docker.com/products/docker-desktop/**
-2. Run the installer — when asked, enable **WSL2 backend**
+2. Run the installer: when asked, enable **WSL2 backend**
 3. **Restart your computer**
 4. Open Docker Desktop (wait until it says "Docker is running")
 5. Open Anaconda Prompt and run:
    ```cmd
-   cd %USERPROFILE%\Downloads\pLIN_v3.0.0_Windows
+   cd %USERPROFILE%\Downloads\pLIN-plasmid-classification-main
    docker compose up --build
    ```
 6. Open **http://localhost:8501** in your browser
@@ -331,7 +331,7 @@ WSL2 lets you run Linux inside Windows. This gives you full tool support.
 | `requirements.txt` | List of Python packages needed |
 | `data\inc_classifier.npz` | Classification model (trained on 8,077 plasmids) |
 | `data\inc_centroids.npz` | Group centroids for distance calculation |
-| `output\pLIN_assignments.tsv` | Reference database (79,305 plasmid assignments) |
+| `output\pLIN_assignments.tsv` | pLIN v3 (legacy) codes; the v4.1 database is downloaded separately into `data/plin_v41/` (see README) |
 | `test_plasmids\IncX\*.fasta` | 22 sample plasmid sequences for testing |
 | `REVIEWER_GUIDE.md` | Detailed feature validation checklist |
 | `Dockerfile` | For Docker-based installation (alternative) |

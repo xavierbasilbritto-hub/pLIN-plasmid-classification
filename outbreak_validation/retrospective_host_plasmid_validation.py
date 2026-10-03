@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Retrospective validation of combined chromosomal-plasmid typing.
 
@@ -47,16 +47,16 @@ CURATED_HOST_DATA = {
     # Study6_IMP4_IncHI2_Australia (Roberts et al. 2020)
     "CP022533": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
 
-    # Conlan_2014_NIH_KPC — same strain, same plasmid
+    # Conlan_2014_NIH_KPC: same strain, same plasmid
     "CP004366": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
     "CP004367": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
 
-    # Sheppard_2016_CTXM_USA — E. coli ST131 clonal spread
+    # Sheppard_2016_CTXM_USA: E. coli ST131 clonal spread
     "CP009231": {"host_species": "Escherichia coli", "MLST_ST": "ST131"},
     "CP009232": {"host_species": "Escherichia coli", "MLST_ST": "ST131"},
     "CP009233": {"host_species": "Escherichia coli", "MLST_ST": "ST131"},
 
-    # Ho_2019_NDM_HK_ICU — polyclonal K. pneumoniae, multiple STs
+    # Ho_2019_NDM_HK_ICU: polyclonal K. pneumoniae, multiple STs
     "MH234497": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST11"},
     "MH234498": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST11"},
     "MH234499": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST15"},
@@ -71,7 +71,7 @@ CURATED_HOST_DATA = {
     "MH234508": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST11"},
     "MH234509": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST15"},
 
-    # Jousset_2019_OXA48_NL — cross-species OXA-48 dissemination
+    # Jousset_2019_OXA48_NL: cross-species OXA-48 dissemination
     "LR025097": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST307"},
     "LR025098": {"host_species": "Escherichia coli", "MLST_ST": "ST410"},
     "LR025100": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST307"},
@@ -80,7 +80,7 @@ CURATED_HOST_DATA = {
     # Jousset_2019_OXA48_FR
     "KP061858": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
 
-    # Li_2020_NDM5_China — multi-ST E. coli
+    # Li_2020_NDM5_China: multi-ST E. coli
     "MH985166": {"host_species": "Escherichia coli", "MLST_ST": "ST167"},
     "MH985167": {"host_species": "Escherichia coli", "MLST_ST": "ST167"},
     "MH985168": {"host_species": "Escherichia coli", "MLST_ST": "ST410"},
@@ -88,7 +88,7 @@ CURATED_HOST_DATA = {
     "MH985170": {"host_species": "Escherichia coli", "MLST_ST": "ST648"},
     "MH985171": {"host_species": "Escherichia coli", "MLST_ST": "ST156"},
 
-    # Rojas_2017_NDM_Colombia — multi-species NDM
+    # Rojas_2017_NDM_Colombia: multi-species NDM
     "CP017672": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
     "KX832926": {"host_species": "Klebsiella pneumoniae", "MLST_ST": "ST258"},
     "KX832927": {"host_species": "Escherichia coli", "MLST_ST": "ST131"},
@@ -329,7 +329,7 @@ def main():
     # Summary text
     summary_path = os.path.join(out_dir, "retrospective_validation_summary.txt")
     with open(summary_path, "w") as f:
-        f.write("pLIN + MLST Combined Typing — Retrospective Validation Summary\n")
+        f.write("pLIN + MLST Combined Typing: Retrospective Validation Summary\n")
         f.write("=" * 60 + "\n\n")
         f.write(f"Total outbreak plasmids: {len(outbreak_df)}\n")
         f.write(f"Plasmids with curated host/MLST data: {n_with_host}\n")

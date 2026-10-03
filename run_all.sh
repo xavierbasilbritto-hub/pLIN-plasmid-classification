@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# pLIN — Complete Pipeline (macOS / Linux)
+# pLIN: Complete Pipeline (macOS / Linux)
 # Runs all steps: pLIN assignment → AMRFinderPlus → Integration
 # ============================================================================
 set -e
@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "============================================================"
-echo "  pLIN — Complete Analysis Pipeline"
+echo "  pLIN: Complete Analysis Pipeline"
 echo "============================================================"
 echo ""
 
@@ -97,9 +97,9 @@ echo "  Pipeline Complete!"
 echo "============================================================"
 echo ""
 echo "  Output files:"
-echo "    output/pLIN_assignments.tsv           — pLIN codes"
-echo "    output/amrfinder/                     — AMR detections"
-echo "    output/integrated/                    — Combined tables"
+echo "    output/pLIN_assignments.tsv: pLIN codes"
+echo "    output/amrfinder/: AMR detections"
+echo "    output/integrated/: Combined tables"
 echo ""
 echo "  Launch the GUI:"
 echo "    streamlit run plin_app.py"

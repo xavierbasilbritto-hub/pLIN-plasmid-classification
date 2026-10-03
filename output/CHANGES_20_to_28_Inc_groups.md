@@ -5,7 +5,7 @@ Each entry shows: FILE → LINE NUMBER → FIND → REPLACE
 
 ---
 
-## 1. Appendix p01 — Title (Line 1) — ALL 4 JOURNALS + output/
+## 1. Appendix p01, Title (Line 1), ALL 4 JOURNALS + output/
 
 **FIND:**
 ```
@@ -25,7 +25,7 @@ Files:
 
 ---
 
-## 2. Appendix p09 — Section heading (Line 26) — ALL 4 JOURNALS + output/
+## 2. Appendix p09, Section heading (Line 26), ALL 4 JOURNALS + output/
 
 **FIND:**
 ```
@@ -45,7 +45,7 @@ Files:
 
 ---
 
-## 3. Appendix p09 — Body text (Line 28) — ALL 4 JOURNALS + output/
+## 3. Appendix p09, Body text (Line 28), ALL 4 JOURNALS + output/
 
 **FIND:**
 ```
@@ -60,7 +60,7 @@ Files: (same 5 files as #2 above, Line 28)
 
 ---
 
-## 4. Appendix p12 — Runtime line (Line 45 or 47) — ALL 4 JOURNALS + output/
+## 4. Appendix p12, Runtime line (Line 45 or 47), ALL 4 JOURNALS + output/
 
 **FIND:**
 ```
@@ -80,7 +80,7 @@ Files:
 
 ---
 
-## 5. Table5 Reference Database (output/ only) — Line 7
+## 5. Table5 Reference Database (output/ only): Line 7
 
 **FIND:**
 ```
@@ -96,7 +96,7 @@ File:
 
 ---
 
-## 6. Lancet Table2 — Intro paragraph (Line 3)
+## 6. Lancet Table2: Intro paragraph (Line 3)
 
 **FIND:**
 ```
@@ -112,7 +112,7 @@ File:
 
 ---
 
-## 7. Lancet Table2 — FastANI validation note (Line 14)
+## 7. Lancet Table2: FastANI validation note (Line 14)
 
 **FIND:**
 ```
@@ -128,7 +128,7 @@ File:
 
 ---
 
-## 8. Lancet Table3 — Title (Line 1)
+## 8. Lancet Table3: Title (Line 1)
 
 **FIND:**
 ```
@@ -144,7 +144,7 @@ File:
 
 ---
 
-## 9. MG Table1 — Footnote (Line 21)
+## 9. MG Table1: Footnote (Line 21)
 
 **FIND:**
 ```
@@ -160,7 +160,7 @@ File:
 
 ---
 
-## 10. BB Table1 — Footnote (Line 21)
+## 10. BB Table1: Footnote (Line 21)
 
 **FIND:**
 ```

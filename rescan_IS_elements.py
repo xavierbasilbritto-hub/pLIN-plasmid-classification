@@ -90,7 +90,7 @@ def scan_group(group, fastas_dir, is_db):
         # Require ≥70% coverage of the IS reference AND ≥85% identity
         if coverage >= 0.70 and float(pident) >= 85.0:
             # sstart > send means the hit aligns to the minus strand of the
-            # IS reference relative to the plasmid query — i.e. this copy
+            # IS reference relative to the plasmid query, i.e. this copy
             # sits in reverse orientation. See detect_IS_elements.py for
             # the full rationale (Harmer & Hall 2024, Ref 20).
             strand = "+" if int(sstart) <= int(send) else "-"

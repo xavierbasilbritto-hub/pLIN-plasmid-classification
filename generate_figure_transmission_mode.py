@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
-Generate Figure: Combined chromosomal-plasmid typing — transmission mode
+Generate Figure: Combined chromosomal-plasmid typing, transmission mode
 discrimination in published outbreaks.
 
 Panel A: Bipartite network (MLST ST ↔ pLIN L6 code)
@@ -79,7 +79,7 @@ def shorten_study(name):
 
 def plot_panel_a(ax, enriched_df, study_df):
     """Panel A: Bipartite network showing ST ↔ pLIN connections."""
-    ax.set_title("A. MLST ST — pLIN L6 Bipartite Network", fontsize=12,
+    ax.set_title("A. MLST ST: pLIN L6 Bipartite Network", fontsize=12,
                  fontweight="bold", pad=10)
 
     # Filter to studies with multi-ST data

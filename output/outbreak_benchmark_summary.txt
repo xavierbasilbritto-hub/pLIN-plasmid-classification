@@ -1,4 +1,4 @@
-pLIN Outbreak Detection — LOOCV Benchmark Summary
+pLIN Outbreak Detection: LOOCV Benchmark Summary
 ==================================================
 
 Total outbreak plasmids: 74

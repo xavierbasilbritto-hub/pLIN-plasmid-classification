@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
-# pLIN Tool — Installation Script (macOS / Linux)
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# pLIN Tool: Installation Script (macOS / Linux)
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # ═══════════════════════════════════════════════════════════════════════════
 set -e
 
 echo "═══════════════════════════════════════════════════════════════"
-echo " pLIN Tool — Installer for macOS / Linux"
+echo " pLIN Tool: Installer for macOS / Linux"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 

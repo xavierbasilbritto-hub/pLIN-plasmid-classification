@@ -1,0 +1,20 @@
+{
+  "threads": 8,
+  "release_load_seconds": 18.0,
+  "known": {
+    "plasmids": 100,
+    "seconds": 0.02,
+    "seconds_per_plasmid": 0.0
+  },
+  "related": {
+    "plasmids": 100,
+    "seconds": 25.25,
+    "seconds_per_plasmid": 0.252
+  },
+  "divergent": {
+    "plasmids": 100,
+    "seconds": 108.05,
+    "seconds_per_plasmid": 1.08
+  },
+  "MOB-suite_seconds_per_plasmid_8_threads": 1.248
+}

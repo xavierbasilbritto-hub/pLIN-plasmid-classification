@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
-Generate Figure 12: Method Resolution Comparison — Alluvial Flow Diagram.
+Generate Figure 12: Method Resolution Comparison, Alluvial Flow Diagram.
 
 Shows how 74 outbreak plasmids from 26 studies are resolved differently by
 six classification methods (PlasmidFinder → pMLST → MOB-suite → COPLA/PTU →
@@ -109,7 +109,7 @@ def assign_plasmidfinder(df):
 def assign_pmlst(df):
     """pMLST: simulate ~15 sequence types by splitting Inc groups into sub-STs."""
     results = []
-    # Assign sub-STs per Inc group — use more buckets and include study info
+    # Assign sub-STs per Inc group: use more buckets and include study info
     # pMLST only has schemes for IncF, IncHI1, IncHI2, IncI1, IncN, IncR
     known_schemes = {"IncFII", "IncF", "IncFIB", "IncFIC", "IncHI1",
                      "IncHI2", "IncI1", "IncN", "IncR", "IncC"}
@@ -170,7 +170,7 @@ def assign_mgecluster(df):
     """mge-cluster: reference-free clustering, ~32 clusters, no permanent codes."""
     results = []
     for _, row in df.iterrows():
-        # Cluster by similarity — approximate using Inc + gene + size bin
+        # Cluster by similarity: approximate using Inc + gene + size bin
         size_bin = "S" if row["length_bp"] < 50000 else (
             "M" if row["length_bp"] < 100000 else "L")
         gene_class = classify_resistance_class(row["resistance_gene"])
@@ -293,7 +293,7 @@ def main():
     ax.set_ylim(-12, total_height + 14)
     ax.axis("off")
 
-    # Column x-positions — wider spacing to prevent header overlap
+    # Column x-positions: wider spacing to prevent header overlap
     col_x = [0, 3.5, 7, 10.5, 14, 17.5]
     col_width = 1.4  # wider rectangles
     method_names = [m[0] for m in methods]
@@ -471,7 +471,7 @@ def main():
                 ha="center", va="center", fontsize=header_size,
                 fontweight=header_weight, color=header_color)
 
-        # Stats beneath method name — compact, single line where possible
+        # Stats beneath method name: compact, single line where possible
         stats_text = f"{n_groups} groups"
         if n_unclass > 0:
             stats_text += f" | {pct:.0f}% classified"
@@ -540,7 +540,7 @@ def main():
                 fontweight=fw, color=text_color, zorder=3)
 
     # ── Callout annotations ──────────────────────────────────────────────────
-    # Annotation 1: Ho 2019 NDM — 13 plasmids all IncX3 at PlasmidFinder,
+    # Annotation 1: Ho 2019 NDM, 13 plasmids all IncX3 at PlasmidFinder,
     #               but 12→pLIN 284 + 1→pLIN 285 at pLIN
     ax.text(-2.3, 60,
             "Ho 2019 NDM (HK):\n"
@@ -552,7 +552,7 @@ def main():
             bbox=dict(boxstyle="round,pad=0.4", facecolor="#E3F2FD",
                       edgecolor=BLUE, alpha=0.9, linewidth=1.5))
 
-    # Annotation 2: OXA-48 cross-country — all IncFII but pLIN 976
+    # Annotation 2: OXA-48 cross-country, all IncFII but pLIN 976
     ax.text(-2.3, 44,
             "OXA-48 (3 countries):\n"
             "PlasmidFinder: all \"IncFII\"\n"

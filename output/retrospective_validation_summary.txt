@@ -1,4 +1,4 @@
-pLIN + MLST Combined Typing — Retrospective Validation Summary
+pLIN + MLST Combined Typing: Retrospective Validation Summary
 ============================================================
 
 Total outbreak plasmids: 74

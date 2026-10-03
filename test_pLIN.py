@@ -31,12 +31,12 @@ if os.path.isdir(TEST_DIR):
 
 # pLIN hierarchical thresholds (same as assign_pLIN.py)
 PLIN_THRESHOLDS = {
-    "A": 0.150,   # ~85% ANI — Broad plasmid family
-    "B": 0.100,   # ~90% ANI — Subfamily
-    "C": 0.050,   # ~95% ANI — Cluster
-    "D": 0.020,   # ~98% ANI — Subcluster
-    "E": 0.010,   # ~99% ANI — Clone group
-    "F": 0.001,   # ~99.9% ANI — Lineage / Outbreak
+    "A": 0.150,   # ~85% ANI, Broad plasmid family
+    "B": 0.100,   # ~90% ANI, Subfamily
+    "C": 0.050,   # ~95% ANI, Cluster
+    "D": 0.020,   # ~98% ANI, Subcluster
+    "E": 0.010,   # ~99% ANI, Clone group
+    "F": 0.001,   # ~99.9% ANI, Lineage / Outbreak
 }
 
 OUTPUT_DIR = os.path.join(BASE_DIR, "output", "test")
@@ -169,7 +169,7 @@ def print_distance_summary(records, dist_matrix):
 
 def main():
     print("=" * 70)
-    print("pLIN TEST — Assigning pLIN codes to test plasmids")
+    print("pLIN TEST: Assigning pLIN codes to test plasmids")
     print("=" * 70)
 
     if not TEST_INC_TYPES:

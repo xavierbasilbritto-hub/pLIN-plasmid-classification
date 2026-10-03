@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
-Generate Figures 14–17: Addressed Limitations — Multi-panel overview.
+Generate Figures 14–17: Addressed Limitations, Multi-panel overview.
 
 Figure 14: Analytical module validation summary
   A) Classifier training composition (28 Inc/Rep groups, training samples per group)
@@ -105,7 +105,7 @@ def get_group_color(name):
         return GRAM_NEG_COLOR
 
 
-# ── Panel A: Training composition — 24 groups ────────────────────────────────
+# ── Panel A: Training composition, 24 groups ────────────────────────────────
 ax_a = fig.add_subplot(gs[0, 0])
 
 # Sort by sample count
@@ -129,7 +129,7 @@ for i, (cnt, bar) in enumerate(zip(sorted_counts, bars)):
     else:
         ax_a.text(cnt + 5, i, str(cnt), va="center", ha="left", fontsize=6)
 
-# Legend — all 5 organism categories
+# Legend: all 5 organism categories
 legend_patches = [
     mpatches.Patch(color=GRAM_NEG_COLOR, label=f"Gram-negative ({len(gram_neg_groups)})"),
     mpatches.Patch(color=GRAM_POS_SA_COLOR, label=f"S. aureus ({sum(1 for g in gram_pos_groups if 'SA' in g)})"),
@@ -384,7 +384,7 @@ ax_f.spines["left"].set_visible(False)
 ax_f.spines["top"].set_visible(False)
 
 # ── Main title ───────────────────────────────────────────────────────────────
-fig.suptitle("Figure 13: Analytical Module Validation Summary — Expanded Classifier,\n"
+fig.suptitle("Figure 13: Analytical Module Validation Summary, Expanded Classifier,\n"
              "Quality Assessment, Novelty Detection, and Mobile Genetic Element Analysis",
              fontsize=13, fontweight="bold", y=1.01)
 
@@ -508,7 +508,7 @@ rect17 = plt.Rectangle((gp_start_17 - 0.5, gp_start_17 - 0.5),
                         fill=False, edgecolor="cyan", linewidth=2, linestyle="--")
 ax.add_patch(rect17)
 
-fig17.suptitle("Figure 14: Novel Inc/Rep Group Discovery — Training Data, "
+fig17.suptitle("Figure 14: Novel Inc/Rep Group Discovery, Training Data, "
                "Performance, and Taxonomic Separation",
                fontsize=12, fontweight="bold", y=1.02)
 

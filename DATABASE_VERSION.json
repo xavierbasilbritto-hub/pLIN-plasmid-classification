@@ -1,0 +1,19 @@
+{
+  "scheme": "pLIN v3 (legacy, 4-mer composition codes)",
+  "superseded_by": "pLIN v4.1, database db-2026.10.03 (data/plin_v41/DATABASE_VERSION.json, from the GitHub Releases page)",
+  "note": "total_plasmids counts 5,788 accessions twice (X and RefSeq_X); 127,517 unique plasmids",
+  "database_version": "db-2026.10.02",
+  "build_timestamp_utc": "2026-10-02T10:17:27Z",
+  "git_commit": "b53fc26",
+  "training_input_fingerprint": "1a60549f2057",
+  "total_plasmids": 133326,
+  "classified_plasmids": 128875,
+  "unique_plin_codes": 82477,
+  "code_scheme": "founder (plin_founder.py); codes never renumbered across releases",
+  "inc_rep_groups": 28,
+  "training_plasmids": 8077,
+  "reference_plasmids": 125249,
+  "content_sha256": "1b651d543773227d56386973c6f54281ec34521d00ea6aabaae0e9e8810acdd2",
+  "reference_assignments_file": "pLIN_reference_assignments.tsv",
+  "classifier_file": "inc_classifier.npz"
+}

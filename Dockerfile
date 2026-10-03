@@ -1,6 +1,6 @@
 # ============================================================
-#  pLIN — Plasmid Lineage Identification Number System
-#  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+#  pLIN: Plasmid Lineage Identification Number System
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 #
 #  Docker container with all bioinformatics tools pre-installed.
 #  Works on Linux, macOS (Intel/Apple Silicon), and Windows (Docker Desktop).

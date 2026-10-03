@@ -1,0 +1,22 @@
+{
+  "test_pairs": 3337,
+  "same_lineage_pairs": 310,
+  "related_backbone_pairs": 1540,
+  "E1_backbone_v41L1_vs_MOBprimary": {
+    "F1": 0.3798037056557746,
+    "F1_comparator": 0.25768438729127263,
+    "difference": 0.12211931836450196,
+    "lo": -0.0931004377144157,
+    "hi": 0.28418962615245835,
+    "noninferior": false
+  },
+  "E2_lineage_v41L5_vs_MOBsecondary": {
+    "F1": 0.8622819799926694,
+    "F1_comparator": 0.5752781470090702,
+    "difference": 0.2870038329835992,
+    "lo": 0.16808661826340668,
+    "hi": 0.41836864576328886,
+    "noninferior": true
+  },
+  "R5_pass": false
+}

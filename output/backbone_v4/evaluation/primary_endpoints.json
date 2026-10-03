@@ -1,0 +1,18 @@
+{
+  "L3_selected": 0.4,
+  "test_pairs": 2765,
+  "endpoint1_related_backbone_F1_v4L3_minus_MOBprimary": {
+    "difference": 0.15240721425530435,
+    "lo": 0.038306640739555205,
+    "hi": 0.3522397700383708
+  },
+  "endpoint2_same_lineage_F1_v4L6_minus_MOBsecondary": {
+    "difference": 0.4672180797253622,
+    "lo": -0.1965512812658298,
+    "hi": 0.6683326167801529
+  },
+  "v4_incremental_stability_100pct": true,
+  "margin": 0.02,
+  "gate1_pass": true,
+  "endpoint2_noninferior": false
+}

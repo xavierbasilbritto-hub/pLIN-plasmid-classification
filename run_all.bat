@@ -1,12 +1,12 @@
 @echo off
 REM ============================================================================
-REM pLIN — Complete Pipeline (Windows)
+REM pLIN: Complete Pipeline (Windows)
 REM Runs: pLIN assignment → Integration
 REM NOTE: AMRFinderPlus requires WSL or Linux. Use run_all.sh in WSL.
 REM ============================================================================
 
 echo ============================================================
-echo   pLIN — Complete Analysis Pipeline (Windows)
+echo   pLIN: Complete Analysis Pipeline (Windows)
 echo ============================================================
 echo.
 

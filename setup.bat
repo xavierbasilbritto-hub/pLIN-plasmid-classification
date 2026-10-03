@@ -1,11 +1,11 @@
 @echo off
 REM ============================================================================
-REM pLIN Setup Script — Windows
+REM pLIN Setup Script: Windows
 REM Creates a Python virtual environment and installs all dependencies.
 REM ============================================================================
 
 echo ============================================================
-echo   pLIN — Plasmid Lineage Identification Number System
+echo   pLIN: Plasmid Lineage Identification Number System
 echo   Setup Script (Windows)
 echo ============================================================
 echo.

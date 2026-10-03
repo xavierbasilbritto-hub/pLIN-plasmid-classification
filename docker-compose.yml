@@ -1,6 +1,6 @@
 # ============================================================
-#  pLIN — Docker Compose
-#  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+#  pLIN: Docker Compose
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 #
 #  Usage:
 #    docker compose up --build      # First run (builds image)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 pLIN + AMRFinderPlus Integration Script
@@ -187,7 +187,7 @@ def analyse_plin_amr(merged):
             gene_counts_crit = Counter(matching)
             total_hits = sum(gene_counts_crit.values())
             top = ", ".join(f"{g}({c})" for g, c in gene_counts_crit.most_common(5))
-            print(f"   {category}: {total_hits} detections — {top}")
+            print(f"   {category}: {total_hits} detections, {top}")
         else:
             print(f"   {category}: none detected")
 
@@ -203,7 +203,7 @@ def analyse_plin_amr(merged):
                 vir_genes_all.extend(g.split("; "))
         vir_counts = Counter(vir_genes_all)
         top5 = ", ".join(f"{g}({c})" for g, c in vir_counts.most_common(5))
-        print(f"   {inc}: {len(sub)} plasmids with virulence genes — top: {top5}")
+        print(f"   {inc}: {len(sub)} plasmids with virulence genes, top: {top5}")
 
     return plin_amr
 

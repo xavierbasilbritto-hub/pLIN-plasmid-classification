@@ -1,0 +1,26 @@
+tool	step	n_plasmids	threads	wall_s	source	failed	s_per_plasmid
+pLIN	load released tree (once per session)	0	1	1.01	measured		
+pLIN	type plasmids	100	1	0.19	measured		0.0019
+pLIN	type plasmids	500	1	1.21	measured		0.0024
+pLIN	type plasmids	1000	1	2.37	measured		0.0024
+pLIN	type plasmids	2000	1	4.59	measured		0.0023
+pLIN v4 (exact protein matches used)	type plasmids	100	8	17.15	measured		0.1715
+pLIN v4 (exact protein matches used)	type plasmids	500	8	114.88	measured		0.2298
+pLIN v4 (exact protein matches used)	type plasmids	1000	8	184.94	measured		0.1849
+pLIN v4 (all proteins searched)	type plasmids	100	8	34.02	measured		0.3402
+pLIN v4 (all proteins searched)	type plasmids	500	8	241.34	measured		0.4827
+pLIN v4 (all proteins searched)	type plasmids	1000	8	395.81	measured		0.3958
+MOB-suite	type plasmids	100	8	121.44	measured	0.0	1.2144
+MOB-suite	type plasmids	500	8	636.01	measured	0.0	1.272
+MOB-suite	type plasmids	1000	8	1238.96	measured	0.0	1.239
+pling	type plasmids	100	8	42.96	measured		0.4296
+pling	type plasmids	250	8	84.17	measured		0.3367
+pling	type plasmids	500	8	123.31	measured		0.2466
+MOB-suite	type plasmids	10000	8	12477.6	extrapolated (linear)		1.2478
+MOB-suite	type plasmids	100000	8	124775.6	extrapolated (linear)		1.2478
+pLIN	type plasmids	10000	1	23.2	extrapolated (linear)		0.0023
+pLIN	type plasmids	100000	1	232.2	extrapolated (linear)		0.0023
+pLIN v4 (all proteins searched)	type plasmids	10000	8	4194.8	extrapolated (linear)		0.4195
+pLIN v4 (all proteins searched)	type plasmids	100000	8	41948.1	extrapolated (linear)		0.4195
+pLIN v4 (exact protein matches used)	type plasmids	10000	8	1981.1	extrapolated (linear)		0.1981
+pLIN v4 (exact protein matches used)	type plasmids	100000	8	19810.6	extrapolated (linear)		0.1981

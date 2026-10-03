@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  pLIN Launcher for Windows
-REM  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 REM  Double-click this file to install dependencies and launch pLIN
 REM ============================================================
 title pLIN - Plasmid Lineage Identification Number System
@@ -65,9 +65,9 @@ echo [OK] All dependencies installed.
 REM Check for AMRFinderPlus (optional)
 where amrfinder >nul 2>nul
 if %ERRORLEVEL% equ 0 (
-    echo [OK] AMRFinderPlus detected — AMR analysis available.
+    echo [OK] AMRFinderPlus detected: AMR analysis available.
 ) else (
-    echo [INFO] AMRFinderPlus not found — pLIN will run without AMR analysis.
+    echo [INFO] AMRFinderPlus not found: pLIN will run without AMR analysis.
     echo        Install via: conda install -c bioconda -c conda-forge ncbi-amrfinderplus
 )
 

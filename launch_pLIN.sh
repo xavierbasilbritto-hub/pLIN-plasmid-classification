@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 #  pLIN Launcher for Linux
-#  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 #  Run: chmod +x launch_pLIN.sh && ./launch_pLIN.sh
 # ============================================================
 set -e
@@ -72,9 +72,9 @@ echo "[OK] All dependencies installed."
 
 # Check for AMRFinderPlus
 if command -v amrfinder &>/dev/null; then
-    echo "[OK] AMRFinderPlus detected — AMR analysis available."
+    echo "[OK] AMRFinderPlus detected: AMR analysis available."
 else
-    echo "[INFO] AMRFinderPlus not found — pLIN will run without AMR analysis."
+    echo "[INFO] AMRFinderPlus not found: pLIN will run without AMR analysis."
     echo "       Install via: conda install -c bioconda -c conda-forge ncbi-amrfinderplus"
 fi
 

@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 #
 # PyInstaller spec for the standalone pLIN desktop app.
 #
@@ -49,7 +49,7 @@ PLIN_APP_VERSION = _read_plin_app_version()
 binaries = []
 datas = []
 
-# Bundled AMRFinderPlus (macOS/Linux builds only — see build-desktop-app.yml
+# Bundled AMRFinderPlus (macOS/Linux builds only: see build-desktop-app.yml
 # for why Windows is excluded: bioconda has no native win-64 build). The CI
 # workflow installs AMRFinderPlus into its own conda env before this spec
 # runs and exports that env's root as PLIN_AMRFINDER_ENV_DIR; locally, a
@@ -61,10 +61,10 @@ amrfinder_env_dir = os.environ.get("PLIN_AMRFINDER_ENV_DIR")
 if amrfinder_env_dir and os.path.isdir(amrfinder_env_dir):
     bundled_bin_dest = "amrfinder_bin"
     # amrfinder itself, its own internal helper binaries (amr_report,
-    # fasta_check, etc. — confirmed by running a real end-to-end scan
+    # fasta_check, etc.: confirmed by running a real end-to-end scan
     # against a bundled build and observing exactly which missing binary
     # it shelled out for next; there is no documented complete list), and
-    # the external blastn/blastp/blastx/hmmsearch it also depends on — see
+    # the external blastn/blastp/blastx/hmmsearch it also depends on, see
     # plin_app.py's run_amrfinder_on_files(), which passes
     # --blast_bin/--hmmer_bin explicitly at this same bundled path rather
     # than relying on PATH, since a packaged app should not depend on the
@@ -80,7 +80,7 @@ if amrfinder_env_dir and os.path.isdir(amrfinder_env_dir):
         else:
             print(f"WARNING: bundled-AMRFinderPlus tool not found, skipping: {tool_path}")
 
-    # AMRFinderPlus's gene database (~242MB) — a dated subdirectory of
+    # AMRFinderPlus's gene database (~242MB): a dated subdirectory of
     # share/amrfinderplus/data/. Bundle the lexicographically-latest one,
     # matching plin_app.py's own detect_amrfinder() version-selection logic.
     db_root = os.path.join(amrfinder_env_dir, "share", "amrfinderplus", "data")
@@ -94,7 +94,7 @@ if amrfinder_env_dir and os.path.isdir(amrfinder_env_dir):
     else:
         print(f"WARNING: no AMRFinderPlus database version found under {db_root}")
 else:
-    print("PLIN_AMRFINDER_ENV_DIR not set — building without a bundled AMRFinderPlus "
+    print("PLIN_AMRFINDER_ENV_DIR not set: building without a bundled AMRFinderPlus "
           "(app will fall back to detecting a system install at runtime, as before).")
 datas += collect_data_files("streamlit")
 datas += copy_metadata("streamlit")
@@ -108,13 +108,19 @@ datas += copy_metadata("numpy")
 # would.
 datas += [
     (os.path.join(REPO_ROOT, "plin_app.py"), "."),
+    # pLIN founder-assignment module imported by plin_app.py at runtime, and
+    # the release founder trees query mode places new plasmids against.
+    (os.path.join(REPO_ROOT, "plin_founder.py"), "."),
+    (os.path.join(REPO_ROOT, "plin_backbone.py"), "."),
+    (os.path.join(REPO_ROOT, "data", "plin_founder_tree_training.npz"), "data"),
+    (os.path.join(REPO_ROOT, "data", "plin_founder_tree_reference.npz"), "data"),
     (os.path.join(REPO_ROOT, "data", "inc_classifier.npz"), "data"),
     (os.path.join(REPO_ROOT, "data", "inc_centroids.npz"), "data"),
     (os.path.join(REPO_ROOT, "output", "pLIN_assignments.tsv"), "output"),
-    # Full 79,305-plasmid expanded reference database, so "query mode"
+    # Full expanded reference database, so "query mode"
     # (looking up a newly-uploaded plasmid's nearest neighbour) runs
     # against the full database rather than just the 8,077-plasmid
-    # training set — see _load_reference_for_query() in plin_app.py,
+    # training set: see _load_reference_for_query() in plin_app.py,
     # which already prefers these two files over the smaller training-set
     # fallback when both are present.
     (os.path.join(REPO_ROOT, "output", "pLIN_reference_assignments.tsv"), "output"),
@@ -130,6 +136,7 @@ datas += [
 hiddenimports = []
 hiddenimports += collect_submodules("streamlit")
 hiddenimports += collect_submodules("Bio")
+hiddenimports += ["pyrodigal"]   # backbone protein comparison (plin_backbone.py)
 hiddenimports += [
     "sklearn.utils._typedefs",
     "sklearn.neighbors._partition_nodes",
@@ -206,7 +213,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name="pLIN.app",
-    icon=None,  # .icns required for a real macOS dock icon; PNG isn't directly usable here — see build notes
+    icon=None,  # .icns required for a real macOS dock icon; PNG isn't directly usable here, see build notes
     bundle_identifier="com.umcg.plin",
     info_plist={
         "NSHighResolutionCapable": "True",

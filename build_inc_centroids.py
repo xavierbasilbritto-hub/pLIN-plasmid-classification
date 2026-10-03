@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 Train an Inc-group classifier from training data using k-mer profiles.
@@ -117,7 +117,7 @@ def main():
     else:
         cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         y_pred = cross_val_predict(knn, X, y, cv=cv)
-        print(f"\n{n_splits}-fold Stratified CV — Per-class metrics:")
+        print(f"\n{n_splits}-fold Stratified CV: Per-class metrics:")
         print(classification_report(y, y_pred, target_names=group_names, digits=4))
 
         # Compute per-class metrics and save

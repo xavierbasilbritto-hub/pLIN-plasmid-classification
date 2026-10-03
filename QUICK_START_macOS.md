@@ -1,4 +1,4 @@
-# pLIN Quick Start Guide — macOS
+# pLIN Quick Start Guide: macOS
 
 **For reviewers with no bioinformatics experience.**
 **Time needed: 20-30 minutes (mostly waiting for downloads).**
@@ -7,7 +7,7 @@
 
 ## What is pLIN?
 
-pLIN is a web application that runs on your computer. You will open it in your web browser (Safari, Chrome, or Firefox) — just like any website, except it runs locally on your Mac. Nothing is uploaded to the internet.
+pLIN is a web application that runs on your computer. You will open it in your web browser (Safari, Chrome, or Firefox), just like any website, except it runs locally on your Mac. Nothing is uploaded to the internet.
 
 You give it plasmid DNA sequence files, and it:
 - Classifies them into groups (Inc/Rep types)
@@ -43,19 +43,19 @@ A window with a black or white background will appear with a blinking cursor. Th
 
 ## Step 2: Unzip the pLIN Package
 
-You received a file called `pLIN_v3.0.0_macOS.zip`.
+Download the source code from GitHub (green **Code** button, then **Download ZIP**): you get `pLIN-plasmid-classification-main.zip`.
 
 1. Find the ZIP file (likely in your **Downloads** folder)
-2. **Double-click** it to unzip — this creates a folder called `pLIN_v3.0.0_macOS`
+2. **Double-click** it to unzip: this creates a folder called `pLIN-plasmid-classification-main`
 3. In Terminal, type this command to navigate into that folder:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_macOS
+cd ~/Downloads/pLIN-plasmid-classification-main
 ```
 
 > **Note:** If you saved the ZIP somewhere else, adjust the path. For example, if it is on your Desktop:
 > ```bash
-> cd ~/Desktop/pLIN_v3.0.0_macOS
+> cd ~/Desktop/pLIN-plasmid-classification-main
 > ```
 
 4. Verify you are in the right folder:
@@ -78,16 +78,16 @@ Homebrew is a free tool that helps install software on Mac. You may already have
 brew --version
 ```
 
-- If you see `Homebrew 4.x.x` — **skip to Step 4**
-- If you see "command not found" — install it:
+- If you see `Homebrew 4.x.x`: **skip to Step 4**
+- If you see "command not found": install it:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 **What to expect:**
-- It will ask for your **Mac password** — type it and press Enter
-- **Nothing appears on screen while you type your password** — this is normal, just keep typing
+- It will ask for your **Mac password**, type it and press Enter
+- **Nothing appears on screen while you type your password**, this is normal, just keep typing
 - Wait 2-5 minutes until you see "Installation successful"
 - If it tells you to run extra commands (about adding Homebrew to your PATH), **run those commands too**
 
@@ -111,8 +111,8 @@ Miniconda manages Python and scientific software packages.
 conda --version
 ```
 
-- If you see `conda 24.x.x` — **skip to Step 5**
-- If you see "command not found" — install it:
+- If you see `conda 24.x.x`: **skip to Step 5**
+- If you see "command not found": install it:
 
 ```bash
 brew install --cask miniconda
@@ -129,7 +129,7 @@ conda init zsh
 Navigate back to the pLIN folder:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_macOS
+cd ~/Downloads/pLIN-plasmid-classification-main
 ```
 
 **Verify it worked:**
@@ -153,8 +153,8 @@ chmod +x pLIN_macOS.sh
 
 **What to expect:**
 - You will see `[INFO]` and `[OK]` messages as things install
-- Some items may show `[WARN] Could not install` — **this is fine**, these are optional tools
-- **This takes 15-30 minutes** — let it run, do not close Terminal
+- Some items may show `[WARN] Could not install`, **this is fine**, these are optional tools
+- **This takes 15-30 minutes**: let it run, do not close Terminal
 - When finished, you will see:
 
 ```
@@ -204,7 +204,7 @@ You should see "3 files uploaded" with the file names listed.
 
 1. Leave all sidebar settings at their defaults
 2. Click the **"Run Analysis"** button
-3. Wait 10-30 seconds — you will see a progress bar
+3. Wait 10-30 seconds: you will see a progress bar
 
 ### 7c. Check the Results
 
@@ -220,7 +220,7 @@ You should see "3 files uploaded" with the file names listed.
 
 **Export tab:**
 - Click **"Download pLIN Assignments (TSV)"**
-- A `.tsv` file downloads — open it in Excel or any text editor
+- A `.tsv` file downloads: open it in Excel or any text editor
 - Verify it has columns: `plasmid_id`, `inc_type`, `length_bp`, `pLIN`
 
 ---
@@ -240,7 +240,7 @@ When you are done testing:
 Next time you want to use pLIN, you only need two commands:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_macOS
+cd ~/Downloads/pLIN-plasmid-classification-main
 ./pLIN_macOS.sh --launch
 ```
 
@@ -301,7 +301,7 @@ amrfinder --update
 | `requirements.txt` | List of Python packages needed |
 | `data/inc_classifier.npz` | Classification model (trained on 8,077 plasmids) |
 | `data/inc_centroids.npz` | Group centroids for distance calculation |
-| `output/pLIN_assignments.tsv` | Reference database (79,305 plasmid assignments) |
+| `output/pLIN_assignments.tsv` | pLIN v3 (legacy) codes; the v4.1 database is downloaded separately into `data/plin_v41/` (see README) |
 | `test_plasmids/IncX/*.fasta` | 22 sample plasmid sequences for testing |
 | `REVIEWER_GUIDE.md` | Detailed feature validation checklist |
 | `Dockerfile` | For Docker-based installation (alternative) |
@@ -313,7 +313,7 @@ amrfinder --update
 If you have Docker Desktop installed, you can skip all the above and just run:
 
 ```bash
-cd ~/Downloads/pLIN_v3.0.0_macOS
+cd ~/Downloads/pLIN-plasmid-classification-main
 docker compose up --build
 ```
 

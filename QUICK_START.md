@@ -8,7 +8,7 @@
 
 ## What is pLIN?
 
-pLIN is a web application that runs locally on your computer. You open it in your web browser (Chrome, Safari, Firefox, or Edge) — just like any website, except nothing is uploaded to the internet.
+pLIN is a web application that runs locally on your computer. You open it in your web browser (Chrome, Safari, Firefox, or Edge), just like any website, except nothing is uploaded to the internet.
 
 You give it plasmid DNA sequence files, and it:
 - Classifies them into Inc/Rep groups (28 supported)
@@ -102,7 +102,7 @@ Close and reopen Terminal after this.
 ### Windows
 
 1. Download **Miniconda** from: https://docs.conda.io/en/latest/miniconda.html
-2. Run the installer — **check "Add to PATH"** when asked
+2. Run the installer: **check "Add to PATH"** when asked
 3. Click **Install**, then **Finish**
 4. Open **Anaconda Prompt** from the Start Menu
 
@@ -130,7 +130,7 @@ git clone https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification.g
 cd pLIN-plasmid-classification
 ```
 
-Verify you're in the right place — you should see `plin_app.py`:
+Verify you're in the right place: you should see `plin_app.py`:
 
 ```bash
 ls plin_app.py
@@ -155,7 +155,7 @@ python setup_pLIN.py --install
 - Conda environment creation + bioinformatics tool installation
 - IS element reference database download (25 sequences from NCBI)
 - BLAST database verification
-- Some `[WARN]` messages for optional tools — this is normal
+- Some `[WARN]` messages for optional tools: this is normal
 
 The installer will:
 1. Check your Python version
@@ -189,9 +189,9 @@ Your browser will open automatically at **http://localhost:8501**.
 1. In the pLIN web interface, click **"Browse files"** or drag-and-drop
 2. Navigate to `test_plasmids/IncX/` and upload 3 FASTA files
 3. Click **"Run Analysis"**
-4. Check the **Results** tab — you should see:
+4. Check the **Results** tab: you should see:
    - Inc/Rep group classification (e.g., IncX1, IncX3, IncX4)
-   - 6-level pLIN codes (e.g., `3.5.12.45.201.3050`)
+   - 6-level pLIN codes (e.g., `169.178.183.208.209.2438`)
    - Confidence scores
 5. Check the **Cladogram** tab for the interactive phylogenetic tree
 6. Try the **Export** button to download a TSV file
@@ -238,15 +238,15 @@ pLIN uses a multi-signal scoring system that combines four lines of evidence:
 
 **Three classification outcomes:**
 
-1. **Plasmid** (high confidence, score >= 10) — receives a pLIN code and all downstream analyses (AMR, mobility, etc.)
-2. **Incomplete plasmid** (ambiguous, -10 < score < 10) — gets AMR/mobility analysis but no pLIN code (prevents unreliable lineage assignments)
-3. **Chromosome** (score <= -10) — excluded from all plasmid-specific analyses
+1. **Plasmid** (high confidence, score >= 10): receives a pLIN code and all downstream analyses (AMR, mobility, etc.)
+2. **Incomplete plasmid** (ambiguous, -10 < score < 10), gets AMR/mobility analysis but no pLIN code (prevents unreliable lineage assignments)
+3. **Chromosome** (score <= -10): excluded from all plasmid-specific analyses
 
 **Multi-contig assembly handling:**
 
 When multiple contigs from the same source file share the same Inc type, pLIN merges them into a single record (joined with 100-N spacer) before pLIN assignment. Contigs with different Inc types are kept separate as genuinely different plasmids.
 
-**No external tools required** — contig classification uses the same KNN classifier (256-dimensional 4-mer frequency vectors + cosine distance) that powers Inc/Rep group detection. It runs automatically when "Auto-detect plasmid contigs" is enabled in the sidebar.
+**No external tools required**: contig classification uses the same KNN classifier (256-dimensional 4-mer frequency vectors + cosine distance) that powers Inc/Rep group detection. It runs automatically when "Auto-detect plasmid contigs" is enabled in the sidebar.
 
 **Controlling the feature:**
 - Enabled by default (recommended for mixed assemblies)
@@ -281,17 +281,17 @@ Insertion sequences are short (800-2,500 bp) transposable elements that carry on
 
 **Setup requirements:**
 
-- **BLAST+** — installed automatically by `setup_pLIN.py`
-- **IS reference database** — downloaded automatically during setup from NCBI
+- **BLAST+**: installed automatically by `setup_pLIN.py`
+- **IS reference database**: downloaded automatically during setup from NCBI
 - If the database was not set up, run `python3 setup_pLIN.py --install` or `python3 detect_IS_elements.py`
 
 **Where to find results:**
 
 - In the pLIN GUI: **MGE Detection** tab (requires Prodigal gene predictions)
 - Output directory: `output/mge_detection/`
-  - `is_element_hits.tsv` — all IS hits per plasmid
-  - `is_family_counts.tsv` — IS family distribution across groups
-  - `composite_transposons.tsv` — IS pairs flanking AMR genes
+  - `is_element_hits.tsv`: all IS hits per plasmid
+  - `is_family_counts.tsv`: IS family distribution across groups
+  - `composite_transposons.tsv`: IS pairs flanking AMR genes
 
 ---
 
@@ -409,7 +409,7 @@ This shows the status of Python, packages, bioinformatics tools, conda environme
 | `data/inc_classifier.npz` | KNN classifier (8,077 plasmids, 28 groups) |
 | `data/inc_centroids.npz` | Group centroids for distance calculation |
 | `output/pLIN_assignments.tsv` | Training database pLIN assignments |
-| `output/pLIN_reference_assignments.tsv` | Full reference database (79,305 plasmids) |
+| `output/pLIN_reference_assignments.tsv` | pLIN v3 (legacy) codes, db-2026.10.02; v4.1 database in `data/plin_v41/` (see README) |
 | `output/mge_detection/` | IS element reference database and detection results |
 | `detect_IS_elements.py` | Standalone IS element detection script |
 | `build_IS_database.py` | Curated IS database builder |
@@ -423,6 +423,6 @@ This shows the status of Python, packages, bioinformatics tools, conda environme
 
 For detailed, step-by-step instructions tailored to your operating system:
 
-- [macOS Guide](QUICK_START_macOS.md) — Ventura, Sonoma, Sequoia (Intel & Apple Silicon)
-- [Linux Guide](QUICK_START_Linux.md) — Ubuntu, Debian, Fedora, CentOS, Arch, RHEL, openSUSE
-- [Windows Guide](QUICK_START_Windows.md) — Windows 10/11 with WSL2 option
+- [macOS Guide](QUICK_START_macOS.md): Ventura, Sonoma, Sequoia (Intel & Apple Silicon)
+- [Linux Guide](QUICK_START_Linux.md): Ubuntu, Debian, Fedora, CentOS, Arch, RHEL, openSUSE
+- [Windows Guide](QUICK_START_Windows.md): Windows 10/11 with WSL2 option

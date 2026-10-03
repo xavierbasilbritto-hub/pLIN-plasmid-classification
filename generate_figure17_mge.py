@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Generate Figure 17: Mobile Genetic Element (MGE) Boundary Detection.
 
@@ -337,7 +337,7 @@ genes_3 = [
     (18, 24, "IS256", COLORS["IS"], 1),
     (25, 36, "aac(6')-aph(2'')", COLORS["AMR"], 1),
     (37, 42, "sat4", COLORS["AMR"], 1),
-    # Same orientation as the flanking copy above — see note on the IS26
+    # Same orientation as the flanking copy above, see note on the IS26
     # pair (Panel B, plasmid 1): IS256 is also an IS6-family element.
     (43, 49, "IS256", COLORS["IS"], 1),
     (51, 56, "ermB", COLORS["AMR"], 1),

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 Honest, leak-free validation of a contrastive-encoder feature transform
@@ -10,7 +10,7 @@ Background: an internal discussion document (output/pLIN_Classifier_KNN_vs_
 Encoder_Discussion.docx) reported a contrastive encoder beating KNN
 (93.3% accuracy / 0.723 macro-F1 vs 91.1% / 0.666), but no training code,
 saved model, or CV fold logs existed anywhere in this repository to verify
-those numbers — they were hardcoded directly into a slide-deck generation
+those numbers: they were hardcoded directly into a slide-deck generation
 script with no underlying analysis to re-run. This script builds a real
 encoder and runs a genuinely leak-free comparison, so the result is
 independently reproducible from this file alone.
@@ -22,7 +22,7 @@ evaluation time, exactly mirroring how the existing KNN baseline's
 cv_accuracy/cv_metrics in data/inc_classifier.npz were computed. Both
 classifiers are evaluated identically: predict Inc/Rep group for each
 held-out plasmid via distance-weighted k=5 nearest neighbour vote (cosine
-distance) — the only difference is which feature space the vote happens
+distance): the only difference is which feature space the vote happens
 in (raw 256-dim 4-mer frequencies for KNN, the encoder's learned
 embedding for the encoder condition). This isolates the actual variable
 of interest (does the learned embedding separate classes better than raw
@@ -49,7 +49,7 @@ from datetime import datetime, timezone
 # torch must be imported before sklearn on this platform: importing
 # sklearn first and torch second causes a native OpenMP/BLAS runtime
 # conflict (both link their own copy) that segfaults on first tensor op
-# — reproduced and confirmed during development of this script.
+#: reproduced and confirmed during development of this script.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -67,7 +67,7 @@ class ContrastiveEncoder(nn.Module):
     """Small MLP embedding network: 256-dim 4-mer vector -> embed_dim
     L2-normalised embedding, trained with a supervised contrastive loss
     (same-class pairs pulled together, different-class pairs pushed
-    apart) — the architecture described in the discussion document
+    apart): the architecture described in the discussion document
     (nonlinear embedding for cosine-KNN), reconstructed here since no
     saved implementation existed."""
 
@@ -148,7 +148,7 @@ def embed(model, X, device="cpu"):
 
 def evaluate_knn_vote(X_train, y_train, X_test, k=5, metric="cosine"):
     """Identical classification rule used for both conditions: k=5,
-    cosine-distance, distance-weighted KNN vote — matching the production
+    cosine-distance, distance-weighted KNN vote: matching the production
     classifier's own configuration exactly."""
     clf = KNeighborsClassifier(n_neighbors=k, metric=metric, weights="distance")
     clf.fit(X_train, y_train)

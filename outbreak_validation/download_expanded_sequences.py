@@ -149,7 +149,7 @@ def main():
 
         # Skip if already downloaded
         if os.path.exists(out_path) and os.path.getsize(out_path) > 100:
-            print(f"[{i}/{total}] {acc} — already exists, skipping")
+            print(f"[{i}/{total}] {acc}: already exists, skipping")
             downloaded += 1
             continue
 
@@ -170,7 +170,7 @@ def main():
             continue
 
         if not info["valid_bases"]:
-            print(f"WARNING (invalid bases) — saving anyway")
+            print(f"WARNING (invalid bases): saving anyway")
 
         with open(out_path, "w") as f:
             f.write(fasta)

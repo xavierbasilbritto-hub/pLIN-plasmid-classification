@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pLIN Classifier — Streamlit GUI Application
+pLIN Classifier: Streamlit GUI Application
 Plasmid Lineage Identification Number system with AMRFinderPlus integration.
 Run: streamlit run plin_app.py
 
@@ -44,13 +44,16 @@ from Bio import SeqIO
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
 
+from plin_founder import (PLIN_THRESHOLDS as _CANONICAL_THRESHOLDS, FounderTree,
+                          kmer_vector as _founder_kmer_vector, session_copy)
+
 # ── Page Configuration ────────────────────────────────────────────────────────
 
 _LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 _FAVICON = os.path.join(_LOGO_DIR, "pLIN_favicon.png")
 
 st.set_page_config(
-    page_title="Generating pLIN number — a digital ID for your plasmid",
+    page_title="Generating pLIN number: a digital ID for your plasmid",
     page_icon=_FAVICON if os.path.exists(_FAVICON) else "🧬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -58,19 +61,21 @@ st.set_page_config(
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-PLIN_THRESHOLDS = {
-    "A": 0.150, "B": 0.100, "C": 0.050,
-    "D": 0.020, "E": 0.010, "F": 0.001,
-}
+PLIN_THRESHOLDS = dict(_CANONICAL_THRESHOLDS)
 
 PLIN_LEVEL_NAMES = {
     "A": "L1", "B": "L2", "C": "L3",
     "D": "L4", "E": "L5", "F": "L6",
 }
 
-ANI_EQUIV = {
-    "A": "~85%", "B": "~90%", "C": "~95%",
-    "D": "~98%", "E": "~99%", "F": "~99.9%",
+# What sharing a code prefix at each level means, from pairwise alignment of
+# plasmids that share that level (validate_alignment_backbone.py). Composition
+# distance does not map onto ANI at the coarse levels, so no ANI value is given.
+LEVEL_MEANING = {
+    "A": "Compositional neighbourhood", "B": "Compositional neighbourhood",
+    "C": "Compositional neighbourhood", "D": "Compositional neighbourhood",
+    "E": "Partly shared backbone",
+    "F": "Same lineage: most of the sequence shared at ~99.9% identity",
 }
 
 THRESHOLD_COLORS = {
@@ -89,11 +94,11 @@ TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 # Bumped on every release that changes the reference database, the
 # classifier, or code-assignment behaviour, so exported results can be
 # traced back to exactly which app build produced them (see
-# get_run_provenance()) — this matters because a "new" pLIN code minted
+# get_run_provenance()): this matters because a "new" pLIN code minted
 # in query mode is only reproducible against the exact database version
 # that assigned it (see USER_MANUAL.md's "Will two colleagues get the
 # same code" section).
-PLIN_APP_VERSION = "3.2.3"
+PLIN_APP_VERSION = "4.1.0"
 
 # Paths to precomputed Inc-group classifier data
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -110,7 +115,7 @@ def _encoder_available():
     appears as a selectable alternative. See
     output/encoder_vs_knn_validation_result.json for the independent,
     leak-free cross-validation this option's reported accuracy comes
-    from (92.7% vs KNN's 91.1%, macro-F1 0.692 vs 0.666 — a consistent
+    from (92.7% vs KNN's 91.1%, macro-F1 0.692 vs 0.666, a consistent
     but modest improvement, not the earlier unverified 93.3%/0.723
     figure that had no underlying analysis behind it)."""
     if not (os.path.exists(ENCODER_PATH) and os.path.exists(ENCODER_METADATA_PATH)):
@@ -147,7 +152,7 @@ INC_CONFIDENCE_THRESHOLD = 0.40  # 40% confidence minimum
 # missed the secondary replicon for 4 of 8 Swiss VIM-1 isolates.
 MULTI_INC_THRESHOLD = 0.15  # 15% minimum for secondary Inc types
 
-# PlasmidFinder replicon BLAST — used as a secondary signal for large plasmids
+# PlasmidFinder replicon BLAST: used as a secondary signal for large plasmids
 # where KNN gives ≥95% to a single group (all 5 neighbours same group → misses secondary)
 PLASMIDFINDER_DB_DIR = os.path.expanduser("~/plasmidfinder_db")
 REPLICON_BLAST_SIZE_THRESHOLD = 100_000   # only run for sequences > 100 kb
@@ -156,8 +161,8 @@ REPLICON_BLAST_COVERAGE = 60.0           # min query coverage % for replicon hit
 
 # Minimum sequence length for reliable 4-mer classification
 # Plasmids shorter than this have high stochastic variance in k-mer profiles
-SHORT_PLASMID_THRESHOLD = 5000  # 5 kb — warn users about unreliable pLIN codes
-CHROMOSOMAL_THRESHOLD = 500000  # 500 kb — likely chromosomal, not plasmid
+SHORT_PLASMID_THRESHOLD = 5000  # 5 kb: warn users about unreliable pLIN codes
+CHROMOSOMAL_THRESHOLD = 500000  # 500 kb: likely chromosomal, not plasmid
 
 # Mobility/conjugation marker genes detectable from AMRFinderPlus output
 MOBILITY_GENES = {
@@ -311,7 +316,7 @@ def load_inc_encoder():
 def classify_inc_group_via_encoder(query_vectors, model, X_train_embedded, y_train, group_names, k=5):
     """Classify query 4-mer vectors via the encoder's learned embedding
     space, using the identical k=5 cosine-distance distance-weighted KNN
-    vote as the raw-4-mer classifier — the only difference from
+    vote as the raw-4-mer classifier: the only difference from
     load_inc_classifier's path is which feature space the vote happens
     in, exactly matching the comparison methodology in
     validate_encoder_vs_knn.py so the two options are genuinely
@@ -357,19 +362,7 @@ def load_cv_metrics():
 
 def _kmer_vector_single(sequence):
     """Compute normalised 4-mer frequency vector for a single sequence."""
-    bases = "ACGT"
-    all_kmers = ["".join(p) for p in iter_product(bases, repeat=4)]
-    kmer_idx = {km: i for i, km in enumerate(all_kmers)}
-    seq = sequence.upper()
-    counts = np.zeros(256, dtype=np.float64)
-    for i in range(len(seq) - 3):
-        kmer = seq[i:i + 4]
-        if kmer in kmer_idx:
-            counts[kmer_idx[kmer]] += 1
-    total = counts.sum()
-    if total > 0:
-        counts /= total
-    return counts
+    return _founder_kmer_vector(sequence)
 
 
 # ── Input Quality Validation ─────────────────────────────────────────────────
@@ -392,11 +385,11 @@ def validate_sequence_quality(sequence, plasmid_id):
     n_pct = 100.0 * n_count / seq_len
     if n_pct > 20:
         warnings.append({"level": "error", "check": "N-content",
-                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases — assembly too fragmented for reliable 4-mer profiling",
+                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases, assembly too fragmented for reliable 4-mer profiling",
                           "value": round(n_pct, 1)})
     elif n_pct > 5:
         warnings.append({"level": "warning", "check": "N-content",
-                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases — may reduce 4-mer accuracy",
+                          "message": f"{plasmid_id}: {n_pct:.1f}% N bases, may reduce 4-mer accuracy",
                           "value": round(n_pct, 1)})
 
     # 2. GC-content check (25–70% covers Enterobacterales + Gram-positive plasmids)
@@ -425,7 +418,7 @@ def validate_sequence_quality(sequence, plasmid_id):
             # Max entropy for 256 bins = log2(256) = 8.0; typical plasmid > 6.0
             if entropy < 3.5:
                 warnings.append({"level": "warning", "check": "low-complexity",
-                                  "message": f"{plasmid_id}: 4-mer entropy = {entropy:.2f} bits (very low — repetitive sequence)",
+                                  "message": f"{plasmid_id}: 4-mer entropy = {entropy:.2f} bits (very low, repetitive sequence)",
                                   "value": round(entropy, 2)})
             elif entropy < 5.0:
                 warnings.append({"level": "info", "check": "low-complexity",
@@ -528,7 +521,7 @@ def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
                 score -= 25
                 reasons.append(f"Very distant from all plasmids (d={nn_dist:.4f})")
 
-            # Centroid distance — chromosomes tend to be far from all centroids
+            # Centroid distance: chromosomes tend to be far from all centroids
             if min_centroid_dist > 0.25:
                 score -= 15
                 reasons.append(f"Far from all Inc centroids (d={min_centroid_dist:.4f})")
@@ -555,10 +548,10 @@ def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
 
         # ── Final classification ─────────────────────────────────────────
         # Three categories:
-        #   1. "plasmid" (confidence >= 95%) — gets pLIN code + all modules
-        #   2. "incomplete_plasmid" (plasmid-like but <95% conf) — no pLIN,
+        #   1. "plasmid" (confidence >= 95%): gets pLIN code + all modules
+        #   2. "incomplete_plasmid" (plasmid-like but <95% conf): no pLIN,
         #      but AMR/mobility/other modules still run
-        #   3. "chromosome" — excluded entirely
+        #   3. "chromosome": excluded entirely
         confidence = min(99, 50 + abs(score))
 
         if score <= -10:
@@ -566,7 +559,7 @@ def classify_contigs_plasmid_vs_chromosome(records, vectors=None):
         elif score >= 10 and confidence >= 95:
             classification = "plasmid"
         else:
-            # Borderline or moderate plasmid signal — flag as incomplete
+            # Borderline or moderate plasmid signal: flag as incomplete
             classification = "incomplete_plasmid"
 
         results.append({
@@ -608,12 +601,12 @@ def merge_multicontig_plasmids(records):
 
     for (src_file, inc_type), group_recs in groups.items():
         if len(group_recs) == 1:
-            # Single contig — pass through unchanged
+            # Single contig: pass through unchanged
             rec = group_recs[0]
             merged_records.append(rec)
             merge_map[rec["plasmid_id"]] = [rec["plasmid_id"]]
         else:
-            # Multiple contigs from same file with same Inc type — merge
+            # Multiple contigs from same file with same Inc type, merge
             # Sort by contig index to maintain original order
             group_recs.sort(key=lambda r: r.get("_contig_index", 0))
 
@@ -678,7 +671,7 @@ def assess_assembly_completeness(records, prodigal_summary_df=None):
                             "completeness_score": 0, "completeness_status": "POOR"})
             continue
 
-        # 1. Contig count — check for N-gaps (>=10 consecutive Ns = contig break)
+        # 1. Contig count: check for N-gaps (>=10 consecutive Ns = contig break)
         import re
         contigs = re.split(r'N{10,}', seq)
         contigs = [c for c in contigs if len(c) > 0]
@@ -697,7 +690,7 @@ def assess_assembly_completeness(records, prodigal_summary_df=None):
                 break
         n50_ratio = n50 / total_len if total_len > 0 else 0
 
-        # 3. Circular topology signal — check overlap between first and last 500bp
+        # 3. Circular topology signal: check overlap between first and last 500bp
         circular_signal = False
         check_len = min(500, total_len // 4)
         if check_len >= 50:
@@ -951,7 +944,7 @@ def classify_inc_group(sequence, group_names, classifier):
             "confusion_note": "",
         }
     else:
-        # Centroid fallback — use cosine similarity as confidence
+        # Centroid fallback: use cosine similarity as confidence
         centroids = classifier
         v = vec.flatten()
         similarities = {}
@@ -1020,12 +1013,12 @@ def calibrate_inc_thresholds():
     # These correspond to the fraction of within-group distances that should
     # fall below each threshold
     level_quantiles = {
-        "A": 0.99,   # L1 — nearly all within-group distances below this
+        "A": 0.99,   # L1, nearly all within-group distances below this
         "B": 0.95,   # L2
         "C": 0.75,   # L3
-        "D": 0.50,   # L4 — median distance
+        "D": 0.50,   # L4, median distance
         "E": 0.25,   # L5
-        "F": 0.05,   # L6 — only very close pairs
+        "F": 0.05,   # L6, only very close pairs
     }
 
     calibrated = {}
@@ -1584,7 +1577,7 @@ def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
     ax.set_xlim(-plasmid_length * 0.02, plasmid_length * 1.02)
     ax.set_ylim(-1.2, 1.5)
     ax.set_xlabel("Position (bp)", fontsize=9)
-    ax.set_title(f"{plasmid_id} — Gene Architecture ({plasmid_length:,} bp)", fontsize=11)
+    ax.set_title(f"{plasmid_id}: Gene Architecture ({plasmid_length:,} bp)", fontsize=11)
     ax.set_yticks([])
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -1610,7 +1603,7 @@ def draw_plasmid_gene_map(mge_df, plasmid_length, plasmid_id):
 # are actually shared. This module runs pairwise blastn between members of a
 # user-selected pLIN group and reports coverage, identity, and the coordinates
 # of shared vs. non-shared sequence directly, plus which AMR genes (if any)
-# fall inside vs. outside the shared blocks — the same analysis performed by
+# fall inside vs. outside the shared blocks, the same analysis performed by
 # hand for Supplementary Table S5 during peer review, now a reusable feature
 # rather than a one-off validation script.
 
@@ -1638,10 +1631,10 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ide
     Returns
     -------
     dict with keys:
-        "pairs": DataFrame, one row per plasmid pair — query/subject id,
+        "pairs": DataFrame, one row per plasmid pair, query/subject id,
             length of each, total length covered, % coverage (of the
             shorter sequence), weighted % identity, n_blocks.
-        "blocks": DataFrame, one row per aligned block (HSP) — pair,
+        "blocks": DataFrame, one row per aligned block (HSP), pair,
             query/subject coordinates, length, % identity. This is the
             data needed to say *which* regions are shared, not just how
             much.
@@ -1658,7 +1651,7 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ide
                 "error": "BLAST+ (blastn/makeblastdb) not found. Install BLAST+ to use "
                          "within-group alignment (see Installation docs)."}
 
-    # plasmid_id is not guaranteed unique across records — e.g. multi-contig
+    # plasmid_id is not guaranteed unique across records, e.g. multi-contig
     # assemblies with generic contig names ("1", "unnamed", ...) can collide
     # across different uploaded files. Silently keying a dict by plasmid_id
     # would drop one and silently align the wrong sequence, so check first.
@@ -1735,7 +1728,7 @@ def run_within_group_alignment(records, plasmid_ids, blastn_binary=None, min_ide
                 # side's aligned intervals, overlaps merged so duplicate/
                 # overlapping HSPs aren't double-counted, as a fraction of
                 # that side's own length) and then reported as coverage of
-                # the shorter sequence specifically — dividing a query-side
+                # the shorter sequence specifically: dividing a query-side
                 # union by the subject's length (or vice versa) is a
                 # mismatched numerator/denominator and can exceed 100% when
                 # the query is not the shorter sequence.
@@ -1803,7 +1796,7 @@ def annotate_alignment_blocks_with_amr(blocks_df, amr_df):
     genes on either plasmid and reports whether each gene's coordinates fall
     within any shared block on that plasmid's side of the alignment. This is
     what lets a user see, directly, whether AMR content differs between two
-    plasmids that otherwise look nearly identical by pLIN code — the
+    plasmids that otherwise look nearly identical by pLIN code, the
     question Reviewer 2 asked for by name.
 
     Returns a DataFrame: plasmid_id, gene, class, start, end, in_shared_block
@@ -1892,15 +1885,15 @@ def draw_alignment_comparison(blocks_row_group, plasmid_1, plasmid_2, len_1, len
     ax.set_yticks([y_bot, y_top])
     ax.set_yticklabels([f"{plasmid_2}\n({len_2:,} bp)", f"{plasmid_1}\n({len_1:,} bp)"], fontsize=8)
     ax.set_xlabel("Position (bp)", fontsize=9)
-    ax.set_title(f"{plasmid_1} vs {plasmid_2} — shared blocks (color = block; darker = higher identity)",
+    ax.set_title(f"{plasmid_1} vs {plasmid_2}: shared blocks (color = block; darker = higher identity)",
                  fontsize=10)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
     if amr_annotated is not None and len(amr_annotated) > 0:
         legend_patches = [
-            mpatches.Patch(color="#43A047", label="AMR gene — inside shared block"),
-            mpatches.Patch(color="#E53935", label="AMR gene — outside shared block"),
+            mpatches.Patch(color="#43A047", label="AMR gene: inside shared block"),
+            mpatches.Patch(color="#E53935", label="AMR gene: outside shared block"),
         ]
         ax.legend(handles=legend_patches, loc="upper right", fontsize=7, framealpha=0.8)
 
@@ -1916,7 +1909,7 @@ def detect_outbreak_clusters(plin_df, integrated_df):
     """Flag potential outbreak clusters: plasmids sharing the same full pLIN
     strain-level code (i.e. identical down to L6). Matching AMR resistance
     profile is attached as supplementary evidence when available, but is not
-    required — a shared pLIN code alone is sufficient evidence of a likely
+    required: a shared pLIN code alone is sufficient evidence of a likely
     shared plasmid, since pLIN already reflects whole-plasmid similarity.
 
     Returns list of dicts with cluster info.
@@ -2081,13 +2074,13 @@ def parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=False
     """Parse uploaded FASTA files. Auto-detects Inc group when inc_type='Auto-detect'.
 
     The primary classification path (classify_inc_group, below) is always
-    KNN on raw 4-mer composition, regardless of use_encoder_classifier —
+    KNN on raw 4-mer composition, regardless of use_encoder_classifier:
     it is the validated default and carries the richer secondary-signal
     logic (BLAST fallback for ambiguous large plasmids, confusion-pair
     flagging, etc.) that the encoder path does not replicate. When
     use_encoder_classifier is True and the optional encoder artifact is
     available, an ADDITIONAL, clearly-labelled encoder prediction is
-    computed alongside the KNN result as a second opinion — it never
+    computed alongside the KNN result as a second opinion, it never
     overrides or replaces the primary inc_type call."""
     auto_detect = (inc_type == "Auto-detect")
     group_names, classifier = None, None
@@ -2131,6 +2124,18 @@ def parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=False
                     rec_dict["inc_probabilities"] = result["all_probabilities"]
                     rec_dict["inc_blast_used"] = result.get("blast_used", False)
                     rec_dict["inc_blast_hits"] = result.get("blast_replicon_hits", [])
+                    # Acinetobacter dif/pdif recombination-risk screen: the
+                    # manuscript's Acinetobacter caveat (composition-based
+                    # clustering may reflect recombination history rather than
+                    # lineage identity) is directly operationalised here rather
+                    # than left as a narrative-only warning.
+                    if result["best_match"] in ("repAci1", "repAci_large"):
+                        pdif_hits = scan_pdif_sites(seq)
+                        rec_dict["pdif_n_sites"] = len(pdif_hits)
+                        rec_dict["pdif_recombination_risk"] = (
+                            "Elevated" if len(pdif_hits) >= 2 else
+                            "Low-moderate" if len(pdif_hits) == 1 else "Low"
+                        )
                     # Enrich with CV metrics
                     best = result["best_match"]
                     if best in cv_data["per_class"]:
@@ -2156,7 +2161,7 @@ def parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=False
                         rec_dict["inc_confusion_note"] = ""
 
                     # Optional encoder second opinion (never overrides the
-                    # primary KNN-based inc_type call above) — see
+                    # primary KNN-based inc_type call above): see
                     # parse_uploaded_fastas' docstring.
                     if encoder_model is not None:
                         try:
@@ -2186,15 +2191,11 @@ def parse_uploaded_fastas(uploaded_files, inc_type, use_encoder_classifier=False
 
 @st.cache_data(show_spinner=False)
 def compute_kmer_vectors(sequences, k=4):
-    """Compute normalised tetranucleotide frequency vectors."""
-    bases = "ACGT"
-    all_kmers = ["".join(p) for p in iter_product(bases, repeat=k)]
-    vectors = np.zeros((len(sequences), len(all_kmers)), dtype=np.float64)
+    """Compute normalised tetranucleotide frequency vectors (same definition as
+    the classifier and the reference database: overlapping 4-mer counts)."""
+    vectors = np.zeros((len(sequences), 4 ** k), dtype=np.float64)
     for idx, seq in enumerate(sequences):
-        s = seq.upper()
-        total = max(len(s) - k + 1, 1)
-        for ki, kmer in enumerate(all_kmers):
-            vectors[idx, ki] = s.count(kmer) / total
+        vectors[idx] = _founder_kmer_vector(seq, k)
     return vectors
 
 
@@ -2352,6 +2353,7 @@ def compare_linkage_methods(vectors, thresholds=None):
 PLIN_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_assignments.tsv")
 REFERENCE_VECTORS_PATH = os.path.join(_APP_DIR, "output", "reference_kmer_vectors.npz")
 REFERENCE_ASSIGNMENTS_PATH = os.path.join(_APP_DIR, "output", "pLIN_reference_assignments.tsv")
+DATABASE_VERSION_PATH = os.path.join(_APP_DIR, "DATABASE_VERSION.json")
 
 
 @st.cache_data(show_spinner=False)
@@ -2362,7 +2364,7 @@ def get_run_provenance():
 
     This is written into every export path (TSV header comments, the ZIP
     bundle's manifest.json, and the JSON report) so a results file can
-    always be traced back to exactly which database version produced it —
+    always be traced back to exactly which database version produced it:
     essential for outbreak investigations spanning multiple runs, users,
     or app versions, since a freshly-minted "New pLIN" code is only
     reproducible against the exact database that assigned it (see
@@ -2390,8 +2392,24 @@ def get_run_provenance():
     except Exception:
         pass
 
+    # Reference database version/build identity: see DATABASE_VERSION_PATH
+    # and assign_pLIN_reference.py::write_database_version(). Distinct from
+    # plin_app_version: the database is regenerated on its own schedule.
+    database_version = None
+    database_build_timestamp = None
+    if os.path.isfile(DATABASE_VERSION_PATH):
+        try:
+            with open(DATABASE_VERSION_PATH) as f:
+                db_info = json.load(f)
+            database_version = db_info.get("database_version")
+            database_build_timestamp = db_info.get("build_timestamp_utc")
+        except Exception:
+            pass
+
     return {
         "plin_app_version": PLIN_APP_VERSION,
+        "database_version": database_version,
+        "database_build_timestamp_utc": database_build_timestamp,
         "reference_database_plasmid_count": n_reference_plasmids,
         "amrfinder_database_version": amrfinder_db_version,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -2401,12 +2419,18 @@ def get_run_provenance():
 def provenance_header_lines(provenance, comment_char="#"):
     """Render a provenance dict as a block of comment lines suitable for
     prepending to a TSV export, e.g.:
-        # pLIN app version: 3.2.0
-        # Reference database: 133,305 plasmids
+        # pLIN app version: 3.2.3
+        # pLIN database version: db-2026.09.29 (built 2026-09-29T07:19:30Z)
+        # v3 (legacy) reference database db-2026.10.02 (133,305 IDs, incl. 5,788 accessions listed twice)
         # AMRFinderPlus database: 2026-08-07.1
         # Generated: 2026-09-29T14:32:07Z
     """
     lines = [f"{comment_char} pLIN app version: {provenance['plin_app_version']}"]
+    if provenance.get("database_version"):
+        db_line = f"{comment_char} pLIN database version: {provenance['database_version']}"
+        if provenance.get("database_build_timestamp_utc"):
+            db_line += f" (built {provenance['database_build_timestamp_utc']})"
+        lines.append(db_line)
     if provenance.get("reference_database_plasmid_count") is not None:
         lines.append(
             f"{comment_char} Reference database: "
@@ -2434,7 +2458,7 @@ def tsv_with_provenance(df, provenance, **to_csv_kwargs):
 def _load_reference_for_query():
     """Load reference vectors and pLIN codes for nearest-neighbour query mode.
 
-    Uses the full reference database (72,556+ plasmids from PLSDB + training)
+    Uses the v3 (legacy) reference database (db-2026.10.02)
     rather than just the smaller training set, so that nearest-neighbour lookups
     match the published case-study results (e.g. Swiss VIM-1 outbreak validation).
     Vectors and pLIN assignments are joined explicitly by plasmid_id, since the
@@ -2474,16 +2498,150 @@ def _load_reference_for_query():
     return X_ref, plin_df
 
 
+FOUNDER_TREE_PATHS = [
+    os.path.join(_APP_DIR, "data", "plin_founder_tree_reference.npz"),
+    os.path.join(_APP_DIR, "data", "plin_founder_tree_training.npz"),
+]
+
+
+@st.cache_resource(show_spinner=False)
+def _load_founder_tree():
+    """Load the release founder tree (reference database if built, else training)."""
+    for path in FOUNDER_TREE_PATHS:
+        if os.path.exists(path):
+            return FounderTree.from_npz(path), path
+    return None, None
+
+
 def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
-    """Assign pLIN codes to query plasmids by nearest-neighbour lookup.
+    """Assign pLIN codes to query plasmids against the release founder tree.
 
-    Implements the LIN nearest-neighbour assignment rule (Vinatzer et al. 2017):
-    for each query, find the nearest reference plasmid and inherit its pLIN code
-    at levels where distance <= threshold, creating new branch IDs where it diverges.
+    Each query is placed with the same founder rule used to build the database
+    (plin_founder.py), so a plasmid already in the database gets back exactly
+    its published code, and a new plasmid gets the code it would receive if it
+    were added in the next release. Queries extend a per-session copy of the
+    tree, so plasmids uploaded together are coded consistently with each other
+    while the release tree itself is never modified; codes not present in the
+    release are flagged as new.
 
-    This is mathematically equivalent to single-linkage clustering — not an
-    approximation. A query Q belongs to cluster C at threshold t if and only if
-    its nearest neighbour N is in C and d(Q,N) <= t.
+    Custom (calibrated) thresholds cannot use the canonical tree, so they fall
+    back to nearest-neighbour inheritance (_assign_plin_nn_inherit); such codes
+    are not canonical pLIN codes.
+
+    Returns:
+        plin_codes: list of pLIN code strings
+        cluster_assignments: dict {level: array} for compatibility with build_results_df
+        query_metadata: list of dicts with nn_plasmid, nn_distance, nn_inc_type
+    """
+    active_thresholds = thresholds if thresholds else PLIN_THRESHOLDS
+    tree, tree_path = _load_founder_tree()
+    canonical = all(abs(active_thresholds[k] - PLIN_THRESHOLDS[k]) < 1e-12 for k in PLIN_THRESHOLDS)
+    if tree is None or not canonical:
+        return _assign_plin_nn_inherit(query_vectors, query_records, thresholds=active_thresholds)
+
+    X_ref, plin_df = _load_reference_for_query()
+    if X_ref is None:
+        raise FileNotFoundError(
+            "Reference data not found. Ensure output/pLIN_reference_assignments.tsv "
+            "or output/pLIN_assignments.tsv exists for query mode."
+        )
+    # nearest database plasmid, reported alongside the code for context
+    dists = cdist(query_vectors, X_ref, metric="cosine")
+
+    bin_labels = list(PLIN_THRESHOLDS.keys())
+    released_next = list(tree.next_id)
+    work = session_copy(tree)
+    plin_codes, query_metadata = [], []
+    cluster_assignments = {b: [] for b in bin_labels}
+    for i, rec in enumerate(query_records):
+        code, _, _ = work.assign(query_vectors[i], key=rec.get("plasmid_id"))
+        new_levels = [j for j, c in enumerate(code) if c >= released_next[j]]
+        diverged_at_level = bin_labels[new_levels[0]] if new_levels else None
+        for j, b in enumerate(bin_labels):
+            cluster_assignments[b].append(code[j])
+        plin_codes.append(".".join(map(str, code)))
+
+        nn_idx = int(np.argmin(dists[i]))
+        nn_row = plin_df.iloc[nn_idx]
+        # is_new_plin: True if this six-level code does not exist in the
+        # release database (it would be minted in the next release).
+        # new_plin_level names the coarsest level at which the code is new.
+        query_metadata.append({
+            "nn_plasmid": nn_row["plasmid_id"],
+            "nn_distance": round(float(dists[i, nn_idx]), 6),
+            "nn_inc_type": nn_row["inc_type"],
+            "nn_plin": nn_row["pLIN"],
+            "is_new_plin": bool(new_levels),
+            "new_plin_level": diverged_at_level,
+            "assignment": f"founder ({os.path.basename(tree_path)})",
+        })
+
+    for level in bin_labels:
+        cluster_assignments[level] = np.array(cluster_assignments[level])
+    return plin_codes, cluster_assignments, query_metadata
+
+
+V41_RELEASE_DIRS = [
+    os.environ.get("PLIN_V41_RELEASE", ""),
+    os.path.join(_APP_DIR, "data", "plin_v41"),
+    os.path.join(os.path.expanduser("~"), ".plin", "plin_v41"),          # desktop app: user-writable location
+    os.path.join(_APP_DIR, "output", "backbone_v41", "release"),
+]
+# MMseqs2 index of all catalogued proteins, built once on first use (~16 GB)
+V41_INDEX_DIR = os.environ.get("PLIN_V41_INDEX", os.path.join(os.path.expanduser("~"), ".plin", "v41_mmseqs_index"))
+
+
+@st.cache_resource(show_spinner=False)
+def _load_v41_release():
+    """The pLIN v4.1 release (first complete directory found), or (None, reason)."""
+    try:
+        from plin_v41_typer import PlinV41Release, missing_files
+    except ImportError as e:
+        return None, f"v4.1 modules unavailable ({e})"
+    for d in V41_RELEASE_DIRS:
+        if d and os.path.isdir(d) and not missing_files(d):
+            return PlinV41Release(d, index_dir=V41_INDEX_DIR), d
+    return None, "pLIN v4.1 release files not found (expected in data/plin_v41)"
+
+
+def assign_plin_v41_mode(records):
+    """pLIN v4.1 codes for uploaded plasmids, typed together in one session (plin_v41_typer).
+
+    Returns the same structures as assign_plin_query_mode. The nearest database plasmid is the one with
+    the highest symmetric k-mer similarity; nn_distance reports 1 - that similarity. A code is "new" when
+    any level is provisional (not in the release); new_plin_level is the first such level.
+    """
+    rel, where = _load_v41_release()
+    if rel is None:
+        raise FileNotFoundError(where)
+    threads = max(1, (os.cpu_count() or 2) - 1)
+    df = rel.type_sequences([(r["plasmid_id"], r["sequence"]) for r in records], threads=threads)
+    bin_labels = list(PLIN_THRESHOLDS.keys())                 # A..F == L1..L6
+    cluster_assignments = {b: df[f"L{k + 1}"].to_numpy() for k, b in enumerate(bin_labels)}
+    meta = []
+    for row in df.itertuples(index=False):
+        nn = row.nearest_database_plasmid
+        info = rel.codes.loc[nn] if nn in rel.codes.index else None
+        lvl = row.provisional_from
+        meta.append({
+            "nn_plasmid": nn,
+            "nn_distance": round(1.0 - float(row.nearest_similarity), 6),
+            "nn_inc_type": info["inc_type"] if info is not None else None,
+            "nn_plin": info["pLIN_v41"] if info is not None else None,
+            "is_new_plin": lvl is not None,
+            "new_plin_level": bin_labels[int(lvl[1:]) - 1] if lvl else None,
+            "matched_accession": row.matched_accession,
+            "assignment": f"pLIN v4.1 ({os.path.basename(os.path.normpath(where))})",
+        })
+    return df.pLIN_v41.tolist(), cluster_assignments, meta
+
+
+def _assign_plin_nn_inherit(query_vectors, query_records, thresholds=None):
+    """Fallback for non-canonical thresholds: nearest-neighbour inheritance.
+
+    For each query, find the nearest reference plasmid and inherit its pLIN
+    code at levels where distance <= threshold, creating new branch IDs where
+    it diverges. Codes produced this way are not canonical pLIN codes.
 
     Returns:
         plin_codes: list of pLIN code strings
@@ -2528,7 +2686,7 @@ def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
                 # Inherit neighbour's code at this level
                 bin_val = int(nn_row[f"bin_{level}"])
             else:
-                # New branch — assign new unique ID
+                # New branch: assign new unique ID
                 if not diverged:
                     diverged_at_level = level
                 diverged = True
@@ -2540,7 +2698,7 @@ def assign_plin_query_mode(query_vectors, query_records, thresholds=None):
         plin_codes.append(".".join(code_parts))
 
         # is_new_plin: True if the query's finest-level (L6) code required a
-        # freshly-minted ID rather than inheriting an existing one in full —
+        # freshly-minted ID rather than inheriting an existing one in full:
         # i.e. no plasmid already in the database shares this exact 6-level
         # code. False means the query's complete pLIN code already exists in
         # the reference database (it matches, at L6 resolution, a plasmid
@@ -2593,8 +2751,23 @@ def build_results_df(records, plin_codes, cluster_assignments):
             # Format multiple Inc types: "IncFII (45%), IncN (30%)"
             multi_str = ", ".join([f"{inc} ({conf*100:.1f}%)" for inc, conf in rec["inc_multiple_types"]])
             row["inc_multiple_types"] = multi_str
+        if "inc_blast_used" in rec:
+            row["inc_blast_used"] = rec["inc_blast_used"]
+        if "inc_blast_hits" in rec and rec["inc_blast_hits"]:
+            # Format BLAST hits: "IncFII (98.5% id, 92% cov), IncN (97.1% id, 88% cov)"
+            blast_str = ", ".join(
+                f"{g} ({pid:.1f}% id, {cov:.0f}% cov)" for g, pid, cov in rec["inc_blast_hits"]
+            )
+            row["inc_blast_hits"] = blast_str
         if "inc_best_match" in rec:
             row["inc_best_match"] = rec["inc_best_match"]
+        if "pdif_n_sites" in rec:
+            row["pdif_n_sites"] = rec["pdif_n_sites"]
+            row["pdif_recombination_risk"] = rec["pdif_recombination_risk"]
+        if "inc_encoder_prediction" in rec:
+            row["inc_encoder_prediction"] = rec["inc_encoder_prediction"]
+            row["inc_encoder_confidence"] = rec["inc_encoder_confidence"]
+            row["inc_encoder_agrees_with_knn"] = rec["inc_encoder_agrees_with_knn"]
         if "inc_top5_candidates" in rec:
             # Format top 5 as string for display: "IncFII (45%), IncN (30%), ..."
             top5_str = ", ".join([f"{inc} ({conf*100:.1f}%)" for inc, conf in rec["inc_top5_candidates"]])
@@ -2661,7 +2834,7 @@ def _find_tool_binary(name):
 def _run_in_wsl(bash_args, timeout=15):
     """Run a bash command inside WSL via wsl.exe. Returns a CompletedProcess,
     or raises the same exceptions subprocess.run() would (FileNotFoundError,
-    TimeoutExpired, etc.) — callers handle those."""
+    TimeoutExpired, etc.): callers handle those."""
     return subprocess.run(
         ["wsl.exe", "-e", "bash"] + bash_args,
         capture_output=True, text=True, timeout=timeout,
@@ -2671,8 +2844,8 @@ def _run_in_wsl(bash_args, timeout=15):
 def _find_tool_in_wsl(name):
     """Check whether a tool is available inside WSL, from native Windows.
 
-    Bioconda — the channel AMRFinderPlus, minimap2, mlst, MOB-suite,
-    FastANI, MinCED, and Prodigal are all distributed through — has no
+    Bioconda: the channel AMRFinderPlus, minimap2, mlst, MOB-suite,
+    FastANI, MinCED, and Prodigal are all distributed through, has no
     native Windows build for any of them (confirmed: no win-64 channel
     exists). On Windows, a `conda install -c bioconda ...` for these
     tools only succeeds inside WSL (Windows Subsystem for Linux), so a
@@ -2681,19 +2854,19 @@ def _find_tool_in_wsl(name):
 
     Two layers, since neither alone is reliable across WSL/conda setups:
 
-    1. `bash -lic "which <name>"` — a login *and* interactive shell, so
+    1. `bash -lic "which <name>"`: a login *and* interactive shell, so
        PATH is set up the same way as a real interactive WSL terminal
        regardless of whether the user's conda-init block ended up in
        ~/.bashrc (only sourced for interactive shells) or a profile
        file (~/.bash_profile/~/.profile, only sourced for login
-       shells) — a plain login-only shell (`-lc`, tried in earlier
+       shells): a plain login-only shell (`-lc`, tried in earlier
        versions) misses whichever one it's NOT in, which is why this
        previously failed with "not on PATH inside WSL's login shell"
        even for a correctly-installed AMRFinderPlus.
     2. If that still finds nothing (e.g. .bashrc has a hard early-return
        for non-interactive contexts that even `-i` doesn't satisfy when
        there's no real TTY), fall back to scanning common conda install
-       locations directly in the WSL filesystem — the same layout
+       locations directly in the WSL filesystem: the same layout
        _find_tool_binary() already checks on native Windows/Unix.
 
     Returns (path_or_None, reason). reason is None on success; on
@@ -2707,9 +2880,9 @@ def _find_tool_in_wsl(name):
     try:
         result = _run_in_wsl(["-lic", f"which {name}"])
     except FileNotFoundError:
-        return None, "wsl.exe not found — WSL does not appear to be installed on this PC"
+        return None, "wsl.exe not found: WSL does not appear to be installed on this PC"
     except subprocess.TimeoutExpired:
-        return None, "wsl.exe timed out after 15s — WSL may be starting up slowly or unresponsive"
+        return None, "wsl.exe timed out after 15s, WSL may be starting up slowly or unresponsive"
     except Exception as e:
         return None, f"could not run wsl.exe: {e}"
 
@@ -2762,13 +2935,13 @@ def _wsl_path_for_windows_path(win_path):
 
 def _bundled_amrfinder():
     """Check for an AMRFinderPlus bundled directly inside this app's own
-    install (macOS/Linux desktop builds only — see desktop_app/pLIN.spec
+    install (macOS/Linux desktop builds only: see desktop_app/pLIN.spec
     and build-desktop-app.yml; no such bundle exists on Windows, since
     bioconda has no native win-64 AMRFinderPlus build to bundle in the
     first place). Returns (binary, database) if found, else (None, None).
 
     Bundled here means literally shipped inside the app so a user never
-    needs to install anything themselves — this is checked before falling
+    needs to install anything themselves: this is checked before falling
     back to detect_amrfinder()'s system-wide search.
     """
     bin_dir = os.path.join(_APP_DIR, "amrfinder_bin")
@@ -2792,14 +2965,14 @@ def detect_amrfinder():
     """Auto-detect AMRFinderPlus binary and database.
 
     Checks for a bundled copy inside this app's own install first (see
-    _bundled_amrfinder()) — the whole point of bundling is that a user
+    _bundled_amrfinder()): the whole point of bundling is that a user
     should never need to think about installing anything, so it takes
     priority over anything found on the system. Only if no bundled copy
     exists does this fall back to searching the system (PATH, then common
     conda install locations).
 
     Returns (binary, database, wsl_diagnostic). On Windows, if no native
-    binary is found (expected — bioconda has no win-64 build of
+    binary is found (expected: bioconda has no win-64 build of
     AMRFinderPlus), also checks whether it's available inside WSL; if
     so, binary/database are returned prefixed with "wsl:" as a sentinel
     that tells run_amrfinder_on_files() to route the call through
@@ -2875,7 +3048,7 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
     files, which tempfile.TemporaryDirectory() places on the native
     Windows filesystem, are addressed from inside WSL via their
     /mnt/c/... equivalent so the WSL-side process can read/write them
-    directly — no copying across the WSL/Windows boundary is needed,
+    directly: no copying across the WSL/Windows boundary is needed,
     since WSL mounts the Windows filesystem at /mnt/<drive>/.
 
     Returns (results_df, errors) where errors is a list of
@@ -2895,7 +3068,7 @@ def run_amrfinder_on_files(uploaded_files, binary, database, progress_callback=N
     # A bundled AMRFinderPlus (see _bundled_amrfinder()) ships its own
     # blastn/blastp/blastx/tblastn/hmmsearch alongside it, in the same
     # directory as the amrfinder binary itself, rather than relying on
-    # PATH (which a packaged app should never depend on) — pass that
+    # PATH (which a packaged app should never depend on), pass that
     # directory explicitly so amrfinder finds them.
     is_bundled = (not use_wsl) and real_binary and os.path.dirname(real_binary).endswith(
         os.path.join("", "amrfinder_bin")
@@ -3680,6 +3853,139 @@ def detect_recombination_signals(records, cluster_assignments, minimap2_binary,
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  ACINETOBACTER pdif/dif SITE SCREEN
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Degenerate 28 bp XerC/D (pdif/dif) consensus for Acinetobacter, built from two
+# independently reported strain-level consensus sequences that agree at 26/28
+# positions: the Ab242 clinical-strain consensus derived from 17 XerC/D-like
+# sites (Bertini et al. 2010, and reviewed in Hamidian & Hall, Front Microbiol
+# 2019, doi:10.3389/fmicb.2019.00632) and the A. bereziniae HPC229 consensus
+# derived from 67 XerC/D sites (Ramirez et al., mSphere/PLoS ONE). Both papers
+# report the site as two 11 bp XerC/XerD half-sites flanking a 6 bp central
+# ("cr") region, with XerD consistently the more conserved half:
+#   Ab242:       ATTTCGTATAAGGTGTATTATGTTAAAT
+#   bereziniae:  ATTTCGCATAAGGGGTATTATGTTAAAT
+#                       ^          ^
+# The two mismatches (position 7 and 14, 1-based) fall in the XerC half-site
+# and the central region respectively, consistent with both papers' finding
+# that XerC binding is less conserved than XerD. IUPAC ambiguity codes cover
+# both at those two positions; this is a screening heuristic over published
+# example sites, not a fitted position-weight-matrix, and is deliberately
+# permissive (a handful of mismatches allowed) because pdif sites are known to
+# diverge further outside these two strains. Hits should be treated as
+# candidates for manual/literature confirmation, not confirmed recombination
+# sites.
+PDIF_CONSENSUS_28BP = "ATTTCGYATAAGGKGTATTATGTTAAAT"
+PDIF_MAX_MISMATCHES = 4  # ~86% identity floor over 28 bp; permissive by design
+
+
+def _reverse_complement(seq):
+    comp = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
+    return "".join(comp.get(b, "N") for b in reversed(seq))
+
+
+_IUPAC_MATCHES = {
+    "A": set("A"), "C": set("C"), "G": set("G"), "T": set("T"),
+    "R": set("AG"), "Y": set("CT"), "S": set("GC"), "W": set("AT"),
+    "K": set("GT"), "M": set("AC"), "B": set("CGT"), "D": set("AGT"),
+    "H": set("ACT"), "V": set("ACG"), "N": set("ACGT"),
+}
+
+
+def _hamming_mismatches(window, consensus):
+    """Count positions where `window` (plain A/C/G/T) fails to match
+    `consensus` (may contain IUPAC ambiguity codes, e.g. Y = C or T)."""
+    return sum(1 for w, c in zip(window, consensus) if w not in _IUPAC_MATCHES.get(c, set()))
+
+
+def scan_pdif_sites(sequence, consensus=PDIF_CONSENSUS_28BP, max_mismatches=PDIF_MAX_MISMATCHES):
+    """Screen a sequence for candidate Acinetobacter pdif/dif (XerC/D) sites.
+
+    Slides the 28 bp consensus (see PDIF_CONSENSUS_28BP) across both strands
+    at every position and reports windows within `max_mismatches` of it. This
+    is a fixed-consensus screen, not an HMM/PWM search, so it is fast enough
+    to run on every Acinetobacter-classified plasmid but will miss pdif
+    variants that diverge further than the two source strains it was built
+    from (see module docstring above).
+
+    Returns a list of dicts: {position (0-based, + strand coords), strand,
+    mismatches, matched_seq}, sorted by position. An empty list means no
+    candidate site was found at this stringency, it does not rule out a
+    pdif site the consensus doesn't cover.
+    """
+    seq = sequence.upper()
+    n = len(consensus)
+    hits = []
+    if len(seq) < n:
+        return hits
+
+    for strand, scan_seq in (("+", seq), ("-", _reverse_complement(seq))):
+        for i in range(len(scan_seq) - n + 1):
+            window = scan_seq[i:i + n]
+            if "N" in window:
+                continue
+            mm = _hamming_mismatches(window, consensus)
+            if mm <= max_mismatches:
+                pos = i if strand == "+" else len(seq) - i - n
+                hits.append({
+                    "position": pos,
+                    "strand": strand,
+                    "mismatches": mm,
+                    "matched_seq": window,
+                })
+
+    hits.sort(key=lambda h: h["position"])
+    return hits
+
+
+def assess_acinetobacter_recombination_risk(records, group_names_by_record):
+    """Flag Acinetobacter plasmids (repAci1/repAci_large) for pdif-mediated
+    recombination risk based on candidate pdif site count.
+
+    This directly operationalises the manuscript's Acinetobacter caveat: dif/
+    pdif-mediated recombination can rearrange plasmid architecture fast enough
+    that composition-based (4-mer) clustering may reflect recombination
+    history rather than lineage identity. Plasmids carrying 2+ candidate pdif
+    sites have the structural machinery for module shuffling; pLIN codes for
+    those plasmids should be read as more provisional than for a plasmid with
+    zero or one site. This does NOT detect that a rearrangement has actually
+    occurred: only that the substrate for it (multiple Xer recombination
+    sites) is present. See scan_pdif_sites() for the underlying consensus
+    and its literature basis.
+
+    Args:
+        records: list of dicts with "plasmid_id" and "sequence" keys.
+        group_names_by_record: list/array of predicted Inc/Rep group per
+            record, same length and order as `records`.
+
+    Returns DataFrame with one row per Acinetobacter-classified plasmid:
+        plasmid_id, inc_group, n_pdif_sites, pdif_positions, recombination_risk.
+    """
+    ACI_GROUPS = {"repAci1", "repAci_large"}
+    rows = []
+    for rec, group in zip(records, group_names_by_record):
+        if group not in ACI_GROUPS:
+            continue
+        hits = scan_pdif_sites(rec["sequence"])
+        n_sites = len(hits)
+        if n_sites == 0:
+            risk = "Low (no candidate pdif sites detected)"
+        elif n_sites == 1:
+            risk = "Low-moderate (single candidate site; module shuffling needs ≥2)"
+        else:
+            risk = "Elevated (multiple candidate pdif sites, module shuffling plausible)"
+        rows.append({
+            "plasmid_id": rec["plasmid_id"],
+            "inc_group": group,
+            "n_pdif_sites": n_sites,
+            "pdif_positions": ", ".join(f"{h['position']}({h['strand']},{h['mismatches']}mm)" for h in hits),
+            "recombination_risk": risk,
+        })
+    return pd.DataFrame(rows)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  TEMPORAL OUTBREAK CLUSTERING
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -3906,7 +4212,7 @@ def detect_minced():
 def detect_blastn():
     """Auto-detect BLAST+ blastn and makeblastdb binaries.
 
-    Returns (blastn_path, makeblastdb_path) — either may be None.
+    Returns (blastn_path, makeblastdb_path): either may be None.
     """
     blastn = None
     makeblastdb = None
@@ -4281,7 +4587,7 @@ def build_blast_db(source, makeblastdb_binary, db_title="plasmid_db"):
         source: str (file path) or list of UploadedFile objects.
         makeblastdb_binary: path to makeblastdb.
 
-    Returns (db_path, tmpdir_handle) — caller must keep tmpdir alive.
+    Returns (db_path, tmpdir_handle): caller must keep tmpdir alive.
     """
     tmpdir = tempfile.TemporaryDirectory()
     try:
@@ -4441,7 +4747,7 @@ def compute_host_probabilities(filtered_hits_df, spacer_summary_df, temperature=
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  BACTERIAL BUDDY — OLLAMA LLM CHATBOT
+#  BACTERIAL BUDDY: OLLAMA LLM CHATBOT
 # ══════════════════════════════════════════════════════════════════════════════
 
 OLLAMA_DEFAULT_URL = "http://localhost:11434"
@@ -4990,10 +5296,10 @@ if os.path.exists(_logo_path):
         )
 else:
     st.title("pLIN Classifier")
-    st.caption("Plasmid Lineage Identification Number System — Upload FASTA files to begin")
+    st.caption("Plasmid Lineage Identification Number System: Upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
-amr_binary, amr_db, amr_wsl_diagnostic = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed — run_amrfinder_on_files() handles that
+amr_binary, amr_db, amr_wsl_diagnostic = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed, run_amrfinder_on_files() handles that
 
 # The 7 tools below have no execution path wired up for a "wsl:"-prefixed
 # binary yet (unlike AMRFinderPlus), so a WSL-only hit is reported as
@@ -5034,7 +5340,7 @@ if _wsl_only_tools_found:
         f"Found in WSL but not yet supported from the desktop app: "
         f"{', '.join(_wsl_only_tools_found)}. These tools are only "
         f"distributed for Linux/macOS (no native Windows build exists), "
-        f"and running them via WSL from this app isn't wired up yet — "
+        f"and running them via WSL from this app isn't wired up yet, "
         f"AMRFinderPlus is the only WSL-bridged tool so far. Run pLIN from "
         f"inside WSL directly if you need these features now.",
         icon="ℹ️",
@@ -5080,7 +5386,7 @@ if not st.session_state.analysis_done:
                 "leak-free 5-fold cross-validation shows it improves overall "
                 "accuracy (92.7% vs 91.1%) and macro-F1 (0.692 vs 0.666) with "
                 "19 of 28 groups improving and 8 declining slightly (largest "
-                "-0.016 F1, none catastrophic) — see "
+                "-0.016 F1, none catastrophic): see "
                 "output/encoder_vs_knn_validation_result.json for the full, "
                 "reproducible per-class comparison. Use it if you have doubts "
                 "about a specific KNN call and want a second opinion from a "
@@ -5113,15 +5419,29 @@ if not st.session_state.analysis_done:
             use_encoder_classifier = classifier_choice.startswith("Contrastive")
         else:
             use_encoder_classifier = False
+        code_scheme = st.radio(
+            "pLIN code scheme",
+            ["v4.1 (recommended)", "v3 (legacy)"],
+            index=0,
+            horizontal=True,
+            key="pLIN_code_scheme_radio",
+            help="v4.1: backbone levels L1–L4 from shared protein families and k-mers, lineage levels "
+                 "L5–L6 from near relatives (pre-registered evaluation; permanent, reproducible codes). "
+                 "v3: earlier 4-mer composition codes, kept for comparison with older results.",
+        )
         linkage_method = st.selectbox(
             "Linkage Method",
             LINKAGE_METHODS, index=0,
-            help="Single: traditional chaining (default). Complete: max distance, tighter clusters. Average: balanced. Weighted: WPGMA.",
+            help="Clustering used for the relatedness tree of the uploaded plasmids. With v4.1 it does not "
+                 "affect the codes. Single: traditional chaining (default). Complete: max distance, tighter "
+                 "clusters. Average: balanced. Weighted: WPGMA.",
         )
         use_adaptive = st.checkbox(
-            "Adaptive thresholds",
-            value=True,
-            help="Calibrate pLIN thresholds per Inc group from training data distance distributions (recommended). Uncheck to use fixed universal thresholds.",
+            "Adaptive thresholds (v3 only)",
+            value=False,
+            disabled=code_scheme.startswith("v4.1"),
+            help="v3 only: calibrate thresholds per Inc group. Calibrated thresholds give non-canonical v3 "
+                 "codes that cannot be compared with the published database.",
         )
         auto_filter_plasmids = st.checkbox(
             "Auto-detect plasmid contigs",
@@ -5136,7 +5456,7 @@ if not st.session_state.analysis_done:
                                   help="Detect AMR, stress, and virulence genes using NCBI's AMRFinderPlus")
         elif amr_wsl_diagnostic:
             st.warning(
-                f"AMRFinderPlus not found — WSL bridge failed: {amr_wsl_diagnostic}",
+                f"AMRFinderPlus not found: WSL bridge failed: {amr_wsl_diagnostic}",
                 icon="⚠️",
             )
             run_amr = False
@@ -5213,7 +5533,7 @@ if not st.session_state.analysis_done:
             if run_crispr:
                 crispr_source = st.radio(
                     "Plasmid database source",
-                    ["Uploaded plasmids", "Reference DB (72,959 plasmids)"],
+                    ["Uploaded plasmids", "Reference DB (local plasmid sequences)"],
                     index=0,
                     help="Match spacers against your uploaded plasmids or the built-in reference database.",
                     horizontal=True,
@@ -5298,10 +5618,10 @@ if not st.session_state.analysis_done:
             use_nt = False
             nt_model_choice = None
             nt_device = "cpu"
-            st.info("Nucleotide Transformer not available. Install: `pip install transformers torch`", icon="🤖")
+            st.info("Nucleotide Transformer not available. Install: `pip install transformers torch`", icon="ℹ️")
 
     if uploaded_files:
-        st.info(f"📂 {len(uploaded_files)} file(s) uploaded — click **Run Analysis** below.")
+        st.info(f"📂 {len(uploaded_files)} file(s) uploaded: click **Run Analysis** below.")
         bcol1, bcol2, _ = st.columns([1, 1, 3])
         with bcol1:
             run_btn = st.button("▶ Run Analysis", type="primary", use_container_width=True)
@@ -5316,10 +5636,11 @@ if not st.session_state.analysis_done:
         st.markdown("👆 **Upload FASTA files above** to get started.")
     st.divider()
 else:
-    # After analysis — show compact controls in main area
+    # After analysis: show compact controls in main area
     uploaded_files = st.session_state.get("_uploaded_files", None)
     inc_type = st.session_state.get("_inc_type", INC_GROUPS[0])
     linkage_method = st.session_state.get("_linkage_method", "single")
+    code_scheme = st.session_state.get("_code_scheme", "v4.1 (recommended)")
     use_adaptive = st.session_state.get("_use_adaptive", False)
     auto_filter_plasmids = st.session_state.get("_auto_filter_plasmids", True)
     use_nt = st.session_state.get("_use_nt", False)
@@ -5403,6 +5724,7 @@ if run_btn and uploaded_files:
     st.session_state._uploaded_files = uploaded_files
     st.session_state._inc_type = inc_type
     st.session_state._linkage_method = linkage_method
+    st.session_state._code_scheme = code_scheme
     st.session_state._use_adaptive = use_adaptive
     st.session_state._auto_filter_plasmids = auto_filter_plasmids
     st.session_state._use_nt = use_nt
@@ -5494,7 +5816,7 @@ if run_btn and uploaded_files:
         else:
             st.session_state.excluded_chromosomes = None
 
-        # Store incomplete plasmids — these get AMR/mobility/other modules
+        # Store incomplete plasmids: these get AMR/mobility/other modules
         # but NOT pLIN code assignment
         if incomplete_indices:
             incomplete_ids = [contig_classes[i]["plasmid_id"] for i in incomplete_indices]
@@ -5589,7 +5911,7 @@ if run_btn and uploaded_files:
         st.session_state.merge_map = merge_map
 
         if len(records) < pre_merge_count:
-            # Merging happened — recompute 4-mer vectors on merged sequences
+            # Merging happened: recompute 4-mer vectors on merged sequences
             sequences = tuple(r["sequence"] for r in records)
             vectors = compute_kmer_vectors(sequences, k=4)
 
@@ -5644,28 +5966,20 @@ if run_btn and uploaded_files:
                 st.session_state._dominant_inc = dominant_inc
 
     # Step 3: Clustering & pLIN assignment
-    if is_query_mode:
-        # Single-plasmid query mode: nearest-neighbour lookup against training DB
-        progress.progress(40, text="Assigning pLIN code via nearest-neighbour lookup...")
+    use_v41 = str(code_scheme).startswith("v4.1")
+    Z = dist_condensed = None
+    if use_v41:
+        progress.progress(40, text="Assigning pLIN v4.1 codes (proteins + k-mers; first run builds a search index)...")
         try:
-            plin_codes, cluster_assignments, query_metadata = assign_plin_query_mode(
-                vectors, records, thresholds=active_thresholds
-            )
-            Z = None
-            dist_condensed = None
+            plin_codes, cluster_assignments, query_metadata = assign_plin_v41_mode(records)
             st.session_state.query_metadata = query_metadata
-        except FileNotFoundError as e:
-            st.error(str(e))
-            st.stop()
-    else:
-        # Multi-plasmid mode: pLIN codes are reference-anchored (each contig
-        # inherits its code from its own nearest reference-database neighbour),
-        # so results are reproducible and consistent with single-contig query
-        # mode and with previously published/reference-based runs. De novo
-        # pairwise clustering (Z/dist_condensed) is still computed separately,
-        # purely to drive the dendrogram/heatmap visualisation of relatedness
-        # among the uploaded contigs themselves.
-        progress.progress(40, text="Assigning pLIN codes via nearest-neighbour lookup...")
+            st.session_state.code_scheme_used = "v4.1"
+        except (FileNotFoundError, RuntimeError) as e:
+            st.warning(f"pLIN v4.1 could not be used ({e}). Falling back to v3 (legacy) codes.")
+            use_v41 = False
+    if not use_v41:
+        st.session_state.code_scheme_used = "v3"
+        progress.progress(40, text="Assigning pLIN v3 codes via the founder tree...")
         try:
             plin_codes, cluster_assignments, query_metadata = assign_plin_query_mode(
                 vectors, records, thresholds=active_thresholds
@@ -5674,7 +5988,9 @@ if run_btn and uploaded_files:
         except FileNotFoundError as e:
             st.error(str(e))
             st.stop()
-
+    if not is_query_mode:
+        # De novo clustering of the uploaded plasmids, only to draw the relatedness tree/heatmap;
+        # it never changes the codes.
         progress.progress(45, text=f"Clustering ({linkage_method} linkage) for visualisation...")
         _, _, Z, dist_condensed = assign_plin_codes(
             vectors, linkage_method=linkage_method, thresholds=active_thresholds
@@ -5710,7 +6026,7 @@ if run_btn and uploaded_files:
             for m in qm
         ]
 
-    # Mark incomplete plasmids — they keep AMR/mobility results but no pLIN code
+    # Mark incomplete plasmids: they keep AMR/mobility results but no pLIN code
     plin_eligible = st.session_state.get("_plin_eligible_ids")
     if plin_eligible is not None:
         for idx, row in plin_df.iterrows():
@@ -5721,7 +6037,7 @@ if run_btn and uploaded_files:
                 # Blank out hierarchical level assignments
                 for lvl in ["A", "B", "C", "D", "E", "F"]:
                     if lvl in plin_df.columns:
-                        plin_df.at[idx, lvl] = "—"
+                        plin_df.at[idx, lvl] = "-"
 
     st.session_state.plin_df = plin_df
     st.session_state.Z = Z
@@ -5744,7 +6060,7 @@ if run_btn and uploaded_files:
                 st.warning(
                     "NT probes not found. Run `python train_nt_classifier.py` first to train "
                     "the classifier probes from your training data.",
-                    icon="🤖",
+                    icon="ℹ️",
                 )
                 st.session_state.nt_results = None
             else:
@@ -5806,7 +6122,7 @@ if run_btn and uploaded_files:
 
     # Step 5d: CRISPR host inference (optional)
     if run_crispr and crispr_host_files:
-        progress.progress(87, text="Running CRISPR host inference — extracting spacers...")
+        progress.progress(87, text="Running CRISPR host inference: extracting spacers...")
 
         # 5d-i: Run MinCED on host genomes
         def crispr_cb(pct):
@@ -5822,7 +6138,7 @@ if run_btn and uploaded_files:
             # 5d-ii: Build or load BLAST DB
             progress.progress(90, text="Building BLAST database for spacer matching...")
             tmpdir_handle = None
-            if crispr_source == "Reference DB (72,959 plasmids)":
+            if crispr_source == "Reference DB (local plasmid sequences)":
                 db_path = get_or_build_reference_blastdb(makeblastdb_binary)
             else:
                 db_path, tmpdir_handle = build_blast_db(uploaded_files, makeblastdb_binary)
@@ -5958,7 +6274,7 @@ if run_btn and uploaded_files:
         progress.progress(94, text="Running Mash ANI estimation...")
         mash_df = run_mash_distances(uploaded_files, mash_binary)
         st.session_state.mash_df = mash_df
-        # ANI concordance check — cross-validate pLIN cosine distances vs Mash ANI
+        # ANI concordance check: cross-validate pLIN cosine distances vs Mash ANI
         st.session_state.concordance_df = check_ani_concordance(plin_df, mash_df)
     else:
         st.session_state.mash_df = None
@@ -6056,35 +6372,45 @@ tab_overview, tab_results, tab_clado, tab_amr, tab_epi, tab_crispr, tab_buddy, t
 # ── TAB 1: Overview ──────────────────────────────────────────────────────────
 
 with tab_overview:
-    st.header("pLIN — Plasmid Lineage Identification Number")
+    st.header("pLIN: Plasmid Lineage Identification Number")
     st.markdown("""
-    **pLIN** assigns each plasmid a six-position hierarchical code (`L1.L2.L3.L4.L5.L6`)
-    based on tetranucleotide (4-mer) composition distances and single-linkage clustering.
+    **pLIN** gives each plasmid a permanent six-level code (`L1.L2.L3.L4.L5.L6`), from its
+    backbone family (shared protein families) to its near-identical outbreak clone (shared
+    k-mers). Codes are never renumbered as the database grows. The default scheme is
+    **v4.1**; the earlier 4-mer composition codes (v3) remain available as a legacy option.
     """)
 
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("pLIN Hierarchy")
-        thresh_data = [{"Position": b, "Level": PLIN_LEVEL_NAMES[b],
-                        "Threshold": f"d \u2264 {t:.3f}", "ANI": ANI_EQUIV[b]}
-                       for b, t in PLIN_THRESHOLDS.items()]
+        thresh_data = [  # pLIN v4.1 levels (plin_v41_typer.LEVEL_NAMES; thresholds in DATABASE_VERSION.json)
+            {"Level": "L1", "Meaning": "Backbone family", "Similarity": "protein-family containment \u2265 0.40"},
+            {"Level": "L2", "Meaning": "Backbone group", "Similarity": "protein-family containment \u2265 0.60"},
+            {"Level": "L3", "Meaning": "Shared backbone", "Similarity": "k-mer containment \u2265 0.50"},
+            {"Level": "L4", "Meaning": "Backbone variant", "Similarity": "k-mer containment \u2265 0.80"},
+            {"Level": "L5", "Meaning": "Lineage", "Similarity": "k-mer similarity to nearest relative \u2265 0.80"},
+            {"Level": "L6", "Meaning": "Near-identical (outbreak clone)", "Similarity": "k-mer similarity to nearest relative \u2265 0.95"},
+        ]
         st.dataframe(pd.DataFrame(thresh_data), use_container_width=True, hide_index=True)
 
     with col2:
         st.subheader("How it works")
         st.markdown("""
         1. **Upload** plasmid FASTA sequences
-        2. **Auto-detect** Inc/Rep group (KNN classifier, 91.1% accuracy, 28 groups)
-        3. **Compute** tetranucleotide frequency vectors (256 features)
-        4. **Calculate** pairwise cosine distances
-        5. **Cluster** using single-linkage hierarchical method
-        6. **Cut** tree at 6 thresholds → pLIN codes
-        7. **Screen** for AMR genes with AMRFinderPlus *(optional)*
+        2. **Predict** the Inc/Rep group (KNN classifier: 91.1% cross-validated accuracy,
+           macro-F1 0.67, 28 groups)
+        3. **Type** each plasmid with pLIN v4.1: proteins are matched to the protein-family
+           catalogue and a k-mer sketch is taken; a plasmid with a near relative in the
+           database copies its backbone and lineage, otherwise it is placed in the backbone
+           levels by the founder rule and starts a new lineage → pLIN code
+        5. **Compare** uploaded plasmids to each other (cosine distance tree) for the
+           dendrogram and heatmap views
+        6. **Screen** for AMR genes with AMRFinderPlus *(optional)*
         """)
 
     if st.session_state.analysis_done:
         if st.session_state.get("is_query_mode"):
-            st.success(f"Query mode — pLIN assigned via nearest-neighbour lookup against {len(st.session_state.get('X_ref', []))}-plasmid training database.")
+            st.success(f"Query mode: pLIN assigned via nearest-neighbour lookup against {len(st.session_state.get('X_ref', []))}-plasmid training database.")
         else:
             st.success("Analysis complete!")
         df = st.session_state.plin_df
@@ -6115,7 +6441,7 @@ with tab_overview:
 
             if n_errors > 0:
                 error_msgs = [w for w in all_quality_warnings if w["level"] == "error"]
-                st.error(f"**{n_errors} sequence quality error(s)** — results for these sequences are unreliable.")
+                st.error(f"**{n_errors} sequence quality error(s)**: results for these sequences are unreliable.")
                 with st.expander(f"View errors ({n_errors})"):
                     st.dataframe(
                         pd.DataFrame(error_msgs)[["check", "message", "value"]],
@@ -6124,7 +6450,7 @@ with tab_overview:
 
             if n_warnings > 0:
                 warn_msgs = [w for w in all_quality_warnings if w["level"] == "warning"]
-                st.warning(f"**{n_warnings} sequence quality warning(s)** — interpret flagged assignments with caution.")
+                st.warning(f"**{n_warnings} sequence quality warning(s)**: interpret flagged assignments with caution.")
                 with st.expander(f"View warnings ({n_warnings})"):
                     st.dataframe(
                         pd.DataFrame(warn_msgs)[["check", "message", "value"]],
@@ -6134,7 +6460,7 @@ with tab_overview:
             # Duplicate detection
             duplicate_pairs = st.session_state.get("duplicate_pairs", [])
             if duplicate_pairs:
-                st.info(f"**{len(duplicate_pairs)} near-identical sequence pair(s) detected** — these may be the same plasmid uploaded twice.")
+                st.info(f"**{len(duplicate_pairs)} near-identical sequence pair(s) detected**: these may be the same plasmid uploaded twice.")
                 with st.expander(f"View duplicate pairs ({len(duplicate_pairs)})"):
                     dup_df = pd.DataFrame(duplicate_pairs, columns=["Plasmid A", "Plasmid B", "Cosine Distance"])
                     st.dataframe(dup_df, use_container_width=True, hide_index=True)
@@ -6146,7 +6472,7 @@ with tab_overview:
         short_plasmids = df[df["length_bp"] < SHORT_PLASMID_THRESHOLD]
         if len(short_plasmids) > 0:
             st.warning(
-                f"**{len(short_plasmids)} plasmid(s) shorter than {SHORT_PLASMID_THRESHOLD/1000:.0f} kb** — "
+                f"**{len(short_plasmids)} plasmid(s) shorter than {SHORT_PLASMID_THRESHOLD/1000:.0f} kb**, "
                 f"4-mer frequency vectors from short sequences have higher stochastic variance, "
                 f"which may produce unreliable pLIN codes and inflated inter-plasmid distances. "
                 f"Interpret these assignments with caution."
@@ -6161,7 +6487,7 @@ with tab_overview:
         excluded_chromo = st.session_state.get("excluded_chromosomes")
         if excluded_chromo is not None and len(excluded_chromo) > 0:
             st.success(
-                f"**{len(excluded_chromo)} chromosomal contig(s) auto-detected and excluded** — "
+                f"**{len(excluded_chromo)} chromosomal contig(s) auto-detected and excluded**: "
                 f"only plasmid sequences were assigned pLIN codes."
             )
             with st.expander(f"View excluded chromosomal contigs ({len(excluded_chromo)})"):
@@ -6174,7 +6500,7 @@ with tab_overview:
         incomplete_plasm = st.session_state.get("incomplete_plasmids")
         if incomplete_plasm is not None and len(incomplete_plasm) > 0:
             st.warning(
-                f"**{len(incomplete_plasm)} incomplete/uncertain plasmid contig(s)** — "
+                f"**{len(incomplete_plasm)} incomplete/uncertain plasmid contig(s)**: "
                 f"analysed for AMR genes, mobility, and other features but "
                 f"**not** assigned pLIN codes (confidence <95%). "
                 f"These appear in results as 'N/A (incomplete plasmid)'."
@@ -6205,7 +6531,7 @@ with tab_overview:
         large_contigs = df[df["length_bp"] > CHROMOSOMAL_THRESHOLD]
         if len(large_contigs) > 0:
             st.warning(
-                f"**{len(large_contigs)} sequence(s) larger than {CHROMOSOMAL_THRESHOLD/1000:.0f} kb in results** — "
+                f"**{len(large_contigs)} sequence(s) larger than {CHROMOSOMAL_THRESHOLD/1000:.0f} kb in results**, "
                 f"these are likely chromosomal. Enable 'Auto-detect plasmid contigs' in the sidebar "
                 f"to automatically exclude chromosomal sequences before pLIN assignment."
             )
@@ -6253,7 +6579,7 @@ with tab_overview:
                 low_conf_count = len(low_conf_df)
                 if low_conf_count > 0:
                     st.error(
-                        f"**{low_conf_count} plasmid(s) classified as Unknown/Novel Inc type** — "
+                        f"**{low_conf_count} plasmid(s) classified as Unknown/Novel Inc type**, "
                         f"confidence below {INC_CONFIDENCE_THRESHOLD*100:.0f}% threshold. "
                         f"These plasmids may represent novel Inc types not in the training data."
                     )
@@ -6285,7 +6611,7 @@ with tab_overview:
                     blast_count = int(df.get("inc_blast_used", False).sum()) if "inc_blast_used" in df.columns else 0
                     blast_note = f" ({blast_count} confirmed by PlasmidFinder BLAST)" if blast_count > 0 else ""
                     st.warning(
-                        f"**{multi_inc_count} plasmid(s) detected with Multiple Inc types{blast_note}** — "
+                        f"**{multi_inc_count} plasmid(s) detected with Multiple Inc types{blast_note}**, "
                         f"These are multi-replicon plasmids carrying replicons from multiple incompatibility groups. "
                         f"KNN threshold: ≥{MULTI_INC_THRESHOLD*100:.0f}% for secondary Inc types. "
                         f"For large plasmids (>100 kb) with 100% KNN confidence, PlasmidFinder BLAST is used as a secondary signal."
@@ -6299,10 +6625,11 @@ with tab_overview:
                         if "inc_blast_hits" in df.columns:
                             multi_cols.append("inc_blast_hits")
                         multi_display = multi_inc_df[multi_cols].copy()
-                        # Format blast hits for display
+                        # inc_blast_hits already arrives pre-formatted as a display
+                        # string from build_results_df (e.g. "IncN (97.1% id, 88% cov)")
                         if "inc_blast_hits" in multi_display.columns:
                             multi_display["inc_blast_hits"] = multi_display["inc_blast_hits"].apply(
-                                lambda hits: ", ".join(f"{g} ({p:.0f}% id)" for g, p, c in hits[:3]) if isinstance(hits, list) and hits else "—"
+                                lambda hits: hits if isinstance(hits, str) and hits else "-"
                             )
                         if "inc_blast_used" in multi_display.columns:
                             multi_display["inc_blast_used"] = multi_display["inc_blast_used"].apply(
@@ -6322,9 +6649,73 @@ with tab_overview:
                             "Detection method: KNN probability split ≥15% triggers multi-replicon flag; "
                             "PlasmidFinder BLAST (enterobacteriales.fsa, ≥80% identity, ≥60% replicon coverage) "
                             "is used as a secondary signal for large plasmids where KNN gives 100% to one group. "
-                            "**The pLIN code is unaffected** — it is based on whole-sequence 4-mer composition and correctly "
+                            "**The pLIN code is unaffected**: it is based on whole-sequence 4-mer composition and correctly "
                             "identifies these plasmids as a single lineage regardless of which replicon label is assigned."
                         )
+
+            # Acinetobacter dif/pdif recombination-risk screen
+            if "pdif_n_sites" in df.columns:
+                aci_df = df[df["inc_best_match"].isin(["repAci1", "repAci_large"])] if "inc_best_match" in df.columns else df[df["pdif_n_sites"].notna()]
+                elevated_df = aci_df[aci_df["pdif_recombination_risk"] == "Elevated"]
+                if len(aci_df) > 0:
+                    st.warning(
+                        f"**{len(aci_df)} Acinetobacter plasmid(s) screened for pdif/dif recombination sites**, "
+                        f"{len(elevated_df)} flagged with elevated recombination risk (≥2 candidate sites). "
+                        "dif/pdif-mediated (XerC/D) recombination can rearrange Acinetobacter plasmid architecture "
+                        "fast enough that composition-based clustering may reflect recombination history as much as "
+                        "lineage identity: pLIN codes for elevated-risk plasmids should be treated as provisional."
+                    )
+                    with st.expander(f"View Acinetobacter pdif screen results ({len(aci_df)})"):
+                        pdif_cols = ["plasmid_id", "inc_best_match", "pdif_n_sites", "pdif_recombination_risk"]
+                        pdif_cols = [c for c in pdif_cols if c in aci_df.columns]
+                        pdif_display = aci_df[pdif_cols].copy().rename(columns={
+                            "inc_best_match": "Inc Group",
+                            "pdif_n_sites": "Candidate pdif Sites",
+                            "pdif_recombination_risk": "Recombination Risk",
+                        })
+                        st.dataframe(pdif_display, use_container_width=True, hide_index=True)
+                        st.caption(
+                            "**Screening method:** sliding-window match (≤4 mismatches/28 bp) against a degenerate "
+                            "consensus of the Acinetobacter XerC/D (pdif/dif) recognition site, built from two "
+                            "independently published strain-level consensus sequences (Ab242, 17 sites; "
+                            "A. bereziniae HPC229, 67 sites) that agree at 26/28 positions. This is a literature-based "
+                            "screening heuristic, not a fitted position-weight-matrix or validated recombination call, "
+                            "it detects the presence of candidate Xer recombination substrate, not that a "
+                            "rearrangement has actually occurred. Treat 'Elevated' plasmids as needing structural "
+                            "follow-up (e.g. long-read assembly comparison, contig-level BLAST) before relying on "
+                            "their pLIN code as a stable lineage identifier."
+                        )
+
+            # Contrastive-encoder second opinion (only present if the user
+            # opted into it: see the "Classifier" radio in the sidebar).
+            if "inc_encoder_prediction" in df.columns:
+                enc_scored = df[df["inc_encoder_prediction"].notna()]
+                enc_disagree = enc_scored[enc_scored["inc_encoder_agrees_with_knn"] == False]
+                if len(enc_scored) > 0:
+                    st.info(
+                        f"**Contrastive-encoder second opinion:** {len(enc_scored)} plasmid(s) scored, "
+                        f"{len(enc_disagree)} disagree with the primary KNN call. "
+                        "The encoder is a comparison signal only, it never overrides the KNN-based inc_type "
+                        "or any downstream flag (multi-replicon, BLAST fallback, pdif screen)."
+                    )
+                    if len(enc_disagree) > 0:
+                        with st.expander(f"View KNN vs. encoder disagreements ({len(enc_disagree)})"):
+                            disagree_cols = [c for c in ["plasmid_id", "inc_type", "inc_confidence",
+                                                          "inc_encoder_prediction", "inc_encoder_confidence"]
+                                              if c in enc_disagree.columns]
+                            disagree_display = enc_disagree[disagree_cols].rename(columns={
+                                "inc_type": "KNN Call",
+                                "inc_confidence": "KNN Confidence",
+                                "inc_encoder_prediction": "Encoder Call",
+                                "inc_encoder_confidence": "Encoder Confidence",
+                            })
+                            st.dataframe(disagree_display, use_container_width=True, hide_index=True)
+                            st.caption(
+                                "A disagreement does not mean the KNN call is wrong, cross-validation shows the "
+                                "encoder is modestly more accurate on average (92.7% vs. 91.1%) but 8 of 28 groups "
+                                "score slightly lower with it, so neither classifier should be treated as ground truth. "
+                                "Use this as a prompt to double-check via PlasmidFinder or manual replicon typing."
+                            )
 
             inc_summary = df.groupby("inc_type").agg(
                 count=("plasmid_id", "count"),
@@ -6599,7 +6990,7 @@ with tab_results:
                 confusion_count = sum(1 for r in records if r.get("inc_confusion_pair"))
                 if confusion_count > 0:
                     st.warning(
-                        f"**{confusion_count} classification(s) involve known confusion pairs** — "
+                        f"**{confusion_count} classification(s) involve known confusion pairs**: "
                         f"the top-2 Inc candidates for these plasmids are known to be frequently "
                         f"confused by the KNN classifier. Consider these assignments with lower confidence.")
                     confused = [{"Plasmid": r["plasmid_id"],
@@ -6798,8 +7189,8 @@ with tab_clado:
         st.caption(
             "A shared pLIN code means two plasmids look similar by composition. "
             "This does not by itself say *which* regions are shared, or whether "
-            "AMR content differs. Select two or more plasmids — typically ones "
-            "sharing a pLIN code or prefix — to run pairwise BLAST and see "
+            "AMR content differs. Select two or more plasmids, typically ones "
+            "sharing a pLIN code or prefix: to run pairwise BLAST and see "
             "coverage, identity, and shared-block coordinates directly."
         )
 
@@ -6813,7 +7204,7 @@ with tab_clado:
             plin_lookup = dict(zip(labels, plin_codes))
             group_options = sorted(set(plin_codes))
             preselect_group = st.selectbox(
-                "Filter by pLIN code (optional — narrows the plasmid list below)",
+                "Filter by pLIN code (optional: narrows the plasmid list below)",
                 ["(no filter)"] + group_options, index=0, key="align_group_filter",
             )
             candidate_ids = (
@@ -6879,7 +7270,7 @@ with tab_clado:
                         ]
 
                         if len(blocks_for_pair) == 0:
-                            st.info("No aligned blocks above the length cutoff for this pair — "
+                            st.info("No aligned blocks above the length cutoff for this pair, "
                                     "these plasmids do not share substantial sequence despite the "
                                     "shared pLIN code prefix.")
                         else:
@@ -6923,6 +7314,56 @@ with tab_clado:
                                     )
             else:
                 st.info("Select at least 2 plasmids above to run alignment.")
+
+        # ── Backbone protein comparison ─────────────────────────────────────
+        st.markdown("---")
+        st.subheader("🧬 Backbone Protein Comparison")
+        st.caption(
+            "pLIN codes come from sequence composition, which identifies near-identical plasmids "
+            "well but says little about backbone relatedness at the coarse levels (L1–L4). This "
+            "compares predicted backbone protein families (AMR genes excluded) between every pair "
+            "of uploaded plasmids. 'Related backbone' means at least half of the smaller plasmid's "
+            "backbone families are shared (92.5% sensitivity, 99.0% specificity against alignment). "
+            "'Possible same lineage' flags pairs with different L6 codes that share ≥90% of backbone "
+            "families and are within cosine distance 0.005, usually a plasmid contained in a larger "
+            "one. This never changes pLIN codes."
+        )
+        from plin_backbone import backbone_sharing, flag_possible_same_lineage, find_mmseqs
+        if find_mmseqs() is None:
+            st.warning("MMseqs2 not detected. Install it (conda install -c bioconda mmseqs2) to use "
+                       "backbone protein comparison.")
+        elif len(st.session_state.records) < 2:
+            st.info("Upload at least two plasmids to compare backbones.")
+        else:
+            n_rec = len(st.session_state.records)
+            if st.button(f"Compare backbone proteins ({n_rec * (n_rec - 1) // 2} pairs)",
+                         key="run_backbone_compare"):
+                with st.spinner("Predicting proteins and clustering families..."):
+                    bb_pairs = backbone_sharing(st.session_state.records,
+                                                amr_df=st.session_state.get("amr_df"))
+                    vec_by_id = {r["plasmid_id"]: _kmer_vector_single(str(r["sequence"]))
+                                 for r in st.session_state.records}
+
+                    def _cos(a, b):
+                        va, vb = vec_by_id[a], vec_by_id[b]
+                        return 1.0 - float(va @ vb / (np.linalg.norm(va) * np.linalg.norm(vb)))
+
+                    st.session_state.backbone_pairs = flag_possible_same_lineage(
+                        bb_pairs, dict(zip(labels, plin_codes)), _cos)
+            bb = st.session_state.get("backbone_pairs")
+            if bb is not None and len(bb) > 0:
+                c1, c2 = st.columns(2)
+                c1.metric("Pairs with related backbone", int(bb["related_backbone"].sum()))
+                c2.metric("Possible same lineage (different L6)", int(bb["possible_same_lineage"].sum()))
+                st.dataframe(bb.rename(columns={
+                    "plasmid_1": "Plasmid 1", "plasmid_2": "Plasmid 2",
+                    "backbone_families_1": "Backbone families 1", "backbone_families_2": "Backbone families 2",
+                    "shared_families": "Shared", "containment": "Containment", "jaccard": "Jaccard",
+                    "related_backbone": "Related backbone", "same_L6": "Same L6",
+                    "cosine_distance": "Cosine distance", "possible_same_lineage": "Possible same lineage",
+                }), use_container_width=True, hide_index=True)
+                st.download_button("📥 Download backbone comparison (TSV)", bb.to_csv(sep="\t", index=False),
+                                   "backbone_protein_comparison.tsv", "text/tab-separated-values")
 
 
 # ── TAB 4: AMR Analysis ─────────────────────────────────────────────────────
@@ -7069,7 +7510,7 @@ with tab_epi:
                 if int(mob_counts.get("Conjugative", 0)) > 0:
                     conj_plasmids = mob_df[mob_df["mobility"] == "Conjugative"]["plasmid_id"].tolist()
                     st.warning(
-                        f"**{len(conj_plasmids)} conjugative plasmid(s) detected** — "
+                        f"**{len(conj_plasmids)} conjugative plasmid(s) detected**: "
                         "these can self-transfer to other bacteria via conjugation, "
                         "posing higher risk for AMR dissemination."
                     )
@@ -7095,7 +7536,7 @@ with tab_epi:
                         st.markdown(f"**Shared pLIN code:** {cluster['pLIN']}")
                         if cluster["amr_genes"]:
                             consistency = "identical across all plasmids" if cluster["amr_profile_consistent"] \
-                                else "genes pooled — profiles differ slightly between plasmids"
+                                else "genes pooled: profiles differ slightly between plasmids"
                             st.markdown(f"**Shared AMR genes ({consistency}):** {', '.join(cluster['amr_genes'])}")
                         else:
                             st.markdown("**Shared AMR genes:** none detected / AMRFinderPlus not run")
@@ -7178,7 +7619,7 @@ with tab_epi:
             for i, tc in enumerate(temporal_clusters):
                 risk_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MODERATE": "🟡"}.get(tc["risk_level"], "⚪")
                 with st.expander(
-                    f"{risk_icon} Cluster {i+1}: pLIN {tc['pLIN']} — "
+                    f"{risk_icon} Cluster {i+1}: pLIN {tc['pLIN']}, "
                     f"{tc['n_plasmids']} plasmids, {tc['date_range_days']}d span, "
                     f"{tc['n_amr_genes']} AMR genes"
                 ):
@@ -7195,7 +7636,7 @@ with tab_epi:
                 st.error(
                     "**CRITICAL temporal outbreak cluster(s) detected.** "
                     "Plasmids with identical L6 codes, same AMR profile, and collection dates "
-                    "within 7 days — strongly suggestive of active clonal transmission."
+                    "within 7 days: strongly suggestive of active clonal transmission."
                 )
 
         # ─── Pathogen-Plasmid Integration (MLST + pLIN) ───
@@ -7224,8 +7665,8 @@ with tab_epi:
                     "**MLST typing succeeded, but no host genome could be linked to any "
                     "plasmid, so transmission-mode analysis (clonal spread vs. horizontal "
                     "plasmid transfer) could not run.** Genomes and plasmids are linked by "
-                    "shared filename text — e.g. `sample01_genome.fasta` links to "
-                    "`sample01_plasmid.fasta` because both contain \"sample01\" — or by "
+                    "shared filename text: e.g. `sample01_genome.fasta` links to "
+                    "`sample01_plasmid.fasta` because both contain \"sample01\": or by "
                     "uploading a metadata CSV/TSV with a genome-name column and a "
                     "`plasmid_id` column. Check that your uploaded genome and plasmid "
                     "filenames share a common identifier, or provide a metadata file, "
@@ -7332,7 +7773,7 @@ with tab_epi:
                 with st.expander(f"Cosine-ANI Concordance Check ({n_concordant}/{n_total} concordant)"):
                     if n_discordant > 0:
                         st.warning(
-                            f"**{n_discordant} discordant assignment(s)** — cosine distance and Mash ANI "
+                            f"**{n_discordant} discordant assignment(s)**: cosine distance and Mash ANI "
                             f"disagree for these plasmids. The 4-mer composition proxy may be unreliable "
                             f"for these specific sequences. Verify with FastANI or minimap2 alignment.")
                         disc = concordance_df[concordance_df["concordance"] == "discordant"]
@@ -7340,7 +7781,7 @@ with tab_epi:
                                      use_container_width=True, hide_index=True)
                     else:
                         st.success(
-                            f"All {n_total} pLIN assignments are concordant with Mash ANI estimates — "
+                            f"All {n_total} pLIN assignments are concordant with Mash ANI estimates, "
                             f"4-mer cosine distances correlate with sequence-level similarity.")
 
         if fastani_df is not None and len(fastani_df) > 0:
@@ -7368,7 +7809,7 @@ with tab_epi:
                     non_ref_identical = identical[identical["plasmid_id"] != identical["reference_id"]]
                     if len(non_ref_identical) > 0:
                         st.warning(
-                            f"**{len(non_ref_identical)} plasmid pair(s) with 0 SNP differences** — "
+                            f"**{len(non_ref_identical)} plasmid pair(s) with 0 SNP differences**, "
                             "these are likely identical or near-identical sequences, strongly suggesting "
                             "recent clonal transmission or the same plasmid isolated multiple times."
                         )
@@ -7588,10 +8029,10 @@ with tab_buddy:
             "2. Start Ollama: `ollama serve`\n"
             "3. Pull a model: `ollama pull llama3.2`\n"
             "4. Refresh this page",
-            icon="🤖"
+            icon="ℹ️"
         )
         st.info(
-            "**Why Ollama?** It runs LLMs locally on your machine — no API keys, no data leaves your computer, "
+            "**Why Ollama?** It runs LLMs locally on your machine, no API keys, no data leaves your computer, "
             "and it's completely free. Perfect for sensitive research data!",
             icon="💡"
         )
@@ -7714,13 +8155,15 @@ with tab_export:
         with col1:
             st.subheader("Tables")
             run_provenance = get_run_provenance()
-            st.caption(
-                f"pLIN v{run_provenance['plin_app_version']} · "
-                f"{run_provenance['reference_database_plasmid_count']:,} reference plasmids · "
-                f"generated {run_provenance['generated_utc']}"
-                if run_provenance.get("reference_database_plasmid_count") is not None else
-                f"pLIN v{run_provenance['plin_app_version']} · generated {run_provenance['generated_utc']}"
-            )
+            db_label = (f"database {run_provenance['database_version']}"
+                        if run_provenance.get("database_version") else None)
+            caption_parts = [f"pLIN v{run_provenance['plin_app_version']}"]
+            if db_label:
+                caption_parts.append(db_label)
+            if run_provenance.get("reference_database_plasmid_count") is not None:
+                caption_parts.append(f"{run_provenance['reference_database_plasmid_count']:,} reference plasmids")
+            caption_parts.append(f"generated {run_provenance['generated_utc']}")
+            st.caption(" · ".join(caption_parts))
 
             # pLIN results
             plin_csv = tsv_with_provenance(st.session_state.plin_df, run_provenance).encode()

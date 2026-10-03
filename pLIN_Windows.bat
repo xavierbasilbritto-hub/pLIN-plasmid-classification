@@ -1,7 +1,7 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════════
-REM  pLIN — All-in-One Setup & Launch for Windows
-REM  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+REM  pLIN: All-in-One Setup & Launch for Windows
+REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 REM
 REM  Single file: installs everything + launches the pLIN web application.
 REM
@@ -18,7 +18,7 @@ REM            x64 processors, WSL2 supported
 REM ═══════════════════════════════════════════════════════════════════════════════
 
 setlocal EnableDelayedExpansion
-title pLIN v3.0.0 — Plasmid Lineage Identification Number System
+title pLIN v3.0.0: Plasmid Lineage Identification Number System
 
 REM ── Change to script directory ──────────────────────────────────────────────
 cd /d "%~dp0"
@@ -74,7 +74,7 @@ REM ═════════════════════════�
 echo.
 echo  ================================================================
 echo    pLIN: Plasmid Lineage Identification Number System
-echo    Version 3.0.0 — All-in-One Installer for Windows
+echo    Version 3.0.0: All-in-One Installer for Windows
 echo    Hierarchical Plasmid Classification + AMR Surveillance
 echo  ================================================================
 echo.
@@ -275,7 +275,7 @@ echo [%~1/%~2] Installing bioinformatics tools via conda...
 
 call :find_conda
 if "!CONDA_BIN!"=="" (
-    call :info "Conda not found — attempting to download Miniconda..."
+    call :info "Conda not found, attempting to download Miniconda..."
     set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
     set "MINICONDA_EXE=%TEMP%\Miniconda3-latest-Windows-x86_64.exe"
 
@@ -380,7 +380,7 @@ if exist "!IS_DB!" (
 call :info "Setting up IS element reference database (25 IS families)..."
 
 if "!PYTHON_BIN!"=="" (
-    call :warn "Python not available — skipping IS database setup"
+    call :warn "Python not available, skipping IS database setup"
     goto :eof
 )
 
@@ -400,10 +400,10 @@ if exist "!IS_FASTA!" (
         if !errorlevel! equ 0 (
             call :ok "BLAST database built for IS references"
         ) else (
-            call :warn "makeblastdb failed — IS detection may not work"
+            call :warn "makeblastdb failed, IS detection may not work"
         )
     ) else (
-        call :warn "makeblastdb not found — BLAST database not built"
+        call :warn "makeblastdb not found, BLAST database not built"
         call :info "IS detection requires BLAST+ (installed via conda)"
     )
 )
@@ -428,7 +428,7 @@ if !errorlevel! equ 0 (
         )
     )
     if !BLAST_FOUND! equ 0 (
-        call :warn "BLAST+ not found — IS element detection will not be available"
+        call :warn "BLAST+ not found, IS element detection will not be available"
         call :info "Contig classification (plasmid vs chromosome) works without BLAST"
     )
 )
@@ -517,7 +517,7 @@ echo [3/5] Checking Python packages...
 if not "!PYTHON_BIN!"=="" (
     call :check_packages
 ) else (
-    call :warn "Cannot check packages — Python not found"
+    call :warn "Cannot check packages, Python not found"
 )
 
 echo.
@@ -628,7 +628,7 @@ call :detect_platform
 echo.
 call :find_python
 if "!PYTHON_BIN!"=="" (
-    call :warn "Python not found — will install via conda"
+    call :warn "Python not found, will install via conda"
 )
 call :check_files
 if "!FILES_OK!"=="0" (
@@ -681,7 +681,7 @@ call :detect_platform
 echo.
 call :find_python
 if "!PYTHON_BIN!"=="" (
-    call :warn "Python not found — will install via conda"
+    call :warn "Python not found, will install via conda"
 )
 call :check_files
 if "!FILES_OK!"=="0" (

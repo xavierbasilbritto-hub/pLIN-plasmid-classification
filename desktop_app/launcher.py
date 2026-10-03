@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 Standalone desktop launcher for the pLIN Streamlit app.
@@ -8,12 +8,12 @@ PyInstaller bundles this script (not plin_app.py directly), because a
 Streamlit app is normally started via the `streamlit run` CLI rather than
 plain `python script.py`. This launcher invokes Streamlit's own internal
 CLI programmatically, then opens the user's default browser once the local
-server is ready — giving a standalone double-clickable app with the same
+server is ready: giving a standalone double-clickable app with the same
 "opens in your browser" experience as running `streamlit run plin_app.py`
 by hand, but with no separate Python/pip install required by the user.
 
 External bioinformatics tools (AMRFinderPlus, MOB-suite, BLAST+, FastANI,
-MinCED, Prodigal, minimap2) are NOT bundled — they are substantial,
+MinCED, Prodigal, minimap2) are NOT bundled: they are substantial,
 platform-specific binaries normally distributed via conda/bioconda, and
 plin_app.py already detects their presence at runtime and gracefully
 disables the modules that need them if they're not found on the system.
@@ -83,7 +83,7 @@ def main():
 
     # plin_app.py resolves its own data/output paths relative to its own
     # file location and/or the current working directory in several
-    # places — run from base_dir so both resolve the same way as a normal
+    # places: run from base_dir so both resolve the same way as a normal
     # `streamlit run plin_app.py` invocation from the repo root would.
     os.chdir(base_dir)
 
@@ -91,7 +91,7 @@ def main():
     url = f"http://localhost:{port}"
 
     print("=" * 60)
-    print("pLIN — plasmid Lineage Identification Number")
+    print("pLIN: plasmid Lineage Identification Number")
     print("=" * 60)
     print(f"Starting local server at {url}")
     print("This window must stay open while pLIN is running.")

@@ -1,0 +1,5 @@
+tool	mode	level	snapshot_frac	seed	n_plasmids	label_retained_pct	pairs_together_before	pairs_split_pct	pairs_merged	ARI	unassigned_before	unassigned_after
+pling	add	community	0.5	1	1000	0.5	61086	0.0	10652	0.9076	0	0
+pling	add	subcommunity	0.5	1	1000	4.6	831	45.97	333	0.556	52	101
+pling	rebuild	community	0.5	1	1000	35.8	61086	0.0	10652	0.9076	0	0
+pling	rebuild	subcommunity	0.5	1	1000	5.4	831	47.05	387	0.53	52	101

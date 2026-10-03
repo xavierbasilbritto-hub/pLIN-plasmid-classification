@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Leave-one-out cross-validation (LOOCV) benchmark for pLIN outbreak detection.
 
@@ -78,7 +78,7 @@ def load_outbreak_sequences():
 
     for seq_dir in [
         # The original 17 outbreak FASTAs live directly in outbreak_validation/,
-        # not outbreak_validation/sequences/ (that directory does not exist —
+        # not outbreak_validation/sequences/ (that directory does not exist:
         # a prior version of this script pointed at it, which silently found
         # 0 files and caused those 17 plasmids to skip true LOOCV testing).
         os.path.join(BASE_DIR, "outbreak_validation"),
@@ -158,7 +158,7 @@ def define_ground_truth_clusters(outbreak_df):
 
 def main():
     print("=" * 70)
-    print("pLIN OUTBREAK DETECTION — LEAVE-ONE-OUT CROSS-VALIDATION BENCHMARK")
+    print("pLIN OUTBREAK DETECTION: LEAVE-ONE-OUT CROSS-VALIDATION BENCHMARK")
     print("=" * 70)
 
     # Load data
@@ -203,7 +203,7 @@ def main():
 
         if acc in outbreak_vecs:
             query_vec = outbreak_vecs[acc]
-            # Classify against training set (no LOO needed — outbreak plasmids
+            # Classify against training set (no LOO needed, outbreak plasmids
             # are NOT in the training set)
             result = classify_loocv(query_vec, X_train, y_train, group_names,
                                      plin_df_train, k=5)
@@ -346,7 +346,7 @@ def main():
     # Summary text
     summary_path = os.path.join(out_dir, "outbreak_benchmark_summary.txt")
     with open(summary_path, "w") as f:
-        f.write("pLIN Outbreak Detection — LOOCV Benchmark Summary\n")
+        f.write("pLIN Outbreak Detection: LOOCV Benchmark Summary\n")
         f.write("=" * 50 + "\n\n")
         f.write(f"Total outbreak plasmids: {len(results_df)}\n")
         f.write(f"LOOCV tested (with sequence): {n_loocv}\n")

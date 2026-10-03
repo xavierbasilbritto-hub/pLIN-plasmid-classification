@@ -1,0 +1,84 @@
+================================================================================
+pLIN: Frequently Asked Questions (pLIN v4.1, database db-2026.10.03)
+================================================================================
+
+This file answers common questions about how pLIN codes are computed and what
+they do and do not depend on. Every number below comes from docs/PLIN_FACTS.json.
+
+--------------------------------------------------------------------------------
+Q1. Plasmids in the same outbreak have different sizes and different resistance
+    genes. How can pLIN say they are the same lineage?
+--------------------------------------------------------------------------------
+
+Short answer: the levels measure different things, so a plasmid can share its
+backbone with another while differing in cargo.
+
+  - L1 and L2 compare shared protein families, so plasmids with the same
+    replication, partition and transfer machinery group together even when
+    their cargo differs.
+  - L3 and L4 compare shared k-mers (exact 21-letter stretches), so they require
+    the same backbone sequence, not only the same kind of proteins.
+  - L5 (lineage) and L6 (near-identical clone) are copied from the plasmid's
+    nearest relative when the two share most of their sequence (k-mer
+    similarity at least 0.80 for L5, 0.95 for L6).
+
+So two isolates that share a backbone but gained or lost a transposon share
+L1 to L4, and share L5 only if most of the whole plasmid is still the same.
+
+Real example (sample_data/swiss_vim1_outbreak): eight isolates carry blaVIM-1
+on large plasmids of 249 to 342 kb. pLIN places all of them in one backbone
+family (L1) and resolves three lineages, agreeing with whole-plasmid
+alignment on 27 of 28 pairs of blaVIM-1 plasmids.
+
+Validation (pre-registered, 2,000 plasmids never used during development):
+lineage level L5 F1 0.86 (95% CI 0.79 to 0.92), against 0.58 for
+MOB-suite secondary clusters.
+
+--------------------------------------------------------------------------------
+Q2. If two people use different classifiers (KNN vs. the optional
+    contrastive encoder), will they get different pLIN codes?
+--------------------------------------------------------------------------------
+
+No. The pLIN code is computed from the plasmid's proteins and k-mers
+(plin_v41_typer.py) and never receives the Inc/Rep classifier's output. The
+classifier answers a separate question, "which replicon group is this?", which
+is reported next to the code. Switching classifiers can change that label and
+anything that keys off it for display, never the six numbers of the code.
+
+The KNN classifier reaches 91.1% cross-validated accuracy, but macro-F1 0.67
+over 28 groups: it is reliable mainly for the common groups, which is another
+reason the code does not depend on it.
+
+--------------------------------------------------------------------------------
+Q3. What do I need before typing plasmids with pLIN v4.1?
+--------------------------------------------------------------------------------
+
+  1. The v4.1 database (about 1.6 GB), downloaded from the GitHub Releases page
+     into data/plin_v41/ (source install) or ~/.plin/plin_v41 (desktop app).
+     Check the files against the SHA-256 checksums in DATABASE_VERSION.json.
+  2. MMseqs2 (conda install -c bioconda mmseqs2). On first use pLIN builds a
+     search index of the protein catalogue (about 16 GB, a few minutes).
+
+Without them, the app says so and assigns the earlier v3 (legacy) codes.
+
+Two version numbers change on different schedules:
+
+  - App version (example: 4.1.0): the code of the application.
+  - Database version (example: db-2026.10.03): the plasmid codes,
+    protein-family catalogue and k-mer index.
+
+Reproducibility: a plasmid already in the database always gets its published
+code (100% of 500 plasmids re-typed from sequence in the validation). A new
+plasmid gets the code it would receive in the next release; levels that do not
+exist yet are marked as provisional, and plasmids analysed together are coded
+consistently with each other. Provisional numbers can differ between separate
+runs, so compare new plasmids by analysing them together, or by the reported
+nearest database plasmid and similarity, until they are added to an official
+release.
+
+================================================================================
+For more detail, see:
+  README.md                    installation, database download, validation
+  desktop_app/USER_MANUAL.md   desktop app usage
+  docs/PLIN_FACTS.json         every published number and its source file
+================================================================================

@@ -1,11 +1,11 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════
-REM pLIN Tool — Installation Script (Windows)
-REM Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+REM pLIN Tool: Installation Script (Windows)
+REM Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 REM ═══════════════════════════════════════════════════════════════════════════
 
 echo ═══════════════════════════════════════════════════════════════
-echo  pLIN Tool — Installer for Windows
+echo  pLIN Tool: Installer for Windows
 echo ═══════════════════════════════════════════════════════════════
 echo.
 

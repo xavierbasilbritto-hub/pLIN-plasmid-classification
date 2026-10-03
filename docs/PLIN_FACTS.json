@@ -1,0 +1,205 @@
+{
+ "scheme": {
+  "value": "pLIN v4.1",
+  "text": "pLIN v4.1",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "database_version": {
+  "value": "db-2026.10.03",
+  "text": "db-2026.10.03",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "db_plasmids": {
+  "value": 127517,
+  "text": "127,517",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L1": {
+  "value": 27333,
+  "text": "27,333",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L2": {
+  "value": 39727,
+  "text": "39,727",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L3": {
+  "value": 49522,
+  "text": "49,522",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L4": {
+  "value": 62735,
+  "text": "62,735",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L5": {
+  "value": 72685,
+  "text": "72,685",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "clusters_L6": {
+  "value": 93440,
+  "text": "93,440",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "db_no_protein": {
+  "value": 985,
+  "text": "985",
+  "source": "output/backbone_v41/release/DATABASE_VERSION.json"
+ },
+ "test_pairs": {
+  "value": 3337,
+  "text": "3,337",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "test_same_lineage_pairs": {
+  "value": 310,
+  "text": "310",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "lineage_F1": {
+  "value": 0.86,
+  "text": "0.86",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "lineage_F1_MOB": {
+  "value": 0.58,
+  "text": "0.58",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "lineage_diff": {
+  "value": 0.29,
+  "text": "+0.29 (95% CI 0.17 to 0.42)",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "backbone_F1": {
+  "value": 0.38,
+  "text": "0.38",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "backbone_F1_MOB": {
+  "value": 0.26,
+  "text": "0.26",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "backbone_diff": {
+  "value": 0.12,
+  "text": "+0.12 (95% CI -0.09 to 0.28); not shown non-inferior",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "lineage_F1_CI": {
+  "value": [
+   0.79,
+   0.92
+  ],
+  "text": "0.79 to 0.92",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_precision": {
+  "value": 0.79,
+  "text": "0.79",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_recall": {
+  "value": 0.94,
+  "text": "0.94",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_F1_pling": {
+  "value": 0.34,
+  "text": "0.34",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_F1_mge": {
+  "value": 0.0,
+  "text": "0.00",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_F1_v4": {
+  "value": 0.47,
+  "text": "0.47",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "stability_runs": {
+  "value": 15,
+  "text": "15",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "stability_retained": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "requery_n": {
+  "value": 500,
+  "text": "500",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "requery_identical": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L1_L5_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L6_0.1pct": {
+  "value": 0.97,
+  "text": "97%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "speed_related_s": {
+  "value": 0.252,
+  "text": "0.25 s",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "speed_divergent_s": {
+  "value": 1.08,
+  "text": "1.08 s",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "speed_MOB_s": {
+  "value": 1.248,
+  "text": "1.25 s",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "onehealth_clones_multisector": {
+  "value": 1330,
+  "text": "1,330",
+  "source": "output/backbone_v41/onehealth/summary.json"
+ },
+ "onehealth_clones_same_gene": {
+  "value": 172,
+  "text": "172",
+  "source": "output/backbone_v41/onehealth/summary.json"
+ },
+ "vim_pairs_agree": {
+  "value": 27,
+  "text": "27 of 28",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_pairs.tsv"
+ },
+ "replicon_groups": {
+  "value": 28,
+  "text": "28",
+  "source": "data/inc_classifier.npz"
+ },
+ "replicon_training": {
+  "value": 8077,
+  "text": "8,077",
+  "source": "data/inc_classifier.npz"
+ },
+ "replicon_cv_accuracy": {
+  "value": 0.911,
+  "text": "91.1%",
+  "source": "data/inc_classifier.npz"
+ },
+ "replicon_macro_F1": {
+  "value": 0.67,
+  "text": "0.67",
+  "source": "data/inc_classifier.npz"
+ }
+}

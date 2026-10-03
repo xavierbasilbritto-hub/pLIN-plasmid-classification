@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Original 17-plasmid pLIN outbreak validation — reconstructed generator.
+Original 17-plasmid pLIN outbreak validation: reconstructed generator.
 
 The script that originally produced output/outbreak_validation_pLIN_results.tsv
 was never committed to the repository; only its (now-stale, pre-pipeline-fix)
@@ -12,7 +12,7 @@ the 17 original outbreak FASTA files in outbreak_validation/*.fasta, against
 the corrected, deterministic output/pLIN_assignments.tsv.
 
 Metadata (study, plasmid_name, expected_inc, resistance_gene) is carried
-over unchanged from the original stale results file — only the
+over unchanged from the original stale results file, only the
 classification (predicted_inc, confidence, pLIN, nn_plasmid, nn_distance)
 is recomputed against the corrected training database.
 """
@@ -33,7 +33,7 @@ TRAINING_PLIN = os.path.join(BASE_DIR, "output", "pLIN_assignments.tsv")
 ORIGINAL_DIR = os.path.dirname(__file__)  # the 17 FASTAs sit directly here
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "outbreak_validation_pLIN_results.tsv")
 
-# Metadata carried over verbatim from the original (stale) results file —
+# Metadata carried over verbatim from the original (stale) results file:
 # these are ground-truth facts about the source studies/plasmids, not
 # classifier output, so they are unaffected by the pLIN renumbering fix.
 ACCESSION_META = {
@@ -75,7 +75,7 @@ ACCESSION_META = {
 
 
 def compute_kmer_vector(seq: str, k: int = 4) -> np.ndarray:
-    """Compute normalised 4-mer frequency vector — identical to
+    """Compute normalised 4-mer frequency vector: identical to
     run_expanded_validation.py::compute_kmer_vector for consistency."""
     bases = "ACGT"
     all_kmers = ["".join(p) for p in iter_product(bases, repeat=k)]

@@ -3,17 +3,23 @@
 __pycache__/
 *.pyc
 
-# FASTA sequences (too large for GitHub — download from NCBI RefSeq)
+# FASTA sequences (too large for GitHub: download from NCBI RefSeq)
 plasmid_sequences_for_training/
 reference/
 sequences.fasta
 
-# Large binary files (>50MB — not suitable for GitHub)
+# Large binary files (>50MB: not suitable for GitHub)
 output/mash/
 outbreak_validation/swiss_vim1/
 
 # CRISPR evaluation intermediate files
 output/crispr_evaluation/
+
+# Standalone database release ZIPs: rebuilt by CI from the committed TSV/
+# classifier/DATABASE_VERSION.json on each tagged release (see
+# build_database_release.py and .github/workflows/build-desktop-app.yml),
+# not meant to be committed themselves.
+output/database_releases/
 
 # Temporary/lock files
 ~$*
@@ -109,3 +115,21 @@ assets/*
 
 # Executed notebooks (keep source .ipynb only)
 pLIN_executed.ipynb
+output/_backups/
+
+# Local presentation, abstract and earlier-manuscript (v3-era) generators: not published
+create_*_pptx.py
+create_*_docx.py
+create_escmid_abstract.py
+generate_escmid_figure.py
+build_supplementary_s5_s6.py
+compute_diversity_table.py
+benchmark_plin_schemes.py
+build_database_release.py
+generate_figure11_founder_outbreak.py
+generate_figure18_classifier_comparison.py
+generate_figure_alignment_validation.py
+generate_figure_swiss_vim1.py
+generate_excel_tables.py
+generate_figure14_outbreak_validation.py
+compute_code_stability_expansion.py

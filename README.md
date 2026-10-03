@@ -1,36 +1,55 @@
-# pLIN — Plasmid Lineage Identification Number
+# pLIN: Plasmid Lineage Identification Number
 
-A hierarchical, reference-free classification system for bacterial plasmid genomes with integrated antimicrobial resistance (AMR) gene surveillance.
+A permanent, multi-level nomenclature for bacterial plasmids, from backbone families to outbreak clones, with integrated antimicrobial resistance (AMR) gene surveillance.
 
-**Author:** Basil Xavier Britto | **License:** GPL-3.0 with mandatory citation clause | **Citation Required:** See [CITATION.cff](CITATION.cff)
+**Author:** Basil Britto Xavier | **License:** GPL-3.0 with mandatory citation clause | **Citation Required:** See [CITATION.cff](CITATION.cff)
 
 ---
 
 ## Overview
 
-pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.12.45`) based on tetranucleotide (4-mer) composition distances and single-linkage clustering at six biologically calibrated thresholds. The system spans from broad family-level (~85% ANI) to strain-level (~99.9% ANI) resolution.
+pLIN gives every plasmid a **six-level code** (for example `169.178.183.208.209.2438`) that never changes as the database grows. The levels run from broad to fine:
+
+| Level | Meaning | How it is assigned |
+|---|---|---|
+| L1 | Backbone family | shared protein families (containment >= 0.40) |
+| L2 | Backbone group | shared protein families (containment >= 0.60) |
+| L3 | Shared backbone | shared k-mers (containment >= 0.50) |
+| L4 | Backbone variant | shared k-mers (containment >= 0.80) |
+| L5 | Lineage | symmetric k-mer similarity >= 0.80 to its nearest relative |
+| L6 | Near-identical (outbreak clone) | symmetric k-mer similarity >= 0.95 to its nearest relative |
+
+A plasmid with a near relative in the database (L5 similarity) copies that relative's code, so near-identical plasmids, mutants and outbreak isolates stay together. A plasmid without one is placed in the backbone levels by a founder rule and starts a new lineage. Existing codes are never renumbered, and a plasmid already in the database always gets back its published code. The scheme (pLIN v4.1) was evaluated in a pre-registered study; see [Validation](#validation).
 
 ### Key Features
 
 | Category | Features |
 |----------|----------|
-| **Classification** | 6-level hierarchical pLIN codes (L1-L6), KNN Inc/Rep group detection (91.1% accuracy, 28 groups), Unknown/Novel flagging |
+| **Classification** | Permanent six-level pLIN codes (L1-L6); replicon (Inc/Rep) group prediction for 28 groups; flagging of new (provisional) codes |
 | **AMR Surveillance** | AMRFinderPlus integration (AMR + stress + virulence genes), critical gene alerts, drug class analysis |
-| **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI true ANI, minimap2 SNP sub-typing within L6 clusters |
-| **Epidemiology** | Plasmid mobility prediction (MOBsuite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
-| **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+), reference DB (72,959 plasmids) |
-| **AI/ML** | Nucleotide Transformer LLM (optional), Bacterial Buddy AI chatbot (Ollama), adaptive per-Inc thresholds |
-| **Visualization** | Interactive Streamlit GUI (8 tabs), cladograms, heatmaps, Plotly charts |
+| **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI, minimap2 SNP sub-typing within lineages |
+| **Epidemiology** | Plasmid mobility prediction (MOB-suite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
+| **Host Inference** | CRISPR spacer-based host prediction (MinCED + BLAST+) |
+| **Visualization** | Interactive Streamlit GUI, cladograms, heatmaps, Plotly charts |
 | **Deployment** | Cross-platform (macOS/Windows/Linux), Docker support, one-click launchers |
 
-### Performance Metrics
+### Validation
 
-- **Simpson's Diversity Index:** 0.985
-- **Inc/Rep Detection Accuracy:** 91.1% (5-fold CV, 28 groups)
-- **Training Dataset:** 8,077 plasmid sequences across 28 Inc/Rep groups (8,056 unique plasmids)
-- **Reference Database:** 79,305 plasmids (8,056 training + 71,249 PLSDB/NCBI RefSeq)
-- **Unique pLIN Codes:** 57,886 strain-level codes (across 79,305 plasmids)
-- **Processing Time:** <30 minutes on a standard laptop
+Pre-registered on GitHub before the test data were drawn ([v4.1 pre-registration](../../blob/preregistration-v4/output/backbone_v41/PREREGISTRATION_v4.1.md)). Test set: 2,000 plasmids never used during development, 3,337 alignment-checked pairs.
+
+- **Same-lineage identification (L5):** F1 0.86 (95% CI 0.79 to 0.92; precision 0.79, recall 0.94), against 0.58 for MOB-suite secondary clusters, 0.34 for pling and below 0.01 for mge-cluster. Difference from MOB-suite: +0.29 (95% CI 0.17 to 0.42).
+- **Related-backbone grouping (L1):** F1 0.38, against 0.26 for MOB-suite primary clusters. The confidence interval was too wide to show non-inferiority (pre-registered criterion not met).
+- **Stability:** 100% of codes unchanged in all 15 database-growth scenarios.
+- **Reproducibility:** 100% of 500 plasmids re-typed from sequence received their published code.
+- **Robustness:** 100% kept L1-L5 after 0.1% random substitutions (97% kept L6).
+- **Speed (8 threads):** instant for a plasmid already in the database; 0.25 s per new plasmid related to the database and 1.08 s when divergent, against 1.25 s for MOB-suite on the same machine.
+- **Replicon prediction:** 91.1% cross-validated accuracy, macro-F1 0.67, over 28 groups (8,077 training plasmids). Accuracy is high mainly for common groups.
+
+All numbers are generated from the result files by [`build_facts.py`](build_facts.py) into [`docs/PLIN_FACTS.json`](docs/PLIN_FACTS.json).
+
+### Database
+
+Release **db-2026.10.03**: 127,517 unique plasmids, 93,440 L6 codes, 72,685 lineages (L5) and 27,333 backbone families (L1).
 
 ---
 
@@ -38,7 +57,7 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 
 > **Just want to use the app, no Python setup?** Download a standalone
 > desktop build for macOS, Windows, or Linux from the
-> [Releases](../../releases) page — no separate Python install required.
+> [Releases](../../releases) page: no separate Python install required.
 > See the [Desktop App User Manual](desktop_app/USER_MANUAL.md) for
 > download, install, and usage instructions. The steps below are for
 > running pLIN from source instead.
@@ -48,6 +67,7 @@ pLIN assigns each plasmid a **six-position hierarchical code** (e.g., `1.1.3.5.1
 - **Python 3.10 or higher** (Python 3.11+ recommended)
 - **Git** (for cloning the repository)
 - **Conda** (recommended) or **pip** with virtual environment
+- **MMseqs2** (for typing new plasmids with pLIN v4.1): `conda install -c bioconda mmseqs2`
 
 ### Quick Start (All Platforms)
 
@@ -63,10 +83,40 @@ bash install_pLIN.sh
 # Windows:
 install_pLIN.bat
 
-# 3. Launch the GUI
+# 3. Download the pLIN v4.1 database (see below) into data/plin_v41/
+
+# 4. Launch the GUI
 conda activate pLIN_tools
 streamlit run plin_app.py
 ```
+
+---
+
+### Database version & updates
+
+pLIN separates two version numbers that change on different schedules:
+
+| | Tracks | Where to check |
+|---|---|---|
+| **App version** | Code: the Streamlit app, classification logic, modules | `PLIN_APP_VERSION` in `plin_app.py`; shown in the app's Export tab |
+| **Database version** (currently `db-2026.10.03`) | Content: the plasmid codes, protein-family catalogue and k-mer index | `data/plin_v41/DATABASE_VERSION.json` |
+
+**Download the database.** The pLIN v4.1 database is about 1.6 GB, too large for the code repository. Download the files of release `db-2026.10.03` from the [Releases](../../releases) page and place them in `data/plin_v41/`:
+
+```
+plin_v41_codes.tsv.gz        codes for every database plasmid (also usable on its own)
+plin_v41_index.npz           codes, k-mer sketches and the backbone founder tree
+family_members.faa.gz        protein-family catalogue (MMseqs2 search target)
+family_exact_lookup.npz      protein-sequence hash -> family
+plasmid_hashes.tsv.gz        whole-plasmid hash -> accession
+DATABASE_VERSION.json        counts, levels, software versions, SHA-256 checksums
+```
+
+Check the files against the SHA-256 checksums in `DATABASE_VERSION.json`. On first use, the app builds an MMseqs2 search index of the protein catalogue (about 16 GB, a few minutes) in `~/.plin/v41_mmseqs_index`; set `PLIN_V41_INDEX` to put it elsewhere.
+
+**Reproducibility note.** A plasmid already in the database always gets its published code. A new plasmid gets the code it would receive in the next release; levels that do not exist in the release are reported as provisional. Plasmids analysed together are coded consistently with each other. Codes become permanent for everyone once a plasmid is added to an official database release.
+
+The earlier v3 codes (4-mer composition) remain available in the app as a legacy option and are listed next to the v4.1 codes in `plin_v41_codes.tsv.gz`.
 
 ---
 
@@ -126,7 +176,7 @@ conda install -c bioconda blast -y
 # Prodigal (gene annotation)
 conda install -c bioconda prodigal -y
 
-# Ollama (AI chatbot — optional)
+# Ollama (AI chatbot: optional)
 brew install ollama
 ollama pull llama3.2
 ```
@@ -140,7 +190,7 @@ The app will open automatically at `http://localhost:8501`.
 
 ---
 
-### Linux Installation (Ubuntu/Debian — Step-by-Step)
+### Linux Installation (Ubuntu/Debian: Step-by-Step)
 
 #### Step 1: Install System Dependencies
 ```bash
@@ -180,7 +230,7 @@ pip install mob_suite
 # Mash, FastANI, minimap2, MinCED, BLAST+, Prodigal
 conda install -c bioconda mash fastani minimap2 minced blast prodigal -y
 
-# Ollama (AI chatbot — optional)
+# Ollama (AI chatbot: optional)
 curl -fsSL https://ollama.com/install.sh | sh
 ollama pull llama3.2
 ```
@@ -261,7 +311,7 @@ docker run -p 8501:8501 -v $(pwd)/data:/app/data plin
 3. **Configure analysis:**
    - Select Inc group (or use auto-detect)
    - Enable/disable AMRFinderPlus, MOBsuite, Prodigal
-   - Upload metadata CSV (optional — for temporal outbreak analysis)
+   - Upload metadata CSV (optional: for temporal outbreak analysis)
    - Enable Mash ANI, FastANI, SNP sub-typing (optional)
 4. **Click "Run pLIN Analysis"**
 5. **Explore results** across 8 tabs
@@ -293,7 +343,7 @@ To enable temporal outbreak clustering and epidemiological analysis:
 
 ### Optional Tool Integration
 
-All external tools are **optional** — pLIN works without them but gains additional features when they are available:
+All external tools are **optional**: pLIN works without them but gains additional features when they are available:
 
 | Tool | Feature Enabled | Install Command |
 |------|----------------|-----------------|
@@ -311,27 +361,19 @@ All external tools are **optional** — pLIN works without them but gains additi
 
 ## pLIN Classification System
 
-### Hierarchical Levels
+The six levels and their thresholds are listed in the [Overview](#overview). Reading a code from the Swiss VIM-1 sample data:
 
-| Level | Bin | Cosine Distance (d) | ANI Equivalent | Biological Meaning |
-|-------|-----|---------------------|----------------|-------------------|
-| L1 | A | d <= 0.150 | ~85% | Broad plasmid family |
-| L2 | B | d <= 0.100 | ~90% | Subfamily |
-| L3 | C | d <= 0.050 | ~95% | Cluster (species-level) |
-| L4 | D | d <= 0.020 | ~98% | Subcluster |
-| L5 | E | d <= 0.010 | ~99% | Clone group |
-| L6 | F | d <= 0.001 | ~99.9% | Lineage / Outbreak |
+```
+169.178.183.208.209.2438
+|   |   |   |   |   +-- L6: near-identical clone (k-mer similarity >= 0.95)
+|   |   |   |   +------ L5: lineage (k-mer similarity >= 0.80)
+|   |   |   +---------- L4: backbone variant (k-mer containment >= 0.80)
+|   |   +-------------- L3: shared backbone (k-mer containment >= 0.50)
+|   +------------------ L2: backbone group (protein-family containment >= 0.60)
++---------------------- L1: backbone family (protein-family containment >= 0.40)
+```
 
-### Example pLIN Code
-```
-1.1.3.5.12.45
-| | | | |  +-- L6: Lineage-level cluster (d <= 0.001)
-| | | | +---- L5: Clone group (d <= 0.010)
-| | | +------ L4: Subcluster (d <= 0.020)
-| | +-------- L3: Cluster (d <= 0.050)
-| +---------- L2: Subfamily (d <= 0.100)
-+------------ L1: Family (d <= 0.150)
-```
+Two plasmids sharing the first five numbers belong to the same lineage; sharing all six means they are near-identical. Numbers are identifiers, not distances: 209 and 210 are not more related than 209 and 900.
 
 ---
 
@@ -353,14 +395,20 @@ pLIN-plasmid-classification/
 ├── Dockerfile                     # Docker deployment
 ├── LICENSE                        # GPL-3.0 license
 ├── CITATION.cff                   # Citation metadata
+├── plin_v41_typer.py              # pLIN v4.1 typing engine (used by the app and CLI)
+├── plin_v41_nn.py, plin_v41.py    # v4.1 founder tree and nearest-relative assignment
+├── plin_kmers.py                  # k-mer sketches (FracMinHash, k = 21)
+├── build_facts.py                 # Generates docs/PLIN_FACTS.json from the result files
+├── docs/PLIN_FACTS.json           # Every published number, with its source file
 ├── data/
-│   ├── inc_classifier.npz         # Trained KNN classifier (28 groups, 8,077 samples)
+│   ├── plin_v41/                  # v4.1 database (download from Releases)
+│   ├── inc_classifier.npz         # Replicon (Inc/Rep) classifier (28 groups, 8,077 training plasmids)
 │   └── inc_centroids.npz          # Inc group centroids
 ├── test_plasmids/
 │   └── IncX/ (22 test FASTA files)
 └── output/
-    ├── pLIN_assignments.tsv              # 8,056 training plasmid assignments
-    ├── pLIN_reference_assignments.tsv     # 79,305 full reference database assignments
+    ├── pLIN_assignments.tsv              # v3 (legacy) codes, training plasmids
+    ├── pLIN_reference_assignments.tsv     # v3 (legacy) codes, db-2026.10.02
     ├── reference_inc_classifications.tsv  # KNN Inc type classifications
     ├── integrated/
     │   ├── pLIN_AMR_integrated.tsv       # pLIN + AMRFinderPlus merged table
@@ -371,9 +419,9 @@ pLIN-plasmid-classification/
 
 ---
 
-## Inc Groups Supported (20)
+## Replicon (Inc/Rep) Groups Supported (28)
 
-ColE, ColRNAI, IncA, IncAC2, IncC, IncF, IncFIB, IncFIBK, IncFIC, IncFII, IncHI1, IncHI2, IncI, IncI1, IncI2, IncN, IncR, IncX1, IncX3, IncX4
+ColE, ColRNAI, IncA, IncAC2, IncC, IncF, IncFIB, IncFIBK, IncFIC, IncFII, IncHI1, IncHI2, IncI, IncI1, IncI2, IncN, IncR, IncX1, IncX3, IncX4, repAci1, repAci_large, repEF_conj, repEF_res, repPae_large, repPae_small, repSA_large, repSA_small
 
 ---
 
@@ -400,7 +448,11 @@ The pLIN app auto-detects all optional tools at startup. Check the sidebar for t
 
 If you use pLIN in your research, you **must** cite:
 
-> Xavier, B. (2025). pLIN: A Plasmid Lineage Identification Number System for Hierarchical, Permanent Classification of Bacterial Plasmids Integrated with Antimicrobial Resistance Gene Surveillance. https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
+> Xavier BB, Bari AK, Sinha B, Rossen JWA. pLIN: a permanent, multi-resolution nomenclature for bacterial plasmids, from backbone families to outbreak clones. Manuscript under review. https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
+
+Earlier version (preprint):
+
+> Xavier BB, Bari AK, Sinha B, Rossen JWA. Development and validation of pLIN, a permanent lineage-numbering system for tracking antimicrobial resistance plasmids. Research Square (2026). https://doi.org/10.21203/rs.3.rs-10481391/v1
 
 ---
 

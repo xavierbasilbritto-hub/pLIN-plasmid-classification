@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
-Assign pLIN codes to ALL reference plasmid sequences (~72,959).
+Assign pLIN codes to ALL reference plasmid sequences.
 
 Pipeline:
-  Phase 1 — Compute 4-mer frequency vectors for all reference sequences
-  Phase 2 — Classify Inc types using the pre-trained KNN classifier
-  Phase 3 — Per-Inc-group single-linkage clustering → pLIN codes
-  Phase 4 — Output combined table
+  Phase 1: Compute 4-mer frequency vectors for all reference sequences
+  Phase 2: Classify Inc types using the pre-trained KNN classifier
+            (reported alongside the code; the code itself does not use it)
+  Phase 3: Extend the frozen training founder tree (plin_founder.py) with
+            every reference plasmid, in accession order → pLIN codes
+  Phase 4: Output combined table
+
+Training codes are copied unchanged from output/pLIN_assignments.tsv and the
+founder tree built with them (data/plin_founder_tree_training.npz) is only
+ever extended, so no existing code changes when the database grows. Run
+assign_pLIN.py first. The extended tree is saved as
+data/plin_founder_tree_reference.npz and is what the app's query mode uses.
 
 Usage:
-  python assign_pLIN_reference.py [--resume] [--max-group-size 25000]
+  python assign_pLIN_reference.py [--resume]
 """
 
 import os
@@ -25,11 +33,10 @@ import subprocess
 import numpy as np
 import pandas as pd
 from datetime import datetime, timezone
-from itertools import product as iter_product
-from scipy.spatial.distance import pdist
-from scipy.cluster.hierarchy import linkage, fcluster
 from sklearn.neighbors import KNeighborsClassifier
 from Bio import SeqIO
+
+from plin_founder import PLIN_THRESHOLDS, FounderTree, kmer_vector
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,16 +50,16 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 VECTORS_CHECKPOINT = os.path.join(OUTPUT_DIR, "reference_kmer_vectors.npz")
 INC_CHECKPOINT = os.path.join(OUTPUT_DIR, "reference_inc_classifications.tsv")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "pLIN_reference_assignments.tsv")
+TRAINING_TREE_FILE = os.path.join(BASE_DIR, "data", "plin_founder_tree_training.npz")
+REFERENCE_TREE_FILE = os.path.join(BASE_DIR, "data", "plin_founder_tree_reference.npz")
 
-# pLIN hierarchical thresholds
-PLIN_THRESHOLDS = {
-    "A": 0.150,   # ~85% ANI — L1 (Family)
-    "B": 0.100,   # ~90% ANI — L2 (Subfamily)
-    "C": 0.050,   # ~95% ANI — L3 (Cluster)
-    "D": 0.020,   # ~98% ANI — L4 (Subcluster)
-    "E": 0.010,   # ~99% ANI — L5 (Clone group)
-    "F": 0.001,   # ~99.9% ANI — L6 (Lineage)
-}
+# Database version file: distinct from PLIN_APP_VERSION (plin_app.py). The
+# app version tracks code releases; this tracks database CONTENT, which is
+# regenerated on its own schedule (adding sequences, reclassifying, etc.)
+# independently of app releases. Lives at the repo root, not under output/,
+# so it survives being copied alongside the TSV+classifier into a standalone
+# distributable database bundle (see build_database_release.py).
+DATABASE_VERSION_PATH = os.path.join(BASE_DIR, "DATABASE_VERSION.json")
 
 # Inc classification thresholds (from plin_app.py)
 INC_CONFIDENCE_THRESHOLD = 0.40
@@ -70,7 +77,7 @@ def resolve_inc_type(inc_type):
 
 
 def run_version_stamp(training_fingerprint=None):
-    """Reproducibility stamp — see assign_pLIN.py::run_version_stamp for rationale."""
+    """Reproducibility stamp: see assign_pLIN.py::run_version_stamp for rationale."""
     try:
         git_hash = subprocess.check_output(
             ["git", "rev-parse", "--short", "HEAD"], cwd=BASE_DIR,
@@ -85,106 +92,10 @@ def run_version_stamp(training_fingerprint=None):
         "classifier_path": CLASSIFIER_PATH,
     }
 
-# 4-mer setup
-K = 4
-BASES = "ACGT"
-KMERS = ["".join(p) for p in iter_product(BASES, repeat=K)]
-KMER_INDEX = {km: i for i, km in enumerate(KMERS)}
-N_KMERS = len(KMERS)  # 256
-
-
-def stable_cluster_ids(raw_labels, member_keys):
-    """Renumber scipy fcluster labels into a deterministic scheme.
-
-    scipy.cluster.hierarchy.fcluster assigns cluster-ID integers based on
-    internal linkage-tree traversal order, which is not guaranteed stable
-    across runs even when cluster MEMBERSHIP is identical. Renumbering by
-    each cluster's lexicographically smallest member key (plasmid accession)
-    makes cluster IDs reproducible across runs and pipeline versions.
-
-    NOTE: this alone only guarantees reproducibility for a FIXED input set.
-    Adding new sequences to the database can change which member is
-    lexicographically smallest within a cluster, which reassigns the ID even
-    when the underlying cluster relationships are unchanged. For stability
-    across database growth, see `frozen_seed_cluster_ids` below, which is
-    the scheme actually used once a frozen training-set numbering exists.
-    """
-    raw_labels = np.asarray(raw_labels)
-    cluster_min_key = {}
-    for raw_id, key in zip(raw_labels, member_keys):
-        if raw_id not in cluster_min_key or key < cluster_min_key[raw_id]:
-            cluster_min_key[raw_id] = key
-
-    ordered_raw_ids = sorted(cluster_min_key, key=lambda rid: cluster_min_key[rid])
-    remap = {raw_id: new_id for new_id, raw_id in enumerate(ordered_raw_ids, start=1)}
-    return np.array([remap[rid] for rid in raw_labels])
-
-
-def frozen_seed_cluster_ids(raw_labels, member_keys, frozen_id_of_key):
-    """Renumber clusters so that IDs inherited from a frozen prior run are
-    preserved, and only genuinely new clusters receive fresh IDs.
-
-    `frozen_id_of_key`: dict mapping a subset of `member_keys` (the ones
-    that were already assigned a canonical ID in a prior, frozen run — e.g.
-    the training-only pLIN_assignments.tsv) to that canonical integer ID.
-
-    For each cluster found in THIS run, if any of its members carry a
-    frozen ID, the cluster inherits that ID (majority vote if it somehow
-    spans more than one frozen ID — this should be rare and only happens
-    when growth merges two previously-separate frozen clusters, which we
-    resolve by keeping the smaller original frozen ID for continuity).
-    Clusters with no frozen members at all (i.e. built entirely from newly
-    added reference sequences) get fresh sequential IDs continuing after
-    the maximum frozen ID, keyed by lexicographically smallest member for
-    reproducibility among themselves.
-    """
-    raw_labels = np.asarray(raw_labels)
-
-    # Group member indices by raw cluster label
-    cluster_members = {}
-    for i, (raw_id, key) in enumerate(zip(raw_labels, member_keys)):
-        cluster_members.setdefault(raw_id, []).append((i, key))
-
-    max_frozen_id = max(frozen_id_of_key.values()) if frozen_id_of_key else 0
-
-    remap = {}
-    new_clusters = []  # (raw_id, min_key) for clusters with no frozen anchor
-    for raw_id, members in cluster_members.items():
-        frozen_ids_present = sorted(set(
-            frozen_id_of_key[key] for _, key in members if key in frozen_id_of_key
-        ))
-        if frozen_ids_present:
-            # Inherit the smallest frozen ID seen (stable, deterministic
-            # tie-break if growth merged two previously-distinct clusters)
-            remap[raw_id] = frozen_ids_present[0]
-        else:
-            min_key = min(key for _, key in members)
-            new_clusters.append((raw_id, min_key))
-
-    # Assign fresh IDs to genuinely new clusters, ordered by min member key
-    # for reproducibility, continuing the numbering after the frozen max.
-    new_clusters.sort(key=lambda t: t[1])
-    for offset, (raw_id, _) in enumerate(new_clusters, start=1):
-        remap[raw_id] = max_frozen_id + offset
-
-    return np.array([remap[rid] for rid in raw_labels])
+N_KMERS = 256
 
 
 # ── Phase 1: Load sequences & compute 4-mer vectors ──────────────────────────
-
-def kmer_vector(sequence):
-    """Compute normalised 4-mer frequency vector (sliding window, fast)."""
-    seq = sequence.upper()
-    counts = np.zeros(N_KMERS, dtype=np.float64)
-    for i in range(len(seq) - K + 1):
-        kmer = seq[i:i + K]
-        if kmer in KMER_INDEX:
-            counts[KMER_INDEX[kmer]] += 1
-    total = counts.sum()
-    if total > 0:
-        counts /= total
-    return counts
-
 
 def load_reference_sequences():
     """Load all reference sequences from sequences.fasta or reference/ dir."""
@@ -380,233 +291,66 @@ def classify_inc_types(vectors, ids, lengths, checkpoint_path, resume=False):
     return df
 
 
-# ── Phase 3: Per-Inc-group clustering ────────────────────────────────────────
+# ── Phase 3: Founder assignment ──────────────────────────────────────────────
 
 TRAINING_ASSIGNMENTS_PATH = os.path.join(OUTPUT_DIR, "pLIN_assignments.tsv")
 
 
-def load_frozen_training_ids(inc_type):
-    """Load the frozen (training-only) cluster IDs for one Inc group, per level.
-
-    Returns dict: {bin_name: {plasmid_id: frozen_int_id}}, or {} if the
-    frozen training-set assignments file is unavailable (in which case
-    cluster_inc_group falls back to the run-local stable_cluster_ids scheme).
-    """
-    if not hasattr(load_frozen_training_ids, "_cache"):
-        if os.path.exists(TRAINING_ASSIGNMENTS_PATH):
-            df = pd.read_csv(TRAINING_ASSIGNMENTS_PATH, sep="\t")
-            load_frozen_training_ids._cache = df
-        else:
-            load_frozen_training_ids._cache = None
-
-    df = load_frozen_training_ids._cache
-    if df is None:
-        return {}
-
-    sub = df[df["inc_type"] == inc_type]
-    if sub.empty:
-        return {}
-
-    result = {}
-    for bname in PLIN_THRESHOLDS:
-        col = f"bin_{bname}"
-        result[bname] = dict(zip(sub["plasmid_id"], sub[col].astype(int)))
-    return result
-
-
-def cluster_inc_group(vectors, member_keys, max_group_size=25000, inc_type=None):
-    """Run single-linkage clustering on vectors within one Inc group.
-
-    When a frozen training-only run exists (output/pLIN_assignments.tsv),
-    cluster IDs for this Inc group are anchored to that frozen numbering via
-    `frozen_seed_cluster_ids`, so adding new reference sequences does not
-    renumber clusters that already existed in the training-only run — only
-    genuinely new clusters receive new IDs. Without a frozen reference,
-    falls back to `stable_cluster_ids` (deterministic within this run only).
-    """
-    n = len(vectors)
-    if n < 2:
-        # Single sequence — assign cluster 1 at all levels
-        assignments = {b: np.array([1]) for b in PLIN_THRESHOLDS}
-        return assignments
-
-    # Estimate memory
-    condensed_size = n * (n - 1) // 2
-    mem_gb = condensed_size * 4 / 1e9  # float32
-
-    if n > max_group_size:
-        print(f"    WARNING: Group has {n:,} sequences ({mem_gb:.1f} GB). "
-              f"Using chunked approach ...", flush=True)
-
-    # Compute pairwise cosine distances
-    dist_condensed = pdist(vectors.astype(np.float64), metric="cosine")
-
-    # Single-linkage clustering
-    Z = linkage(dist_condensed, method="single")
-
-    frozen = load_frozen_training_ids(inc_type) if inc_type else {}
-
-    # Cut at each threshold, renumbering to a deterministic cluster-ID scheme
-    assignments = {}
-    for bname, thresh in PLIN_THRESHOLDS.items():
-        raw_clusters = fcluster(Z, t=thresh, criterion="distance")
-        if bname in frozen and frozen[bname]:
-            assignments[bname] = frozen_seed_cluster_ids(raw_clusters, member_keys, frozen[bname])
-        else:
-            assignments[bname] = stable_cluster_ids(raw_clusters, member_keys)
-
-    return assignments
-
-
-def phase3_clustering(ref_classifications, ref_vectors, ref_ids,
-                      training_records, training_vectors,
-                      max_group_size=25000):
-    """Per-Inc-group clustering combining training + classified reference sequences."""
+def phase3_assign_codes(ref_classifications, ref_vectors, ref_ids, training_records):
+    """Extend the frozen training founder tree with every reference plasmid."""
     print("\n" + "=" * 70, flush=True)
-    print("PHASE 3: Per-Inc-Group Clustering", flush=True)
+    print("PHASE 3: Founder Assignment (extending the frozen training tree)", flush=True)
     print("=" * 70, flush=True)
 
-    # Build lookup from plasmid_id to vector index for reference sequences
-    ref_id_to_idx = {pid: i for i, pid in enumerate(ref_ids)}
-
-    # Build lookup for training sequences
-    train_id_to_vec = {}
-    train_id_to_rec = {}
-    for i, rec in enumerate(training_records):
-        train_id_to_vec[rec["plasmid_id"]] = training_vectors[i]
-        train_id_to_rec[rec["plasmid_id"]] = rec
-
-    # Get all Inc groups (from training + classified reference)
-    classified_ref = ref_classifications[~ref_classifications["is_novel"]]
-    all_inc_types = sorted(set(
-        list(classified_ref["inc_type"].unique()) +
-        list(set(r["inc_type"] for r in training_records))
-    ))
-
-    # Find overlap: training IDs that also appear in reference
-    training_ids = set(r["plasmid_id"] for r in training_records)
-    reference_ids = set(ref_ids)
-    overlap_ids = training_ids & reference_ids
-    if overlap_ids:
-        print(f"  Note: {len(overlap_ids):,} sequences appear in both "
-              f"training and reference (will use training Inc type)", flush=True)
+    if not (os.path.exists(TRAINING_TREE_FILE) and os.path.exists(TRAINING_ASSIGNMENTS_PATH)):
+        sys.exit(f"  Missing {TRAINING_TREE_FILE} or {TRAINING_ASSIGNMENTS_PATH}: run assign_pLIN.py first.")
+    tree = FounderTree.from_npz(TRAINING_TREE_FILE)
+    training = pd.read_csv(TRAINING_ASSIGNMENTS_PATH, sep="\t")
+    bin_cols = [f"bin_{b}" for b in PLIN_THRESHOLDS]
 
     all_results = []
-    t0 = time.time()
-
-    for inc_type in all_inc_types:
-        # Gather training sequences of this Inc type
-        train_ids_this = [r["plasmid_id"] for r in training_records
-                          if r["inc_type"] == inc_type]
-        # Gather classified reference sequences of this Inc type
-        ref_rows_this = classified_ref[classified_ref["inc_type"] == inc_type]
-        # Exclude reference sequences that are also in training (avoid duplicates)
-        ref_ids_this = [pid for pid in ref_rows_this["plasmid_id"]
-                        if pid not in training_ids]
-
-        # Combine
-        combined_ids = train_ids_this + ref_ids_this
-        n_train = len(train_ids_this)
-        n_ref = len(ref_ids_this)
-        n_total = len(combined_ids)
-
-        if n_total == 0:
-            continue
-
-        print(f"\n  {inc_type}: {n_train:,} training + {n_ref:,} reference "
-              f"= {n_total:,} total", flush=True)
-
-        # Build combined vector matrix
-        combined_vectors = np.zeros((n_total, N_KMERS), dtype=np.float32)
-        for i, pid in enumerate(combined_ids):
-            if pid in train_id_to_vec:
-                combined_vectors[i] = train_id_to_vec[pid].astype(np.float32)
-            elif pid in ref_id_to_idx:
-                combined_vectors[i] = ref_vectors[ref_id_to_idx[pid]]
-
-        # Cluster (member keys = plasmid IDs, used for deterministic cluster numbering;
-        # inc_type anchors IDs to the frozen training-only run when available)
-        assignments = cluster_inc_group(combined_vectors, combined_ids, max_group_size, inc_type=inc_type)
-
-        # Report cluster counts
-        for bname in PLIN_THRESHOLDS:
-            n_clusters = len(set(assignments[bname]))
-            print(f"    Bin {bname}: {n_clusters:>6,} clusters", flush=True)
-
-        # Build pLIN codes and results
-        bin_labels = list(PLIN_THRESHOLDS.keys())
-        for i, pid in enumerate(combined_ids):
-            code_parts = [str(assignments[b][i]) for b in bin_labels]
-            plin_code = ".".join(code_parts)
-
-            is_training = pid in training_ids
-            source = "training" if is_training else "reference"
-
-            # Get metadata
-            if is_training:
-                rec = train_id_to_rec[pid]
-                length = rec["length"]
-                confidence = 1.0
-                is_novel = False
-                is_multiple = False
-                inc_secondary = ""
-            else:
-                row = ref_rows_this[ref_rows_this["plasmid_id"] == pid].iloc[0]
-                length = int(row["length_bp"])
-                confidence = float(row["inc_confidence"])
-                is_novel = False
-                is_multiple = bool(row.get("is_multiple", False))
-                inc_secondary = str(row.get("inc_secondary", ""))
-
-            all_results.append({
-                "plasmid_id": pid,
-                "inc_type": inc_type,
-                "resolved_inc_type": resolve_inc_type(inc_type),
-                "inc_confidence": confidence,
-                "length_bp": length,
-                "pLIN": plin_code,
-                "bin_A": int(assignments["A"][i]),
-                "bin_B": int(assignments["B"][i]),
-                "bin_C": int(assignments["C"][i]),
-                "bin_D": int(assignments["D"][i]),
-                "bin_E": int(assignments["E"][i]),
-                "bin_F": int(assignments["F"][i]),
-                "source": source,
-                "is_multiple": is_multiple,
-                "inc_secondary": inc_secondary,
-                "is_novel": is_novel,
-            })
-
-    elapsed = time.time() - t0
-
-    # Add Unknown/Novel sequences (no pLIN code)
-    novel_ref = ref_classifications[ref_classifications["is_novel"]]
-    for _, row in novel_ref.iterrows():
-        pid = row["plasmid_id"]
-        if pid in training_ids:
-            continue  # Training sequences always have known Inc type
+    train_len = {r["plasmid_id"]: r["length"] for r in training_records}
+    for _, row in training.iterrows():
         all_results.append({
-            "plasmid_id": pid,
-            "inc_type": "Unknown",
-            "resolved_inc_type": "Unknown",
-            "inc_confidence": float(row["inc_confidence"]),
-            "length_bp": int(row["length_bp"]),
-            "pLIN": "NA",
-            "bin_A": "NA", "bin_B": "NA", "bin_C": "NA",
-            "bin_D": "NA", "bin_E": "NA", "bin_F": "NA",
-            "source": "reference",
-            "is_multiple": bool(row.get("is_multiple", False)),
-            "inc_secondary": "",
-            "is_novel": True,
+            "plasmid_id": row["plasmid_id"], "inc_type": row["inc_type"],
+            "resolved_inc_type": resolve_inc_type(row["inc_type"]), "inc_confidence": 1.0,
+            "length_bp": int(train_len.get(row["plasmid_id"], row["length_bp"])),
+            "pLIN": row["pLIN"], **{c: int(row[c]) for c in bin_cols},
+            "source": "training", "is_multiple": False, "inc_secondary": "", "is_novel": False,
         })
 
-    print(f"\n  Clustering complete in {elapsed/60:.1f} min", flush=True)
-    print(f"  Total results: {len(all_results):,}", flush=True)
+    training_ids = set(training["plasmid_id"])
+    meta = ref_classifications.set_index("plasmid_id")
+    order = sorted(i for i, pid in enumerate(ref_ids) if pid not in training_ids)
+    order.sort(key=lambda i: ref_ids[i])
+    n_skipped = len(ref_ids) - len(order)
+    if n_skipped:
+        print(f"  {n_skipped:,} reference sequences are training plasmids "
+              f"(training code kept)", flush=True)
 
+    t0 = time.time()
+    for n_done, i in enumerate(order, start=1):
+        pid = ref_ids[i]
+        code, _, _ = tree.assign(ref_vectors[i], key=pid)
+        row = meta.loc[pid]
+        novel = bool(row["is_novel"])
+        inc = "Unknown" if novel else row["inc_type"]
+        all_results.append({
+            "plasmid_id": pid, "inc_type": inc, "resolved_inc_type": resolve_inc_type(inc),
+            "inc_confidence": float(row["inc_confidence"]), "length_bp": int(row["length_bp"]),
+            "pLIN": ".".join(map(str, code)), **dict(zip(bin_cols, map(int, code))),
+            "source": "reference", "is_multiple": bool(row.get("is_multiple", False)),
+            "inc_secondary": "" if novel else str(row.get("inc_secondary", "")),
+            "is_novel": novel,
+        })
+        if n_done % 10000 == 0:
+            print(f"    {n_done:,}/{len(order):,} assigned ({time.time() - t0:.0f}s)", flush=True)
+
+    tree.to_npz(REFERENCE_TREE_FILE)
+    print(f"  Extended founder tree saved: {REFERENCE_TREE_FILE}", flush=True)
+    print(f"  Founder assignment complete in {(time.time() - t0)/60:.1f} min", flush=True)
     return pd.DataFrame(all_results)
 
-
-# ── Phase 4: Output ──────────────────────────────────────────────────────────
 
 def training_fingerprint():
     """Fingerprint of the training FASTA set, comparable with assign_pLIN.py's."""
@@ -616,6 +360,49 @@ def training_fingerprint():
         hasher.update(os.path.relpath(p, TRAINING_DIR).encode())
         hasher.update(str(os.path.getsize(p)).encode())
     return hasher.hexdigest()[:12]
+
+
+def write_database_version(df, stamp):
+    """Write DATABASE_VERSION.json: a human-facing version identity for the
+    reference database, separate from PLIN_APP_VERSION. The version string
+    is date-stamped (db-YYYY.MM.DD) rather than incrementing semver, since
+    what matters to a user is WHEN this snapshot was built and against what
+    input, not a sequential release number: two database builds on the
+    same day from different inputs are already disambiguated by
+    content_sha256 and training_input_fingerprint below.
+    """
+    build_date = stamp["run_timestamp_utc"][:10]  # YYYY-MM-DD
+    version_string = f"db-{build_date.replace('-', '.')}"
+
+    classified = df[~df["is_novel"].astype(bool)]
+    hasher = hashlib.sha256()
+    with open(OUTPUT_FILE, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            hasher.update(chunk)
+
+    version_info = {
+        "database_version": version_string,
+        "build_timestamp_utc": stamp["run_timestamp_utc"],
+        "git_commit": stamp["git_commit"],
+        "training_input_fingerprint": stamp["training_input_fingerprint"],
+        "total_plasmids": int(len(df)),
+        "classified_plasmids": int(len(classified)),
+        "unique_plin_codes": int(df["pLIN"].nunique()),
+        "code_scheme": "founder (plin_founder.py); codes never renumbered across releases",
+        "inc_rep_groups": int(df.loc[df["inc_type"] != "Unknown", "inc_type"].nunique()),
+        "training_plasmids": int((df["source"] == "training").sum()),
+        "reference_plasmids": int((df["source"] == "reference").sum()),
+        "content_sha256": hasher.hexdigest(),
+        "reference_assignments_file": os.path.basename(OUTPUT_FILE),
+        "classifier_file": os.path.basename(CLASSIFIER_PATH),
+    }
+    with open(DATABASE_VERSION_PATH, "w") as fh:
+        json.dump(version_info, fh, indent=2)
+    print(f"  Database version saved: {DATABASE_VERSION_PATH}", flush=True)
+    print(f"  Database version: {version_string}  "
+          f"({version_info['total_plasmids']:,} plasmids, "
+          f"{version_info['unique_plin_codes']:,} unique pLIN codes)", flush=True)
+    return version_info
 
 
 def save_results(df):
@@ -633,20 +420,23 @@ def save_results(df):
     print(f"  Run: {stamp['run_timestamp_utc']}  commit={stamp['git_commit']}  "
           f"training_fingerprint={stamp['training_input_fingerprint']}", flush=True)
 
+    write_database_version(df, stamp)
+
     # Summary
     print("\n" + "=" * 70, flush=True)
     print("SUMMARY", flush=True)
     print("=" * 70, flush=True)
 
-    classified = df[df["pLIN"] != "NA"]
-    unknown = df[df["pLIN"] == "NA"]
+    classified = df[~df["is_novel"].astype(bool)]
+    unknown = df[df["is_novel"].astype(bool)]
     training = df[df["source"] == "training"]
     reference = df[df["source"] == "reference"]
 
     print(f"  Total sequences:      {len(df):,}", flush=True)
     print(f"    Training:           {len(training):,}", flush=True)
     print(f"    Reference:          {len(reference):,}", flush=True)
-    print(f"  Classified (pLIN):    {len(classified):,} "
+    print(f"  Unique pLIN codes (all plasmids): {df['pLIN'].nunique():,}", flush=True)
+    print(f"  Inc/Rep classified:   {len(classified):,} "
           f"({len(classified)/len(df)*100:.1f}%)", flush=True)
     print(f"  Unknown/Novel:        {len(unknown):,} "
           f"({len(unknown)/len(df)*100:.1f}%)", flush=True)
@@ -677,8 +467,6 @@ def main():
     parser = argparse.ArgumentParser(description="Assign pLIN codes to reference sequences")
     parser.add_argument("--resume", action="store_true",
                         help="Resume from checkpoints if available")
-    parser.add_argument("--max-group-size", type=int, default=25000,
-                        help="Maximum group size before chunked clustering (default: 25000)")
     args = parser.parse_args()
 
     print("=" * 70, flush=True)
@@ -704,12 +492,6 @@ def main():
     ref_vectors, ref_ids, ref_lengths = compute_vectors(
         ref_records, VECTORS_CHECKPOINT, resume=args.resume)
 
-    print("\n[1d] Computing training 4-mer vectors ...", flush=True)
-    training_vectors = np.zeros((len(training_records), N_KMERS), dtype=np.float32)
-    for i, rec in enumerate(training_records):
-        training_vectors[i] = kmer_vector(rec["sequence"]).astype(np.float32)
-    print(f"  {len(training_records):,} training vectors computed", flush=True)
-
     # Free sequence strings to save memory
     for rec in ref_records:
         del rec["sequence"]
@@ -724,11 +506,9 @@ def main():
     ref_classifications = classify_inc_types(
         ref_vectors, ref_ids, ref_lengths, INC_CHECKPOINT, resume=args.resume)
 
-    # ── Phase 3: Per-Inc-group clustering ──
-    results_df = phase3_clustering(
-        ref_classifications, ref_vectors, ref_ids,
-        training_records, training_vectors,
-        max_group_size=args.max_group_size)
+    # ── Phase 3: Founder assignment ──
+    results_df = phase3_assign_codes(
+        ref_classifications, ref_vectors, ref_ids, training_records)
 
     # ── Phase 4: Output ──
     print("\n" + "=" * 70, flush=True)

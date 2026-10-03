@@ -1,48 +1,64 @@
 cff-version: 1.2.0
-title: "Development and validation of the pLIN (plasmid Lineage Identification Number) permanent classification system: Tracking plasmid-mediated antimicrobial resistance at lineage-level resolution"
+title: "pLIN: plasmid Lineage Identification Number"
 message: >-
   If you use this software, you MUST cite it using the
   metadata from this file. Citation is a mandatory
   requirement of the license (GPL-3.0 with citation clause).
 type: software
 authors:
-  - given-names: Basil Xavier
-    family-names: Britto
-    orcid: ""
+  - given-names: Basil Britto
+    family-names: Xavier
 repository-code: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 url: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 abstract: >-
-  pLIN (plasmid Lineage Identification Number) is a hierarchical,
-  permanent, reference-free classification system for bacterial
-  plasmid genomes integrated with antimicrobial resistance gene
-  surveillance. It assigns each plasmid a six-position code
-  (A.B.C.D.E.F) based on tetranucleotide composition distances
-  and hierarchical clustering. Features include automatic Inc
-  group detection (91.1% accuracy, 28 Inc/Rep groups), plasmid mobility
-  prediction, outbreak detection with clinical risk stratification,
-  CRISPR spacer-based host inference, and an interactive Streamlit
-  web GUI with AMRFinderPlus integration. Reference database of
-  79,305 plasmids with 57,886 unique pLIN codes.
+  pLIN (plasmid Lineage Identification Number) assigns bacterial
+  plasmids permanent, multi-level codes for antimicrobial resistance
+  surveillance, from backbone families to near-identical outbreak
+  clones, together with replicon, mobility and resistance-gene
+  annotation in a desktop and web application.
 keywords:
   - plasmid classification
+  - plasmid nomenclature
   - antimicrobial resistance
   - AMR surveillance
+  - outbreak detection
+  - One Health
   - bacterial genomics
   - bioinformatics
-  - tetranucleotide frequency
-  - hierarchical clustering
-  - incompatibility group
-  - plasmid typing
-  - epidemiology
 license: GPL-3.0-or-later
 version: "2.1.0"
 date-released: "2025-02-13"
 preferred-citation:
-  type: software
-  title: "Development and validation of the pLIN (plasmid Lineage Identification Number) permanent classification system: Tracking plasmid-mediated antimicrobial resistance at lineage-level resolution"
-  status: "under review"
+  type: article
+  title: "pLIN: a permanent, multi-resolution nomenclature for bacterial plasmids, from backbone families to outbreak clones"
+  status: submitted
+  notes: "Manuscript under review."
   authors:
-    - given-names: Basil Xavier
-      family-names: Britto
-  year: 2025
+    - given-names: Basil Britto
+      family-names: Xavier
+    - given-names: Anurag Kumar
+      family-names: Bari
+    - given-names: Bhanu
+      family-names: Sinha
+    - given-names: John W. A.
+      family-names: Rossen
+  year: 2026
   url: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
+references:
+  - type: article
+    title: "Development and validation of pLIN, a permanent lineage-numbering system for tracking antimicrobial resistance plasmids"
+    status: preprint
+    authors:
+      - given-names: Basil Britto
+        family-names: Xavier
+      - given-names: Anurag Kumar
+        family-names: Bari
+      - given-names: Bhanu
+        family-names: Sinha
+      - given-names: John W. A.
+        family-names: Rossen
+    publisher:
+      name: Research Square
+    year: 2026
+    doi: "10.21203/rs.3.rs-10481391/v1"
+    url: "https://doi.org/10.21203/rs.3.rs-10481391/v1"

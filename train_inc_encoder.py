@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 # See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
 """
 Train the production contrastive encoder for optional Inc/Rep group
@@ -9,7 +9,7 @@ genuine, leak-free cross-validated performance.
 This is the encoder architecture validated in validate_encoder_vs_knn.py
 (5-fold CV: 92.7% accuracy / 0.692 macro-F1 vs KNN's 91.1% / 0.666, a
 consistent improvement in all 5 folds, 19/28 classes improved and 8
-declined by at most 0.016 with none catastrophic) — see that script and
+declined by at most 0.016 with none catastrophic), see that script and
 output/encoder_vs_knn_validation_result.json for the full validation.
 
 This script trains the FINAL production encoder on the complete 8,077-
@@ -23,19 +23,19 @@ Usage:
   python train_inc_encoder.py
 
 Output:
-  data/inc_encoder.pt          — encoder weights (PyTorch state_dict) +
+  data/inc_encoder.pt: encoder weights (PyTorch state_dict) +
                                   embedded training vectors/labels for
                                   KNN-in-embedding-space at inference time
-  data/inc_encoder_metadata.json — architecture, training config, and the
+  data/inc_encoder_metadata.json: architecture, training config, and the
                                   genuine CV performance figures from
                                   validate_encoder_vs_knn.py (NOT
                                   re-measured on this final fit, which
-                                  would be optimistic/leaked — the
+                                  would be optimistic/leaked: the
                                   reported accuracy is always the
                                   independent CV result)
 """
 
-# torch must be imported before sklearn — see validate_encoder_vs_knn.py
+# torch must be imported before sklearn: see validate_encoder_vs_knn.py
 # for the reproduced native-library import-order conflict this avoids.
 import torch
 
@@ -66,7 +66,7 @@ def main():
         raise SystemExit(
             f"ERROR: {CV_RESULT_PATH} not found. Run validate_encoder_vs_knn.py "
             "first to genuinely measure this architecture's CV performance before "
-            "training a production artifact — training a final model without a "
+            "training a production artifact: training a final model without a "
             "prior independent CV run would leave no honest accuracy figure to "
             "report for it."
         )
@@ -104,7 +104,7 @@ def main():
             "note": (
                 "These figures come from validate_encoder_vs_knn.py's independent, "
                 "leak-free 5-fold cross-validation (encoder retrained from scratch "
-                "each fold, never sees its own test fold) — NOT from evaluating this "
+                "each fold, never sees its own test fold), NOT from evaluating this "
                 "final artifact on the data it was trained on, which would be "
                 "optimistic. This is the accuracy a user should expect from the "
                 "encoder option, not a number specific to this exact saved file."
@@ -117,7 +117,7 @@ def main():
         },
         "known_limitations": [
             "Adding a NEW Inc/Rep group (one not in the 28 currently trained on) "
-            "requires retraining this encoder from scratch — unlike the raw-4-mer "
+            "requires retraining this encoder from scratch: unlike the raw-4-mer "
             "KNN classifier, where a new group is a FASTA folder drop and a "
             "training-data rebuild with no model retraining needed. The encoder "
             "option should be treated as unavailable/stale for any group added "
@@ -128,7 +128,7 @@ def main():
             "output/encoder_vs_knn_validation_result.json for the full per-class "
             "breakdown before relying on the encoder for a specific Inc group.",
             "Embedding stability across independent retrains (e.g. after adding "
-            "training data) has not been separately measured — a retrained "
+            "training data) has not been separately measured, a retrained "
             "encoder's embedding geometry may shift, unlike KNN's raw 4-mer "
             "feature space, which cannot change under retraining.",
         ],

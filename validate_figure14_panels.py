@@ -78,7 +78,7 @@ def compute_assembly_completeness():
                     identity = matches / check_len
                     circular_signal = identity >= 0.90
 
-                # 4. No Prodigal data available — neutral score
+                # 4. No Prodigal data available: neutral score
                 coding_density = 0.0
 
                 # 5. Composite score

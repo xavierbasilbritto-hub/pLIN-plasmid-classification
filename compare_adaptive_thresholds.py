@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Compare pLIN's uniform, IncX-calibrated thresholds against per-Inc-group
 adaptive thresholds derived independently from each group's own within-group
@@ -167,7 +167,7 @@ def main():
     print(summary.to_string(index=False))
 
     # Overall groups most divergent from the uniform scheme (by mean abs % diff
-    # across all 6 levels) — this is the direct answer to "is applying IncX-
+    # across all 6 levels): this is the direct answer to "is applying IncX-
     # derived thresholds uniformly valid?"
     per_group = (
         df.groupby(["inc_group", "n_training", "is_incx_like"])["abs_pct_difference"]

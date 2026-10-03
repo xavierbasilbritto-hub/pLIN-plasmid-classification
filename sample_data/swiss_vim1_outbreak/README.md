@@ -1,19 +1,27 @@
 # Sample data: Swiss VIM-1 outbreak cluster
 
-Eight clinical isolates from the Swiss carbapenemase-producing outbreak case study used as a flagship validation example in the pLIN manuscript, provided so you can try pLIN immediately without needing your own FASTA files.
+Eight clinical isolates from a Swiss carbapenemase-producing hospital cluster, provided so you can try pLIN without your own FASTA files.
 
 ## What's here
 
-- `NARACHVIM11_plasmids.fasta` ... `NARACHVIM56_plasmids.fasta` — 8 isolates, each containing that isolate's assembled plasmid contigs only (chromosomal sequence already removed).
-- `expected_pLIN_results.tsv` — the pLIN codes this analysis is expected to produce, from the original manuscript validation run, so you can check your own run matches.
+- `NARACHVIM11_plasmids.fasta` ... `NARACHVIM56_plasmids.fasta`: 8 isolates, each with that isolate's assembled plasmid contigs only (19 contigs in total; chromosomal sequence removed).
+- `expected_pLIN_results.tsv`: the pLIN v4.1 codes (database db-2026.10.03) produced when all 8 files are analysed together, the most similar database plasmid for each contig, and, for the blaVIM-1 plasmids, the lineage found by whole-plasmid alignment.
 
 ## How to use
 
-1. In the app's **Overview** tab, upload all 8 `*_plasmids.fasta` files at once (multi-file upload is supported).
-2. Leave **Incompatibility Group** on **Auto-detect** and click **Run Analysis**.
-3. Check the **Results** tab against `expected_pLIN_results.tsv` — most contigs should resolve to pLIN code **1.1.2.4.7.13**, the shared outbreak lineage (IncN/IncHI2), demonstrating that pLIN correctly identifies these epidemiologically-linked isolates as one lineage despite being typed under two different replicon families.
-4. Try the **Cladogram** tab to see the isolates cluster together visually, and **Epidemiology** to see the outbreak/clone-detection module flag the shared code.
+1. In the app, upload all 8 `*_plasmids.fasta` files at once, keep the code scheme on **v4.1** and click **Run Analysis**.
+2. Compare the **Results** tab with `expected_pLIN_results.tsv`. Codes with a value in `provisional_from` contain levels that are new to the database; their numbers are the same as in the file only when the same 8 files are analysed together in one run.
 
-## Background
+## What it shows
 
-This is the same dataset behind Figure 12 (transmission mode) and the outbreak-validation section of the manuscript: a real hospital cluster where a blaVIM-1-carrying plasmid spread across patients, captured here as assembled contigs from each isolate's sequencing run.
+Every isolate carries blaVIM-1 on a large plasmid (249 to 342 kb). Whole-plasmid alignment separates them into three lineages:
+
+| Lineage (alignment) | Isolates | pLIN v4.1 |
+|---|---|---|
+| A (blaVIM-1, blaCTX-M-9, blaSHV-12) | 11, 12, 20, 31, 52 | share L1 to L5 (`169.178.183.208.209`) |
+| B (blaVIM-1, qnrB2) | 36, 48 | share the backbone L1 to L4 with A, own lineage at L5 |
+| C (blaVIM-1, qnrB4) | 56 | same backbone family (L1 `169`), separate below |
+
+pLIN agrees with the alignment on 27 of 28 pairs of blaVIM-1 plasmids. The one difference is isolates 11 and 52, which share 79% of their sequence at 99.997% identity, just under the 80% used to define a lineage; pLIN places them in the same lineage. Near-identical pairs (12 and 52; 20 and 31) also share L6.
+
+This is a development case study: it was used while designing pLIN v4.1, so it illustrates the method rather than testing it independently.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 Validate the contig classifier (plasmid vs chromosome) using:
   - Known plasmids: random sample from the 8,077 training sequences
@@ -7,9 +7,9 @@ Validate the contig classifier (plasmid vs chromosome) using:
   - Mixed assemblies: simulated multi-contig files
 
 Produces output/contig_validation/ with:
-  - validation_results.tsv       — per-contig classification results
-  - validation_summary.json      — performance metrics
-  - size_stratified_metrics.json — accuracy by contig size
+  - validation_results.tsv: per-contig classification results
+  - validation_summary.json: performance metrics
+  - size_stratified_metrics.json: accuracy by contig size
 """
 
 import os

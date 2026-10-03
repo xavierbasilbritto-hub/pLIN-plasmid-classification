@@ -1,0 +1,22 @@
+{
+  "release_unique_accessions": 127517,
+  "matched_to_PLSDB_2024_05_31": 72556,
+  "sector_counts": {
+    "human": 25930,
+    "unknown": 21957,
+    "animal": 10963,
+    "environment": 7248,
+    "plant": 3352,
+    "food": 3106
+  },
+  "L6": {
+    "lineages_with_>=2_annotated_plasmids": 5117,
+    "spanning_>=2_sectors": 1330,
+    "same_key_AMR_gene_in_>=2_sectors": 172
+  },
+  "L3": {
+    "lineages_with_>=2_annotated_plasmids": 4509,
+    "spanning_>=2_sectors": 1820,
+    "same_key_AMR_gene_in_>=2_sectors": 115
+  }
+}

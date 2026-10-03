@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Expanded pLIN outbreak validation — classify 57 new outbreak plasmids.
+Expanded pLIN outbreak validation: classify 57 new outbreak plasmids.
 
 Uses the trained KNN classifier (data/inc_classifier.npz) and the full training
 set pLIN assignments (output/pLIN_assignments.tsv) to:
@@ -112,7 +112,7 @@ def main():
     print("\n[1/5] Loading KNN classifier ...")
     data = np.load(CLASSIFIER_PATH, allow_pickle=True)
     X_train = data["X"]          # (6998, 256)
-    y_train = data["y"]          # (6998,) — integer labels
+    y_train = data["y"]          # (6998,): integer labels
     group_names = data["group_names"]  # Inc type names
     print(f"  Training set: {X_train.shape[0]} plasmids, {len(group_names)} Inc types")
 
@@ -154,7 +154,7 @@ def main():
         # Compute 4-mer vector
         q_vec = compute_kmer_vector(q["sequence"])
 
-        # KNN classification — compute cosine distances to all training samples
+        # KNN classification: compute cosine distances to all training samples
         dists = np.array([cosine_dist(q_vec, X_train[j]) for j in range(X_train.shape[0])])
 
         # k=5 nearest neighbours

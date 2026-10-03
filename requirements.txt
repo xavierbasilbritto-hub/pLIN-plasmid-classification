@@ -1,4 +1,4 @@
-# pLIN Tool — Core Dependencies
+# pLIN Tool: Core Dependencies
 numpy>=2.0
 pandas>=2.0
 scipy>=1.12
@@ -25,3 +25,4 @@ joblib>=1.3
 #
 # Nucleotide Transformer LLM support (separate, larger optional feature):
 # transformers>=4.36.0
+pyrodigal>=3.0          # backbone protein comparison (plin_backbone.py); MMseqs2 is installed separately

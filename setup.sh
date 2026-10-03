@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# pLIN Setup Script — macOS / Linux
+# pLIN Setup Script: macOS / Linux
 # Creates a Python virtual environment and installs all dependencies.
 # Optionally installs AMRFinderPlus via conda/mamba.
 # ============================================================================
@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "============================================================"
-echo "  pLIN — Plasmid Lineage Identification Number System"
+echo "  pLIN: Plasmid Lineage Identification Number System"
 echo "  Setup Script (macOS / Linux)"
 echo "============================================================"
 echo ""

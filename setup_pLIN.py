@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pLIN Tool — Cross-Platform Setup & Launch Script (Single File)
+pLIN Tool: Cross-Platform Setup & Launch Script (Single File)
 ==============================================================
 One file to install dependencies and launch pLIN on macOS, Linux, or Windows.
 
@@ -14,7 +14,7 @@ Usage:
 
 Works on: macOS (Intel/Apple Silicon), Linux (Ubuntu/Debian/Fedora/Arch/RHEL/openSUSE), Windows 10/11
 
-Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 """
 
 import os
@@ -155,7 +155,7 @@ def banner():
     print(f"""
 {C.CYAN}{'='*62}
   {C.BOLD}pLIN: Plasmid Lineage Identification Number System{C.RESET}{C.CYAN}
-  Version {APP_VERSION} — Cross-Platform Setup & Launch
+  Version {APP_VERSION}: Cross-Platform Setup & Launch
   Hierarchical Plasmid Classification + AMR Surveillance
 {'='*62}{C.RESET}
 """)
@@ -334,7 +334,7 @@ def check_python():
         ok(f"Python {v.major}.{v.minor}.{v.micro}")
         return True
     else:
-        fail(f"Python {v.major}.{v.minor}.{v.micro} — need {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
+        fail(f"Python {v.major}.{v.minor}.{v.micro}: need {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
         return False
 
 
@@ -386,10 +386,10 @@ def check_biotools():
             path = _find_tool_in_conda_env(tool)
         if path:
             found[tool] = path
-            ok(f"{tool} — {meta['desc']}")
+            ok(f"{tool}: {meta['desc']}")
         else:
             missing[tool] = meta
-            warn(f"{tool} — {meta['desc']} (not found, optional)")
+            warn(f"{tool}: {meta['desc']} (not found, optional)")
     return found, missing
 
 
@@ -631,7 +631,7 @@ def setup_is_reference_database(python_bin=None):
     using BioPython's Entrez, writes them as a combined FASTA file, and
     builds a BLAST nucleotide database for IS element detection.
 
-    This is optional — if NCBI is unreachable or BioPython is unavailable,
+    This is optional: if NCBI is unreachable or BioPython is unavailable,
     the function logs a warning and returns False.
     """
     mge_dir = OUTPUT_DIR / "mge_detection"
@@ -649,7 +649,7 @@ def setup_is_reference_database(python_bin=None):
         python_bin = sys.executable
 
     info("Downloading IS element reference sequences from NCBI...")
-    info("(Requires internet — skipped if unavailable)")
+    info("(Requires internet: skipped if unavailable)")
 
     # Inline download script to keep setup_pLIN.py self-contained
     download_script = (
@@ -693,7 +693,7 @@ def setup_is_reference_database(python_bin=None):
         return False
 
     if "SKIP:" in (output or ""):
-        warn("BioPython not available — skipping IS reference database setup")
+        warn("BioPython not available: skipping IS reference database setup")
         return False
 
     ok(output.split("OK:")[-1] if "OK:" in output else "IS references downloaded")
@@ -714,7 +714,7 @@ def setup_is_reference_database(python_bin=None):
             warn(f"makeblastdb failed: {(output or '')[:200]}")
             return False
     else:
-        warn("makeblastdb not found — BLAST database not built")
+        warn("makeblastdb not found: BLAST database not built")
         warn("Install BLAST and run: makeblastdb -in output/mge_detection/is_reference_sequences.fasta -dbtype nucl")
         return False
 
@@ -735,7 +735,7 @@ def verify_blast_for_contig_classification():
             ok(f"BLAST available: {ver_line}")
             return True
 
-    warn("BLAST tools not found — IS element detection will be unavailable")
+    warn("BLAST tools not found: IS element detection will be unavailable")
     info("Core pLIN classification and contig filtering work without BLAST")
     return False
 
@@ -978,9 +978,9 @@ def environment_report():
     total_tools = len(BIOTOOLS)
     n_found = len(found)
     if not missing and n_found == total_tools:
-        ok("All dependencies satisfied — full functionality available")
+        ok("All dependencies satisfied: full functionality available")
     elif not missing:
-        ok(f"Core dependencies OK — {n_found}/{total_tools} optional tools installed")
+        ok(f"Core dependencies OK: {n_found}/{total_tools} optional tools installed")
         if not_found:
             unique_pkgs = set()
             for m in not_found.values():
@@ -993,7 +993,7 @@ def environment_report():
             if mob_missing:
                 info("Install MOBsuite: pip install mob_suite")
     else:
-        warn(f"Missing {len(missing)} Python packages — run: python3 setup_pLIN.py --install")
+        warn(f"Missing {len(missing)} Python packages: run: python3 setup_pLIN.py --install")
 
     print()
 
@@ -1001,7 +1001,7 @@ def environment_report():
 # ── Main ─────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
-        description=f"pLIN v{APP_VERSION} — Cross-Platform Setup & Launch (macOS / Linux / Windows)",
+        description=f"pLIN v{APP_VERSION}: Cross-Platform Setup & Launch (macOS / Linux / Windows)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
@@ -1061,7 +1061,7 @@ Supported platforms:
     # Step 1: Check environment
     step(1, total_steps, "Checking environment...")
     if not check_python():
-        warn(f"Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required — will install via conda")
+        warn(f"Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required: will install via conda")
 
     if not check_files():
         fail("Required data files are missing. Ensure you have the complete pLIN distribution.")
@@ -1084,7 +1084,7 @@ Supported platforms:
             if setup_conda_env(conda):
                 install_biotools_conda(conda)
         else:
-            warn("Conda not available — skipping bioinformatics tools")
+            warn("Conda not available: skipping bioinformatics tools")
             info("Core pLIN features (classification, pLIN assignment) work without these tools")
             info("Install conda from: https://docs.conda.io/en/latest/miniconda.html")
             if plat["system"] == "windows":

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
-#  pLIN — All-in-One Setup & Launch for Linux
-#  Copyright (C) 2025 Basil Xavier Britto — GPL-3.0 + Citation clause
+#  pLIN: All-in-One Setup & Launch for Linux
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
 #
 #  Single file: installs everything + launches the pLIN web application.
 #
@@ -43,7 +43,7 @@ banner() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║${NC}  ${BOLD}pLIN: Plasmid Lineage Identification Number System${NC}        ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC}  Version ${APP_VERSION} — All-in-One Installer for Linux           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  Version ${APP_VERSION}: All-in-One Installer for Linux           ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}  Hierarchical Plasmid Classification + AMR Surveillance    ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
@@ -115,7 +115,7 @@ install_system_deps() {
             yum)    sudo yum install -y curl wget gcc gcc-c++ java-11-openjdk-headless ;;
             pacman) sudo pacman -Sy --noconfirm curl wget base-devel jre-openjdk-headless ;;
             zypper) sudo zypper install -y curl wget gcc gcc-c++ java-11-openjdk-headless ;;
-            *)      fail "Cannot install system deps — unknown package manager"; exit 1 ;;
+            *)      fail "Cannot install system deps: unknown package manager"; exit 1 ;;
         esac
     fi
 
@@ -248,20 +248,20 @@ check_biotools() {
 
     for i in "${!tools[@]}"; do
         if command -v "${tools[$i]}" &>/dev/null; then
-            ok "${tools[$i]} — ${descs[$i]}"
+            ok "${tools[$i]}: ${descs[$i]}"
             ((BIOTOOLS_FOUND++))
         else
             local found=false
             for base in "$HOME/miniconda3" "$HOME/miniforge3" "$HOME/anaconda3" "$HOME/mambaforge"; do
                 if [ -x "$base/envs/$ENV_NAME/bin/${tools[$i]}" ]; then
-                    ok "${tools[$i]} — ${descs[$i]} (in conda env)"
+                    ok "${tools[$i]}: ${descs[$i]} (in conda env)"
                     ((BIOTOOLS_FOUND++))
                     found=true
                     break
                 fi
             done
             if ! $found; then
-                warn "${tools[$i]} — ${descs[$i]} (not found, optional)"
+                warn "${tools[$i]}: ${descs[$i]} (not found, optional)"
             fi
         fi
     done
@@ -371,7 +371,7 @@ setup_is_database() {
     elif [ -n "${PYTHON_BIN:-}" ]; then
         PY="$PYTHON_BIN"
     else
-        warn "Python not available — skipping IS database setup"
+        warn "Python not available: skipping IS database setup"
         return 0
     fi
 
@@ -381,7 +381,7 @@ import sys, os
 try:
     from Bio import Entrez, SeqIO
 except ImportError:
-    print('  [WARN] BioPython not available — skipping IS database download')
+    print('  [WARN] BioPython not available: skipping IS database download')
     sys.exit(0)
 
 Entrez.email = 'plin_tool@example.com'
@@ -428,10 +428,10 @@ print(f'  [OK]   Downloaded {downloaded}/25 IS reference sequences')
         if [ $? -eq 0 ]; then
             ok "BLAST database built for IS references"
         else
-            warn "makeblastdb failed — IS detection may not work"
+            warn "makeblastdb failed: IS detection may not work"
         fi
     elif [ -f "$IS_FASTA" ]; then
-        warn "makeblastdb not found — BLAST database not built"
+        warn "makeblastdb not found: BLAST database not built"
         info "IS detection requires BLAST+ (installed via conda)"
     fi
 }
@@ -453,7 +453,7 @@ verify_blast() {
             fi
         done
         if ! $found; then
-            warn "BLAST+ not found — IS element detection will not be available"
+            warn "BLAST+ not found: IS element detection will not be available"
             info "Contig classification (plasmid vs chromosome) works without BLAST"
         fi
     fi
@@ -602,7 +602,7 @@ check_mode() {
     if find_python; then
         check_packages
     else
-        warn "Cannot check packages — Python not found"
+        warn "Cannot check packages: Python not found"
     fi
 
     step 4 5 "Checking bioinformatics tools..."
