@@ -36,10 +36,10 @@ def _pick(sim, t, rule):
 
 
 class ProtNode:
-    __slots__ = ("ids", "sizes", "post")
+    __slots__ = ("ids", "sizes", "post", "fp")
 
     def __init__(self):
-        self.ids, self.sizes, self.post = [], [], {}
+        self.ids, self.sizes, self.post, self.fp = [], [], {}, []
 
     def similarity(self, fams):
         if not self.ids or not len(fams):
@@ -55,13 +55,14 @@ class ProtNode:
 
     def copy(self):
         n = ProtNode()
-        n.ids, n.sizes = list(self.ids), list(self.sizes)
+        n.ids, n.sizes, n.fp = list(self.ids), list(self.sizes), list(self.fp)
         n.post = {f: list(v) for f, v in self.post.items()}
         return n
 
-    def append(self, cid, fams):
+    def append(self, cid, fams, fp=-1):
         j = len(self.ids)
         self.ids.append(cid)
+        self.fp.append(fp)
         self.sizes.append(len(fams))
         for f in fams.tolist():
             self.post.setdefault(f, []).append(j)
@@ -69,22 +70,23 @@ class ProtNode:
 
 class KmerNode:
     """Founder sketches with a lazily rebuilt sorted index (hash -> founder position)."""
-    __slots__ = ("ids", "sk", "scale", "counts", "ix_hash", "ix_owner", "n_indexed")
+    __slots__ = ("ids", "sk", "scale", "counts", "ix_hash", "ix_owner", "n_indexed", "fp")
 
     def __init__(self):
-        self.ids, self.sk, self.scale, self.counts = [], [], [], []
+        self.ids, self.sk, self.scale, self.counts, self.fp = [], [], [], [], []
         self.ix_hash = np.zeros(0, np.uint64)
         self.ix_owner = np.zeros(0, np.int64)
         self.n_indexed = 0
 
     def copy(self):
         n = KmerNode()
-        n.ids, n.sk, n.scale, n.counts = list(self.ids), list(self.sk), list(self.scale), list(self.counts)
+        n.ids, n.sk, n.scale, n.counts, n.fp = list(self.ids), list(self.sk), list(self.scale), list(self.counts), list(self.fp)
         n.ix_hash, n.ix_owner, n.n_indexed = self.ix_hash, self.ix_owner, self.n_indexed   # arrays are replaced, never mutated
         return n
 
-    def append(self, cid, sk, scale):
+    def append(self, cid, sk, scale, fp=-1):
         self.ids.append(cid)
+        self.fp.append(fp)
         self.sk.append(sk)
         self.scale.append(scale)
         self.counts.append(np.searchsorted(sk, _CUTS, side="right"))     # sketch size at every scale
@@ -151,7 +153,8 @@ class V41Tree:
             self._owned.add(prefix)
         return node
 
-    def assign(self, fams, sk, scale, add=True):
+    def assign(self, fams, sk, scale, add=True, exclude=None):
+        """exclude: database plasmid indices whose founder entries are ignored (leave-one-out)."""
         prefix, provisional = (), list(self.next_id)
         for li, (kind, t) in enumerate(zip(self.kinds, self.thresholds)):
             if kind == "prot" and len(fams) == 0:
@@ -161,6 +164,8 @@ class V41Tree:
             chosen = None
             if node is not None:
                 sim = node.similarity(fams) if kind == "prot" else node.similarity(sk, scale, kind)
+                if exclude and node.fp:
+                    sim = np.where(np.isin(np.asarray(node.fp), list(exclude)), -1.0, sim)
                 j = _pick(sim, t, self.rule)
                 chosen = node.ids[j] if j is not None else None
             if chosen is None:

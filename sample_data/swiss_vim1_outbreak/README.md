@@ -1,6 +1,6 @@
 # Sample data: Swiss VIM-1 outbreak cluster
 
-Eight clinical isolates from a Swiss carbapenemase-producing hospital cluster, provided so you can try pLIN without your own FASTA files.
+Eight clinical isolates from a Swiss investigation of VIM-1-producing *Enterobacter* (Seth-Smith et al., Antimicrob. Agents Chemother. 70:e01827-25, 2026; reads in ENA project PRJEB98563), provided so you can try pLIN without your own FASTA files. The plasmid contigs come from Flye assemblies of the published Nanopore reads.
 
 ## What's here
 
@@ -22,6 +22,6 @@ Every isolate carries blaVIM-1 on a large plasmid (249 to 342 kb). Whole-plasmid
 | B (blaVIM-1, qnrB2) | 36, 48 | share the backbone L1 to L4 with A, own lineage at L5 |
 | C (blaVIM-1, qnrB4) | 56 | same backbone family (L1 `169`), separate below |
 
-pLIN agrees with the alignment on 27 of 28 pairs of blaVIM-1 plasmids. The one difference is isolates 11 and 52, which share 79% of their sequence at 99.997% identity, just under the 80% used to define a lineage; pLIN places them in the same lineage. Near-identical pairs (12 and 52; 20 and 31) also share L6.
+pLIN agrees with the alignment on 27 of 28 pairs of blaVIM-1 plasmids. The one difference is isolates 11 and 52, which share 79% of their sequence at 99.997% identity, just under the 80% used to define a lineage; pLIN places them in the same lineage. Near-identical pairs (12 and 52; 20 and 31; 36 and 48) also share L6.
 
 This is a development case study: it was used while designing pLIN v4.1, so it illustrates the method rather than testing it independently.

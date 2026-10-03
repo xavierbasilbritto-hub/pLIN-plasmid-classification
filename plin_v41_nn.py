@@ -174,9 +174,16 @@ class HybridIndex:
                 return out, k
         return out, None
 
-    def assign(self, fams, sk, scale, limit, extra=None, add=True):
-        """Code against indexed plasmids [0, limit) (+ session extras). Returns (code, new_from_level)."""
+    def assign(self, fams, sk, scale, limit, extra=None, add=True, exclude=None):
+        """Code against indexed plasmids [0, limit) (+ session extras). Returns (code, new_from_level).
+
+        exclude: database plasmid indices treated as absent (leave-one-out): never copied from and
+        never used as a founder.
+        """
         rows, vals = self.ix.similarities(np.zeros(0, np.int64), sk, scale, limit)["kmin"]
+        if exclude:
+            keep = ~np.isin(rows, list(exclude))
+            rows, vals = rows[keep], vals[keep]
         codes_of = self.codes[rows]
         if extra is not None and len(extra["codes"]):
             rows = np.concatenate([rows, -1 - np.arange(len(extra["codes"]))])
@@ -191,7 +198,7 @@ class HybridIndex:
             new_from = None if stop is None else self.nf + stop
         else:
             before = list(self.tree.next_id)
-            backbone = list(self.tree.assign(fams, sk, scale, add=add))
+            backbone = list(self.tree.assign(fams, sk, scale, add=add, exclude=exclude))
             lin = []
             new_from = next((k for k, c in enumerate(backbone) if c >= before[k]), self.nf)
         for k in range(len(lin), len(self.lin)):
@@ -269,9 +276,9 @@ def load_hybrid(path):
         kind = levels[lv][0]
         node = hx.tree._node_for_append(prefix, kind)
         if kind == "prot":
-            node.append(int(cid), pv[po[pi]:po[pi + 1]])
+            node.append(int(cid), pv[po[pi]:po[pi + 1]], fp=int(pl))
             pi += 1
         else:
-            node.append(int(cid), sketches[pl], int(scales[pl]))
+            node.append(int(cid), sketches[pl], int(scales[pl]), fp=int(pl))
     hx.tree.next_id = z["next_id"].tolist()
     return hx

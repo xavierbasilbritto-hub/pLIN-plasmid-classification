@@ -1253,10 +1253,38 @@ def discover_novel_inc_groups(vectors, inc_predictions, confidence_scores, recor
 #  MOBILITY PREDICTION
 # ══════════════════════════════════════════════════════════════════════════════
 
-def classify_mobility(amr_df, source_file, mobsuite_df=None):
+def _record_ids(plasmid_id):
+    """Original contig IDs behind a record (several when contigs were merged)."""
+    merge_map = st.session_state.get("merge_map") or {}
+    return set(merge_map.get(plasmid_id, [plasmid_id]))
+
+
+def amr_hits_for(amr_df, plasmid_id, source_file=None):
+    """AMRFinderPlus hits on one record's own contig(s).
+
+    AMRFinderPlus runs once per uploaded file, so a file with several plasmid contigs holds the hits
+    of all of them; the "Contig id" column (the FASTA header's first word, the same as plasmid_id)
+    assigns each hit to its contig.
+    """
+    if amr_df is None or len(amr_df) == 0 or "source_file" not in amr_df.columns:
+        return pd.DataFrame()
+    df = amr_df
+    if source_file is not None:
+        df = df[df["source_file"] == source_file.replace(".fasta", "").replace(".fa", "").replace(".fna", "")]
+    if "Contig id" in df.columns:
+        contig = df["Contig id"].astype(str).str.split().str[0]
+        sel = df[contig.isin(_record_ids(plasmid_id))]
+        if len(sel) or source_file is not None:
+            return sel
+    return df[df["source_file"] == plasmid_id] if source_file is None else df
+
+
+def classify_mobility(amr_df, source_file, mobsuite_df=None, plasmid_id=None):
     """Classify plasmid mobility using best available data.
 
-    Priority: MOBsuite (gold standard) > AMRFinderPlus gene scan > Non-mobilizable.
+    Priority: MOBsuite (gold standard) > AMRFinderPlus gene scan > not determined.
+    AMRFinderPlus does not screen for transfer or mobilization genes, so finding none
+    there is reported as "Unknown" (not determined), never as non-mobilizable.
 
     Categories:
     - Conjugative: has tra/trb/virB/trw transfer genes or MOBsuite says conjugative
@@ -1271,6 +1299,8 @@ def classify_mobility(amr_df, source_file, mobsuite_df=None):
     # ── Tier 1: MOBsuite (if available) ──
     if mobsuite_df is not None and len(mobsuite_df) > 0:
         mob_hits = mobsuite_df[mobsuite_df["source_file"] == sf]
+        if plasmid_id is not None and "sample_id" in mob_hits.columns:
+            mob_hits = mob_hits[mob_hits["sample_id"].astype(str).str.split().str[0].isin(_record_ids(plasmid_id))]
         if len(mob_hits) > 0:
             row = mob_hits.iloc[0]
             mobility = str(row.get("predicted_mobility", "")).lower()
@@ -1315,11 +1345,11 @@ def classify_mobility(amr_df, source_file, mobsuite_df=None):
             "source": "None", "relaxase_family": "", "mpf_type": "",
         }
 
-    hits = amr_df[amr_df["source_file"] == sf]
+    hits = amr_hits_for(amr_df, plasmid_id, source_file) if plasmid_id is not None else amr_df[amr_df["source_file"] == sf]
     if len(hits) == 0:
         return {
-            "mobility": "Non-mobilizable", "genes": [],
-            "detail": "No genes detected", "source": "AMRFinderPlus",
+            "mobility": "Unknown", "genes": [],
+            "detail": "Not determined: no AMRFinderPlus hits; run MOB-suite for mobility", "source": "AMRFinderPlus",
             "relaxase_family": "", "mpf_type": "",
         }
 
@@ -1390,8 +1420,8 @@ def classify_mobility(amr_df, source_file, mobsuite_df=None):
         }
     else:
         return {
-            "mobility": "Non-mobilizable", "genes": [],
-            "detail": "No transfer/mobilization genes detected",
+            "mobility": "Unknown", "genes": [],
+            "detail": "Not determined: AMRFinderPlus does not screen for transfer genes; run MOB-suite",
             "source": "AMRFinderPlus", "relaxase_family": "", "mpf_type": "",
         }
 
@@ -1813,7 +1843,7 @@ def annotate_alignment_blocks_with_amr(blocks_df, amr_df):
         s_intervals = [(b["s_start"], b["s_end"]) for _, b in pair_blocks.iterrows()]
 
         for plasmid_id, intervals, other in ((p1, q_intervals, p2), (p2, s_intervals, p1)):
-            genes = amr_df[amr_df["source_file"] == plasmid_id]
+            genes = amr_hits_for(amr_df, plasmid_id)
             for _, gene in genes.iterrows():
                 try:
                     gstart, gend = int(gene["Start"]), int(gene["Stop"])
@@ -2357,7 +2387,7 @@ DATABASE_VERSION_PATH = os.path.join(_APP_DIR, "DATABASE_VERSION.json")
 
 
 @st.cache_data(show_spinner=False)
-def get_run_provenance():
+def get_run_provenance(scheme="v3"):
     """Build a small metadata block recording what this run was actually
     computed against: app version, reference database size, AMRFinderPlus
     database version (if bundled/detected), and a generation timestamp.
@@ -2372,6 +2402,9 @@ def get_run_provenance():
 
     Cached per Streamlit session (the underlying files don't change while
     the app is running), not recomputed on every export.
+
+    scheme: "v4.1" reads the v4.1 release record (its DATABASE_VERSION.json);
+    "v3" reads the legacy reference table and DATABASE_VERSION.json.
     """
     from datetime import datetime, timezone
 
@@ -2406,8 +2439,23 @@ def get_run_provenance():
         except Exception:
             pass
 
+    if scheme == "v4.1":
+        _, where = _load_v41_release()
+        n_reference_plasmids = database_version = database_build_timestamp = None
+        v41_info = os.path.join(where, "DATABASE_VERSION.json") if os.path.isdir(str(where)) else None
+        if v41_info and os.path.isfile(v41_info):
+            try:
+                with open(v41_info) as f:
+                    db_info = json.load(f)
+                database_version = db_info.get("database_version")
+                database_build_timestamp = db_info.get("built_utc")
+                n_reference_plasmids = db_info.get("unique_plasmids")
+            except Exception:
+                pass
+
     return {
         "plin_app_version": PLIN_APP_VERSION,
+        "pLIN_scheme": scheme,
         "database_version": database_version,
         "database_build_timestamp_utc": database_build_timestamp,
         "reference_database_plasmid_count": n_reference_plasmids,
@@ -2426,6 +2474,8 @@ def provenance_header_lines(provenance, comment_char="#"):
         # Generated: 2026-09-29T14:32:07Z
     """
     lines = [f"{comment_char} pLIN app version: {provenance['plin_app_version']}"]
+    if provenance.get("pLIN_scheme"):
+        lines.append(f"{comment_char} pLIN code scheme: {provenance['pLIN_scheme']}")
     if provenance.get("database_version"):
         db_line = f"{comment_char} pLIN database version: {provenance['database_version']}"
         if provenance.get("database_build_timestamp_utc"):
@@ -3125,8 +3175,7 @@ def integrate_plin_amr(plin_df, amr_df):
     """Integrate pLIN assignments with AMR results."""
     rows = []
     for _, row in plin_df.iterrows():
-        sf = row["source_file"].replace(".fasta", "").replace(".fa", "").replace(".fna", "")
-        hits = amr_df[amr_df["source_file"] == sf] if len(amr_df) > 0 else pd.DataFrame()
+        hits = amr_hits_for(amr_df, row["plasmid_id"], row["source_file"])
 
         amr_hits = hits[hits["Type"] == "AMR"] if "Type" in hits.columns and len(hits) > 0 else pd.DataFrame()
         stress_hits = hits[hits["Type"] == "STRESS"] if "Type" in hits.columns and len(hits) > 0 else pd.DataFrame()
@@ -3338,7 +3387,7 @@ def run_mobsuite_on_files(uploaded_files, binary, progress_callback=None):
             out_path = os.path.join(tmpdir, f"{uf.name}.mobtyper.txt")
             source_name = uf.name.replace(".fasta", "").replace(".fa", "").replace(".fna", "")
 
-            cmd = [binary, "--infile", fasta_path, "--out_file", out_path]
+            cmd = [binary, "--infile", fasta_path, "--out_file", out_path, "--multi"]   # one row per contig
 
             try:
                 subprocess.run(cmd, capture_output=True, timeout=300)
@@ -5204,7 +5253,7 @@ def plot_cladogram_amr(Z, labels, plin_codes, strain_clusters, amr_df, records):
     heat = np.zeros((n_plasmids, n_genes))
     for i, li in enumerate(leaf_order):
         src = label_to_source[labels[li]]
-        hits = amr_df[amr_df["source_file"] == src]
+        hits = amr_hits_for(amr_df, labels[li], src)
         for j, gene in enumerate(gene_list):
             if gene in hits["Element symbol"].values:
                 heat[i, j] = 2 if gene_types[j] == "AMR" else 1
@@ -5291,12 +5340,12 @@ if os.path.exists(_logo_path):
         st.markdown(
             "<h1 style='margin-bottom:0; padding-top:18px;'>pLIN Classifier</h1>"
             "<p style='color:#3B6FA0; margin-top:0;'>"
-            "Plasmid Lineage Identification Number System &mdash; Upload FASTA files to begin</p>",
+            "Plasmid Lineage Identification Number System: upload FASTA files to begin</p>",
             unsafe_allow_html=True,
         )
 else:
     st.title("pLIN Classifier")
-    st.caption("Plasmid Lineage Identification Number System: Upload FASTA files to begin")
+    st.caption("Plasmid Lineage Identification Number System: upload FASTA files to begin")
 
 # AMRFinderPlus detection (used in both upload and post-analysis views)
 amr_binary, amr_db, amr_wsl_diagnostic = detect_amrfinder()  # amr_binary may be "wsl:"-prefixed, run_amrfinder_on_files() handles that
@@ -5830,8 +5879,8 @@ if run_btn and uploaded_files:
                 f"**{len(incomplete_indices)} contig(s) classified as incomplete/uncertain plasmid** "
                 f"(confidence <95%): {', '.join(incomplete_ids[:5])}"
                 f"{'...' if len(incomplete_ids) > 5 else ''}. "
-                f"These will be analysed for AMR genes, mobility, and other features "
-                f"but will **not** receive pLIN code assignment.",
+                f"With pLIN v4.1 they still receive a code and are flagged 'uncertain'; with v3 (legacy) "
+                f"they are analysed for AMR genes and mobility but receive no pLIN code.",
                 icon="⚠️",
             )
         else:
@@ -6026,9 +6075,16 @@ if run_btn and uploaded_files:
             for m in qm
         ]
 
-    # Mark incomplete plasmids: they keep AMR/mobility results but no pLIN code
+    # Uncertain plasmid calls. v3 codes depend on the 4-mer classifier, so these contigs get no v3 code.
+    # A v4.1 code depends only on the sequence, so it is kept and the contig is flagged instead.
     plin_eligible = st.session_state.get("_plin_eligible_ids")
-    if plin_eligible is not None:
+    if plin_eligible is not None and st.session_state.get("code_scheme_used") == "v4.1":
+        plin_df["plasmid_call"] = [
+            "plasmid" if row.get("plasmid_id", row.get("Plasmid", "")) in plin_eligible
+            else "uncertain (check that the contig is a complete plasmid)"
+            for _, row in plin_df.iterrows()
+        ]
+    elif plin_eligible is not None:
         for idx, row in plin_df.iterrows():
             pid = row.get("plasmid_id", row.get("Plasmid", ""))
             if pid not in plin_eligible:
@@ -6243,7 +6299,7 @@ if run_btn and uploaded_files:
     mobsuite_df = st.session_state.get("mobsuite_df")
     mobility_results = []
     for rec in records:
-        mob_result = classify_mobility(amr_df, rec["source_file"], mobsuite_df=mobsuite_df)
+        mob_result = classify_mobility(amr_df, rec["source_file"], mobsuite_df=mobsuite_df, plasmid_id=rec["plasmid_id"])
         mobility_results.append({
             "plasmid_id": rec["plasmid_id"],
             "mobility": mob_result["mobility"],
@@ -6499,12 +6555,20 @@ with tab_overview:
         # Show incomplete plasmids (included for AMR/mobility but no pLIN)
         incomplete_plasm = st.session_state.get("incomplete_plasmids")
         if incomplete_plasm is not None and len(incomplete_plasm) > 0:
-            st.warning(
-                f"**{len(incomplete_plasm)} incomplete/uncertain plasmid contig(s)**: "
-                f"analysed for AMR genes, mobility, and other features but "
-                f"**not** assigned pLIN codes (confidence <95%). "
-                f"These appear in results as 'N/A (incomplete plasmid)'."
-            )
+            if st.session_state.get("code_scheme_used") == "v4.1":
+                st.warning(
+                    f"**{len(incomplete_plasm)} contig(s) with an uncertain plasmid call** (plasmid-vs-chromosome "
+                    f"confidence <95%, e.g. very large or unusual plasmids). They received pLIN v4.1 codes, which "
+                    f"depend only on the sequence, and are flagged 'uncertain' in the plasmid_call column: check "
+                    f"that each is a complete plasmid before reporting its code."
+                )
+            else:
+                st.warning(
+                    f"**{len(incomplete_plasm)} incomplete/uncertain plasmid contig(s)**: "
+                    f"analysed for AMR genes, mobility, and other features but "
+                    f"**not** assigned pLIN codes (confidence <95%). "
+                    f"These appear in results as 'N/A (incomplete plasmid)'."
+                )
             with st.expander(f"View incomplete plasmid contigs ({len(incomplete_plasm)})"):
                 st.dataframe(
                     incomplete_plasm[["plasmid_id", "length_bp", "confidence", "reason"]],
@@ -6543,12 +6607,17 @@ with tab_overview:
 
         # Show analysis parameters
         params_col1, params_col2 = st.columns(2)
+        v41_used = st.session_state.get("code_scheme_used") == "v4.1"
         with params_col1:
             lm = st.session_state.get("linkage_method_used", "single")
-            st.markdown(f"**Linkage method:** `{lm}`")
+            st.markdown(f"**Linkage method{' (relatedness tree only)' if v41_used else ''}:** `{lm}`")
         with params_col2:
             at = st.session_state.get("active_thresholds")
-            if at and at != PLIN_THRESHOLDS:
+            if v41_used:
+                prov = get_run_provenance("v4.1")
+                st.markdown(f"**Code scheme:** pLIN v4.1, fixed thresholds, database `{prov.get('database_version')}`")
+                at = None
+            elif at and at != PLIN_THRESHOLDS:
                 dom_inc = st.session_state.get("_dominant_inc", "?")
                 st.markdown(f"**Adaptive thresholds:** calibrated for **{dom_inc}**")
             else:
@@ -7454,10 +7523,12 @@ with tab_epi:
                 # Color-coded metrics
                 mob_colors = {"Conjugative": "#E53935", "Mobilizable": "#FB8C00",
                               "Non-mobilizable": "#43A047", "Unknown": "#9E9E9E"}
-                mc1, mc2, mc3 = st.columns(3)
+                mc1, mc2, mc3, mc4 = st.columns(4)
                 mc1.metric("Conjugative", int(mob_counts.get("Conjugative", 0)))
                 mc2.metric("Mobilizable", int(mob_counts.get("Mobilizable", 0)))
                 mc3.metric("Non-mobilizable", int(mob_counts.get("Non-mobilizable", 0)))
+                mc4.metric("Not determined", int(mob_counts.get("Unknown", 0)),
+                           help="AMRFinderPlus does not screen for transfer genes; enable MOB-suite typing")
 
                 # Show prediction source
                 if "mobility_source" in mob_df.columns:
@@ -8154,7 +8225,7 @@ with tab_export:
 
         with col1:
             st.subheader("Tables")
-            run_provenance = get_run_provenance()
+            run_provenance = get_run_provenance(st.session_state.get("code_scheme_used", "v3"))
             db_label = (f"database {run_provenance['database_version']}"
                         if run_provenance.get("database_version") else None)
             caption_parts = [f"pLIN v{run_provenance['plin_app_version']}"]
@@ -8343,7 +8414,7 @@ with tab_export:
         st.subheader("Download All (ZIP)")
         if st.button("📦 Generate ZIP Bundle"):
             with st.spinner("Creating ZIP..."):
-                zip_provenance = get_run_provenance()
+                zip_provenance = get_run_provenance(st.session_state.get("code_scheme_used", "v3"))
                 zip_buf = io.BytesIO()
                 with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
                     zf.writestr("manifest.json", json.dumps(zip_provenance, indent=2))

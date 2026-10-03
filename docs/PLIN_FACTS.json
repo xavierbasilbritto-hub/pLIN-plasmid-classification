@@ -84,6 +84,11 @@
   "text": "0.26",
   "source": "output/backbone_v41/confirm/endpoints.json"
  },
+ "backbone_diff_ci": {
+  "value": 0.12,
+  "text": "+0.12 (95% CI -0.09 to 0.28)",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
  "backbone_diff": {
   "value": 0.12,
   "text": "+0.12 (95% CI -0.09 to 0.28); not shown non-inferior",
@@ -201,5 +206,891 @@
   "value": 0.67,
   "text": "0.67",
   "source": "data/inc_classifier.npz"
+ },
+ "loo_n": {
+  "value": 66,
+  "text": "66",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_recovery_L5": {
+  "value": 86.4,
+  "text": "86.4%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_same_pairs_L5": {
+  "value": 50.5,
+  "text": "50.5%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_diff_pairs_L5": {
+  "value": 0.96,
+  "text": "0.96%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_recovery_L6": {
+  "value": 66.7,
+  "text": "66.7%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_same_pairs_L6": {
+  "value": 39.3,
+  "text": "39.3%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_diff_pairs_L6": {
+  "value": 0.36,
+  "text": "0.36%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "ob_L5_same": {
+  "value": 50.3,
+  "text": "50.3%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L5_diff": {
+  "value": 0.96,
+  "text": "0.96%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L6_same": {
+  "value": 40.3,
+  "text": "40.3%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L6_diff": {
+  "value": 0.36,
+  "text": "0.36%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_MOBsec_same": {
+  "value": 49.7,
+  "text": "49.7%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_MOBsec_diff": {
+  "value": 0.88,
+  "text": "0.88%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_MOBprim_same": {
+  "value": 58.6,
+  "text": "58.6%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_MOBprim_diff": {
+  "value": 1.83,
+  "text": "1.83%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_pling_sub_same": {
+  "value": 67.5,
+  "text": "67.5%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_pling_sub_diff": {
+  "value": 9.6,
+  "text": "9.60%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_mge_same": {
+  "value": 100.0,
+  "text": "100.0%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_mge_diff": {
+  "value": 100.0,
+  "text": "100.00%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "prosp_n": {
+  "value": 47,
+  "text": "47",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L5_warning": {
+  "value": 55.3,
+  "text": "55.3%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L5_false_alarm": {
+  "value": 6.4,
+  "text": "6.4%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_MOBsec_warning": {
+  "value": 61.7,
+  "text": "61.7%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_MOBsec_false_alarm": {
+  "value": 17.0,
+  "text": "17.0%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_MOBprim_warning": {
+  "value": 68.1,
+  "text": "68.1%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_MOBprim_false_alarm": {
+  "value": 44.7,
+  "text": "44.7%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "sr_assembled_n": {
+  "value": 189,
+  "text": "189",
+  "source": "output/backbone_v41/shortread/fragmentation_metrics.tsv"
+ },
+ "sr_L1_L5_kept": {
+  "value": 100.0,
+  "text": "100%",
+  "source": "output/backbone_v41/shortread/fragmentation_metrics.tsv"
+ },
+ "sr_vim_reconstructed_n": {
+  "value": 11,
+  "text": "11",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_vim_reconstructed_L5": {
+  "value": 100.0,
+  "text": "100%",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "simpson_replicon": {
+  "value": 0.8863,
+  "text": "0.886",
+  "source": "output/backbone_v41/diversity.json"
+ },
+ "simpson_L5": {
+  "value": 0.9998,
+  "text": "0.9998",
+  "source": "output/backbone_v41/diversity.json"
+ },
+ "simpson_L6": {
+  "value": 0.9999,
+  "text": "0.9999",
+  "source": "output/backbone_v41/diversity.json"
+ },
+ "build_source_PLSDB_2024_05_31": {
+  "value": 72556,
+  "text": "72,556",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_source_training_not_in_PLSDB": {
+  "value": 1539,
+  "text": "1,539",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_source_other_NCBI": {
+  "value": 53422,
+  "text": "53,422",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_accessions_listed_twice": {
+  "value": 5788,
+  "text": "5,788",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_unique_protein_sequences": {
+  "value": 4467618,
+  "text": "4,467,618",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_protein_families_in_use": {
+  "value": 1353655,
+  "text": "1,353,655",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_kmer_hashes_total": {
+  "value": 84793570,
+  "text": "84,793,570",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "ptu_n": {
+  "value": 3400,
+  "text": "3,400",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "ptu_ARI_L1": {
+  "value": 0.73,
+  "text": "0.73",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "ptu_ARI_MOBprim": {
+  "value": 0.59,
+  "text": "0.59",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "lineage_MOBsec_F1": {
+  "value": 0.58,
+  "text": "0.58",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_MOBsec_precision": {
+  "value": 0.42,
+  "text": "0.42",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_MOBsec_recall": {
+  "value": 0.9,
+  "text": "0.90",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_MOBsec_lo": {
+  "value": 0.44,
+  "text": "0.44",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "lineage_MOBsec_hi": {
+  "value": 0.71,
+  "text": "0.71",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_pling_F1": {
+  "value": 0.16,
+  "text": "0.16",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_pling_precision": {
+  "value": 0.86,
+  "text": "0.86",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_pling_recall": {
+  "value": 0.09,
+  "text": "0.09",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_pling_lo": {
+  "value": 0.06,
+  "text": "0.06",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_pling_hi": {
+  "value": 0.29,
+  "text": "0.29",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_mge_F1": {
+  "value": 0.02,
+  "text": "0.02",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_mge_precision": {
+  "value": 0.01,
+  "text": "0.01",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_mge_recall": {
+  "value": 0.5,
+  "text": "0.50",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_mge_lo": {
+  "value": 0.01,
+  "text": "0.01",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_mge_hi": {
+  "value": 0.03,
+  "text": "0.03",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v4_F1": {
+  "value": 0.41,
+  "text": "0.41",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v4_precision": {
+  "value": 0.47,
+  "text": "0.47",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v4_recall": {
+  "value": 0.36,
+  "text": "0.36",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v4_lo": {
+  "value": 0.2,
+  "text": "0.20",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v4_hi": {
+  "value": 0.55,
+  "text": "0.55",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v41L1_F1": {
+  "value": 0.38,
+  "text": "0.38",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v41L1_precision": {
+  "value": 0.46,
+  "text": "0.46",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v41L1_recall": {
+  "value": 0.32,
+  "text": "0.32",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v41L1_lo": {
+  "value": 0.17,
+  "text": "0.17",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_v41L1_hi": {
+  "value": 0.62,
+  "text": "0.62",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_MOBprim_F1": {
+  "value": 0.26,
+  "text": "0.26",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_MOBprim_precision": {
+  "value": 0.95,
+  "text": "0.95",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_MOBprim_recall": {
+  "value": 0.15,
+  "text": "0.15",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_MOBprim_lo": {
+  "value": 0.1,
+  "text": "0.10",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "backbone_MOBprim_hi": {
+  "value": 0.41,
+  "text": "0.41",
+  "source": "output/backbone_v41/confirm/test_metrics.tsv"
+ },
+ "test_related_backbone_pairs": {
+  "value": 1540,
+  "text": "1,540",
+  "source": "output/backbone_v41/confirm/endpoints.json"
+ },
+ "test_plasmids": {
+  "value": 2000,
+  "text": "2,000",
+  "source": "output/backbone_v41/confirm/test_plasmids.tsv"
+ },
+ "mutation_L1_0.01pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L2_0.01pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L3_0.01pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L4_0.01pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L5_0.01pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L6_0.01pct": {
+  "value": 0.96,
+  "text": "96%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L1_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L2_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L3_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L4_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L5_0.1pct": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L1_1pct": {
+  "value": 0.86,
+  "text": "86%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L2_1pct": {
+  "value": 0.75,
+  "text": "75%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L3_1pct": {
+  "value": 0.74,
+  "text": "74%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L4_1pct": {
+  "value": 0.64,
+  "text": "64%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L5_1pct": {
+  "value": 0.56,
+  "text": "56%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_L6_1pct": {
+  "value": 0.0,
+  "text": "0%",
+  "source": "output/backbone_v41/confirm/release_checks.json"
+ },
+ "mutation_n": {
+  "value": 100,
+  "text": "100",
+  "source": "output/backbone_v41/confirm/mutation_plasmids.tsv"
+ },
+ "speed_known_s": {
+  "value": 0.0,
+  "text": "< 0.01 s",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "speed_threads": {
+  "value": 8,
+  "text": "8",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "speed_n": {
+  "value": 100,
+  "text": "100",
+  "source": "output/backbone_v41/speed_v41.json"
+ },
+ "pling_add_sub_split": {
+  "value": 45.97,
+  "text": "46%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_n": {
+  "value": 1000,
+  "text": "1,000",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "mge_existing_split": {
+  "value": 0.23,
+  "text": "0.23%",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "mge_rebuild_split": {
+  "value": 54.66,
+  "text": "55%",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "ob_n": {
+  "value": 74,
+  "text": "74",
+  "source": "output/outbreak_validation_founder_results.tsv"
+ },
+ "ob_studies": {
+  "value": 27,
+  "text": "27",
+  "source": "output/outbreak_validation_founder_results.tsv"
+ },
+ "ob_regions": {
+  "value": 16,
+  "text": "16",
+  "source": "output/outbreak_validation_founder_results.tsv"
+ },
+ "ob_same_pairs": {
+  "value": 191,
+  "text": "191",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_diff_pairs": {
+  "value": 2510,
+  "text": "2,510",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L1_same": {
+  "value": 61.3,
+  "text": "61.3%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L1_diff": {
+  "value": 5.9,
+  "text": "5.90%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L3_same": {
+  "value": 51.8,
+  "text": "51.8%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_L3_diff": {
+  "value": 1.43,
+  "text": "1.43%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_pling_comm_same": {
+  "value": 94.2,
+  "text": "94.2%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "ob_pling_comm_diff": {
+  "value": 37.45,
+  "text": "37.45%",
+  "source": "output/backbone_v41/case_studies/outbreak_comparators.tsv"
+ },
+ "loo_partner_n": {
+  "value": 60,
+  "text": "60",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_recovery_L1": {
+  "value": 98.5,
+  "text": "98.5%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_recovery_L3": {
+  "value": 95.5,
+  "text": "95.5%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "loo_recovery_L4": {
+  "value": 92.4,
+  "text": "92.4%",
+  "source": "output/backbone_v41/case_studies/loo_metrics.tsv"
+ },
+ "prosp_L1_warning": {
+  "value": 72.3,
+  "text": "72.3%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L1_false_alarm": {
+  "value": 29.8,
+  "text": "29.8%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L3_warning": {
+  "value": 63.8,
+  "text": "63.8%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L3_false_alarm": {
+  "value": 17.0,
+  "text": "17.0%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L6_warning": {
+  "value": 42.6,
+  "text": "42.6%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_L6_false_alarm": {
+  "value": 6.4,
+  "text": "6.4%",
+  "source": "output/backbone_v41/case_studies/prospective_metrics.tsv"
+ },
+ "prosp_first_year": {
+  "value": 2003,
+  "text": "2003",
+  "source": "output/backbone_v41/case_studies/prospective_arrivals.tsv"
+ },
+ "prosp_last_year": {
+  "value": 2022,
+  "text": "2022",
+  "source": "output/backbone_v41/case_studies/prospective_arrivals.tsv"
+ },
+ "prosp_db_first": {
+  "value": 573,
+  "text": "573",
+  "source": "output/backbone_v41/case_studies/prospective_arrivals.tsv"
+ },
+ "prosp_db_last": {
+  "value": 70058,
+  "text": "70,058",
+  "source": "output/backbone_v41/case_studies/prospective_arrivals.tsv"
+ },
+ "sr_n": {
+  "value": 200,
+  "text": "200",
+  "source": "output/backbone_v41/shortread/fragmentation_codes.tsv"
+ },
+ "sr_unassembled_n": {
+  "value": 11,
+  "text": "11",
+  "source": "output/backbone_v41/shortread/fragmentation_codes.tsv"
+ },
+ "sr_unassembled_range": {
+  "value": [
+   253,
+   546
+  ],
+  "text": "253 to 546 bp",
+  "source": "output/backbone_v41/shortread/fragmentation_codes.tsv"
+ },
+ "sr_L6_1contig": {
+  "value": 99.1,
+  "text": "99.1%",
+  "source": "output/backbone_v41/shortread/fragmentation_metrics.tsv"
+ },
+ "sr_L6_gt20": {
+  "value": 85.7,
+  "text": "85.7%",
+  "source": "output/backbone_v41/shortread/fragmentation_metrics.tsv"
+ },
+ "sr_L6_assembled": {
+  "value": 97.9,
+  "text": "97.9%",
+  "source": "output/backbone_v41/shortread/fragmentation_metrics.tsv"
+ },
+ "sr_vim_n": {
+  "value": 19,
+  "text": "19",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_vim_split_n": {
+  "value": 8,
+  "text": "8",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_vim_split_L1": {
+  "value": 37.5,
+  "text": "37.5%",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_vim_split_L4": {
+  "value": 0.0,
+  "text": "0%",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_vim_reconstructed_L6": {
+  "value": 36.4,
+  "text": "36.4%",
+  "source": "output/backbone_v41/shortread/vim_metrics.tsv"
+ },
+ "sr_real_reconstructed_n": {
+  "value": 11,
+  "text": "11",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_L1": {
+  "value": 100.0,
+  "text": "100%",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_L5": {
+  "value": 90.9,
+  "text": "10 of 11",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_L6": {
+  "value": 27.3,
+  "text": "27.3%",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_vim_L5": {
+  "value": 87.5,
+  "text": "7 of 8",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_vim_isolates": {
+  "value": 8,
+  "text": "8",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "onehealth_annotated": {
+  "value": 72556,
+  "text": "72,556",
+  "source": "output/backbone_v41/onehealth/summary.json"
+ },
+ "onehealth_L6_lineages": {
+  "value": 5117,
+  "text": "5,117",
+  "source": "output/backbone_v41/onehealth/summary.json"
+ },
+ "oh_oxa48_n": {
+  "value": 412,
+  "text": "412",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_oxa48_size": {
+  "value": 421,
+  "text": "421",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_oxa48_countries": {
+  "value": 51,
+  "text": "51",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_oxa48_sectors": {
+  "value": 4,
+  "text": "4",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_oxa48_code": {
+  "value": "291.313.324.743.764.1213",
+  "text": "291.313.324.743.764.1213",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_ndm5_n": {
+  "value": 168,
+  "text": "168",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_ndm5_size": {
+  "value": 224,
+  "text": "224",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_ndm5_countries": {
+  "value": 61,
+  "text": "61",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_ndm5_sectors": {
+  "value": 5,
+  "text": "5",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_ndm5_code": {
+  "value": "159.167.171.172.173.1356",
+  "text": "159.167.171.172.173.1356",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_mcr1_n": {
+  "value": 92,
+  "text": "92",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_mcr1_size": {
+  "value": 105,
+  "text": "105",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_mcr1_countries": {
+  "value": 48,
+  "text": "48",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_mcr1_sectors": {
+  "value": 4,
+  "text": "4",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "oh_mcr1_code": {
+  "value": "372.420.445.548.562.600",
+  "text": "372.420.445.548.562.600",
+  "source": "output/backbone_v41/onehealth/cross_sector_examples.tsv"
+ },
+ "vim_discordant_af": {
+  "value": 0.79,
+  "text": "79%",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_pairs.tsv"
+ },
+ "vim_discordant_ani": {
+  "value": 99.997,
+  "text": "99.997%",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_pairs.tsv"
+ },
+ "build_families_median": {
+  "value": 40.0,
+  "text": "40",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_kmers_median": {
+  "value": 566,
+  "text": "566",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "build_proteins_predicted": {
+  "value": 12381054,
+  "text": "12,381,054",
+  "source": "output/backbone_v41/build_stats.json"
+ },
+ "simpson_L1": {
+  "value": 0.9961,
+  "text": "0.9961",
+  "source": "output/backbone_v41/diversity.json"
+ },
+ "replicon_types_db": {
+  "value": 29,
+  "text": "29",
+  "source": "output/backbone_v41/diversity.json"
+ },
+ "ptu_test_n": {
+  "value": 55,
+  "text": "55",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "ptu_test_ARI_L1": {
+  "value": 0.56,
+  "text": "0.56",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "ptu_test_ARI_MOBprim": {
+  "value": 0.44,
+  "text": "0.44",
+  "source": "output/backbone_v41/ptu_agreement.tsv"
+ },
+ "vim_isolates": {
+  "value": 8,
+  "text": "8",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_codes.tsv"
+ },
+ "vim_contigs": {
+  "value": 19,
+  "text": "19",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_codes.tsv"
+ },
+ "vim_size_kb": {
+  "value": [
+   249,
+   342
+  ],
+  "text": "249 to 342 kb",
+  "source": "output/backbone_v41/case_studies/swiss_vim1_codes.tsv"
+ },
+ "v4_E1": {
+  "value": 0.15,
+  "text": "+0.15 (95% CI 0.04 to 0.35)",
+  "source": "output/backbone_v4/evaluation/primary_endpoints.json"
+ },
+ "v4_test_pairs": {
+  "value": 2765,
+  "text": "2,765",
+  "source": "output/backbone_v4/evaluation/primary_endpoints.json"
+ },
+ "dev_designs": {
+  "value": 14,
+  "text": "14",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "prereg_sha256": {
+  "value": "f0689ab7bc035f92cfbffcd3ac16eb41dc280d3375ba3ba1caa320df62f0b4ce",
+  "text": "f0689ab7bc035f92cfbffcd3ac16eb41dc280d3375ba3ba1caa320df62f0b4ce",
+  "source": "output/backbone_v41/PREREGISTRATION_v4.1.sha256"
  }
 }

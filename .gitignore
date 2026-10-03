@@ -133,3 +133,6 @@ generate_figure_swiss_vim1.py
 generate_excel_tables.py
 generate_figure14_outbreak_validation.py
 compute_code_stability_expansion.py
+
+# Manuscript sources and submission packages (kept local)
+manuscript/
