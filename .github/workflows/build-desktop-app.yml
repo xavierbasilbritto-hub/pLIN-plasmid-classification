@@ -183,20 +183,12 @@ jobs:
         with:
           path: artifacts
 
-      # Packages the already-committed reference database (TSV + classifier
-      # + DATABASE_VERSION.json: see assign_pLIN_reference.py's
-      # write_database_version()) as its own standalone, versioned download,
-      # separate from the desktop app builds above. This lets anyone grab
-      # just the database: e.g. to run against their own pLIN scripts, or
-      # to update an existing installation's database without a full app
-      # reinstall: without needing the full desktop app bundle.
-      - name: Build standalone database release
-        run: python3 build_database_release.py
-
-      - name: Create GitHub Release with platform builds and database attached
+      # The pLIN v4.1 database is not attached here: it is its own release (db-YYYY.MM.DD tags) and on
+      # Zenodo, and the app downloads it on first use.
+      - name: Create GitHub Release with the platform builds
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/**/*.zip
-            output/database_releases/*.zip
-          generate_release_notes: true
+          body_path: .github/RELEASE_NOTES.md
+          generate_release_notes: false
