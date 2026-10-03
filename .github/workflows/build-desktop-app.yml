@@ -143,6 +143,9 @@ jobs:
           for i in $(seq 1 120); do curl -sf http://localhost:8501/_stcore/health && break; sleep 2; done
           curl -sf http://localhost:8501/_stcore/health || { echo "app did not start"; cat app.log; exit 1; }
           echo " app is up"
+          # stop the app so its files are not locked when the build is zipped (Windows)
+          if [ "${{ runner.os }}" = "Windows" ]; then taskkill //IM pLIN.exe //F //T || true; else kill %1 || true; fi
+          sleep 5
 
       - name: Package build output (Windows/Linux)
         if: matrix.os != 'macos-latest'
@@ -150,7 +153,8 @@ jobs:
         run: |
           cd dist
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            powershell -Command "Compress-Archive -Path pLIN -DestinationPath ../pLIN-windows.zip"
+            powershell -Command "\$ErrorActionPreference = 'Stop'; Compress-Archive -Path pLIN -DestinationPath ../pLIN-windows.zip"
+            test -s ../pLIN-windows.zip
           else
             zip -r ../pLIN-linux.zip pLIN
           fi
@@ -166,6 +170,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: pLIN-*.zip
+          if-no-files-found: error
           retention-days: 90
 
   release:
