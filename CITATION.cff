@@ -8,6 +8,7 @@ type: software
 authors:
   - given-names: Basil Britto
     family-names: Xavier
+    orcid: "https://orcid.org/0000-0002-5897-0240"
 repository-code: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 url: "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification"
 abstract: >-
@@ -36,6 +37,7 @@ preferred-citation:
   authors:
     - given-names: Basil Britto
       family-names: Xavier
+      orcid: "https://orcid.org/0000-0002-5897-0240"
     - given-names: Anurag Kumar
       family-names: Bari
     - given-names: Bhanu
@@ -51,6 +53,7 @@ references:
     authors:
       - given-names: Basil Britto
         family-names: Xavier
+        orcid: "https://orcid.org/0000-0002-5897-0240"
       - given-names: Anurag Kumar
         family-names: Bari
       - given-names: Bhanu

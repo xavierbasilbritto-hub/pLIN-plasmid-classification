@@ -2641,6 +2641,58 @@ V41_RELEASE_DIRS = [
 V41_INDEX_DIR = os.environ.get("PLIN_V41_INDEX", os.path.join(os.path.expanduser("~"), ".plin", "v41_mmseqs_index"))
 
 
+def _v41_release_dir():
+    """First complete pLIN v4.1 release directory, or None (no files are loaded)."""
+    try:
+        from plin_v41_typer import missing_files
+    except ImportError:
+        return None
+    for d in V41_RELEASE_DIRS:
+        if d and os.path.isdir(d) and not missing_files(d):
+            return d
+    return None
+
+
+def _v41_status_panel():
+    """Shows where the v4.1 database is, offers to download it if missing, and checks for MMseqs2."""
+    try:
+        from plin_v41_typer import DEFAULT_RELEASE_TAG, download_release, find_mmseqs
+    except ImportError as e:
+        st.warning(f"pLIN v4.1 modules unavailable ({e}); v3 codes will be used.")
+        return
+    found = _v41_release_dir()
+    if found:
+        st.caption(f"pLIN v4.1 database: {found}")
+    else:
+        dest = os.path.join(os.path.expanduser("~"), ".plin", "plin_v41")
+        st.warning(
+            f"The pLIN v4.1 database ({DEFAULT_RELEASE_TAG}, 1.6 GB) is not installed yet. Download it once; "
+            f"it is saved in {dest} and every file is checked against its published checksum. The first time a "
+            "plasmid with proteins new to the database is typed, a search index is also built once "
+            "(about 16 GB of disk, 10 to 30 minutes)."
+        )
+        if st.button("Download the pLIN v4.1 database (1.6 GB)", key="download_v41_db"):
+            bar = st.progress(0.0, text="Starting download...")
+            last = {"pct": -1}
+
+            def _progress(frac, msg):
+                pct = int(100 * frac)
+                if pct != last["pct"]:
+                    last["pct"] = pct
+                    bar.progress(frac, text=f"{msg} ({pct}%)")
+            try:
+                download_release(dest, progress=_progress)
+                _load_v41_release.clear()
+                st.success("pLIN v4.1 database installed.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Download failed: {e}. Check the internet connection and try again; "
+                         "files already downloaded are kept.")
+    if not find_mmseqs():
+        st.warning("MMseqs2 was not found, so plasmids with proteins that are new to the database cannot be typed. "
+                   "Install it with `conda install -c bioconda mmseqs2` (the desktop app includes it).")
+
+
 @st.cache_resource(show_spinner=False)
 def _load_v41_release():
     """The pLIN v4.1 release (first complete directory found), or (None, reason)."""
@@ -5478,6 +5530,8 @@ if not st.session_state.analysis_done:
                  "L5–L6 from near relatives (pre-registered evaluation; permanent, reproducible codes). "
                  "v3: earlier 4-mer composition codes, kept for comparison with older results.",
         )
+        if code_scheme.startswith("v4.1"):
+            _v41_status_panel()
         linkage_method = st.selectbox(
             "Linkage Method",
             LINKAGE_METHODS, index=0,

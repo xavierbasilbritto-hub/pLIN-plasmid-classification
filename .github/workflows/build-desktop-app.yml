@@ -69,6 +69,21 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      # Bundled MMseqs2 (all platforms): pLIN v4.1 uses it to place proteins that are new to the
+      # database. The official static build of release 18-8cc5c, the version that built the database.
+      - name: Download MMseqs2 18-8cc5c
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Windows) A=mmseqs-win64.zip ;;
+            macOS)   A=mmseqs-osx-universal.tar.gz ;;
+            Linux)   A=mmseqs-linux-sse41.tar.gz ;;
+          esac
+          curl -sSfL -o "$A" "https://github.com/soedinglab/MMseqs2/releases/download/18-8cc5c/$A"
+          mkdir -p mmseqs_dl
+          if [ "${{ runner.os }}" = "Windows" ]; then unzip -q "$A" -d mmseqs_dl; else tar xzf "$A" -C mmseqs_dl; fi
+          echo "PLIN_MMSEQS_DIR=$GITHUB_WORKSPACE/mmseqs_dl/mmseqs" >> "$GITHUB_ENV"
+
       # Bundled AMRFinderPlus: macOS and Linux only (see note above). This
       # runs in its own conda env (separate from the PyInstaller build's
       # own Python/pip setup above) purely to obtain the AMRFinderPlus
@@ -103,6 +118,30 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           pyinstaller desktop_app/pLIN.spec --noconfirm
+
+      # Smoke tests on every platform: the bundled MMseqs2 searches, the v4.1 database downloads with
+      # matching checksums, known plasmids get their published codes, and the packaged app starts.
+      - name: Smoke test pLIN v4.1 typing
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then export PLIN_MMSEQS="$PLIN_MMSEQS_DIR/mmseqs.bat";
+          else export PLIN_MMSEQS="$PLIN_MMSEQS_DIR/bin/mmseqs"; fi
+          python tests/smoke_v41.py --release-dir "$RUNNER_TEMP/plin_v41"
+
+      - name: Smoke test the packaged app
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Windows) EXE=dist/pLIN/pLIN.exe ;;
+            macOS)   EXE=dist/pLIN.app/Contents/MacOS/pLIN ;;
+            Linux)   EXE=dist/pLIN/pLIN ;;
+          esac
+          test -n "$(find dist -name plin_v41_typer.py | head -1)" || { echo "v4.1 modules missing from bundle"; exit 1; }
+          test -n "$(find dist -path '*mmseqs*' -name 'mmseqs*' -type f | head -1)" || { echo "MMseqs2 missing from bundle"; exit 1; }
+          "$EXE" > app.log 2>&1 &
+          for i in $(seq 1 120); do curl -sf http://localhost:8501/_stcore/health && break; sleep 2; done
+          curl -sf http://localhost:8501/_stcore/health || { echo "app did not start"; cat app.log; exit 1; }
+          echo " app is up"
 
       - name: Package build output (Windows/Linux)
         if: matrix.os != 'macos-latest'

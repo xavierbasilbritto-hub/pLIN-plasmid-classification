@@ -112,7 +112,7 @@ plasmid_hashes.tsv.gz        whole-plasmid hash -> accession
 DATABASE_VERSION.json        counts, levels, software versions, SHA-256 checksums
 ```
 
-Check the files against the SHA-256 checksums in `DATABASE_VERSION.json`. On first use, the app builds an MMseqs2 search index of the protein catalogue (about 16 GB, a few minutes) in `~/.plin/v41_mmseqs_index`; set `PLIN_V41_INDEX` to put it elsewhere.
+The desktop app and the Streamlit app can also download and check the files for you (a **Download the pLIN v4.1 database** button appears when the database is missing; files go to `~/.plin/plin_v41`). Check the files against the SHA-256 checksums in `DATABASE_VERSION.json`. On first use, the app builds an MMseqs2 search index of the protein catalogue (about 16 GB, a few minutes) in `~/.plin/v41_mmseqs_index`; set `PLIN_V41_INDEX` to put it elsewhere.
 
 **Reproducibility note.** A plasmid already in the database always gets its published code. A new plasmid gets the code it would receive in the next release; levels that do not exist in the release are reported as provisional. Plasmids analysed together are coded consistently with each other. Codes become permanent for everyone once a plasmid is added to an official database release.
 

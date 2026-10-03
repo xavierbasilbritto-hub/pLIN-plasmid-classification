@@ -72,16 +72,21 @@ The standalone app bundles the **core pipeline**: replicon (Inc/Rep group)
 classification, pLIN code assignment, the cladogram viewer, within-group
 sequence alignment, and outbreak/clone detection.
 
-**pLIN v4.1 needs two things that are not bundled:**
+**pLIN v4.1 in the desktop app:**
 
-1. **The v4.1 database** (about 1.6 GB). Download the files of the latest
-   database release from the GitHub [Releases](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases)
-   page into the folder `.plin/plin_v41` in your home folder
-   (`~/.plin/plin_v41` on macOS/Linux, `%USERPROFILE%\.plin\plin_v41` on Windows),
-   and check them against the SHA-256 checksums in `DATABASE_VERSION.json`.
-2. **MMseqs2**, used to match the proteins of new plasmids to the protein-family
-   catalogue: `conda install -c bioconda mmseqs2`. On first use the app builds a
-   search index of about 16 GB in `~/.plin/v41_mmseqs_index` (a few minutes).
+1. **MMseqs2 is included.** The app bundles MMseqs2 (release 18-8cc5c, the version that built the
+   database), which matches the proteins of new plasmids to the protein-family catalogue. On Windows,
+   the first search sets up MMseqs2's helper tools and may ask once for administrator permission.
+2. **The v4.1 database is downloaded once** (about 1.6 GB). With the code scheme on v4.1, the app
+   shows a **Download the pLIN v4.1 database** button if the database is missing. It saves the files in
+   `.plin/plin_v41` in your home folder (`~/.plin/plin_v41` on macOS/Linux,
+   `%USERPROFILE%\.plin\plin_v41` on Windows) and checks every file against the SHA-256 checksums in
+   `DATABASE_VERSION.json`. You can also download the files yourself from the GitHub
+   [Releases](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases) page into
+   that folder.
+3. **A search index is built once.** The first time a plasmid with proteins new to the database is
+   typed, the app builds a search index of about 16 GB in `~/.plin/v41_mmseqs_index` (10 to 30 minutes,
+   depending on the computer).
 
 Without them, the app tells you so and assigns the earlier v3 (legacy) codes instead.
 

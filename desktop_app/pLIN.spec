@@ -96,6 +96,22 @@ if amrfinder_env_dir and os.path.isdir(amrfinder_env_dir):
 else:
     print("PLIN_AMRFINDER_ENV_DIR not set: building without a bundled AMRFinderPlus "
           "(app will fall back to detecting a system install at runtime, as before).")
+# Bundled MMseqs2 (all platforms), used by pLIN v4.1 to place proteins that are new to the
+# database. The CI workflow downloads the official static build of MMseqs2 release 18-8cc5c (the
+# version that built the database) and exports its unpacked "mmseqs" directory (containing bin/) as
+# PLIN_MMSEQS_DIR; plin_v41_typer.find_mmseqs() looks for it at <bundle>/mmseqs/bin/.
+mmseqs_dir = os.environ.get("PLIN_MMSEQS_DIR")
+if mmseqs_dir and os.path.isdir(os.path.join(mmseqs_dir, "bin")):
+    for f in sorted(os.listdir(os.path.join(mmseqs_dir, "bin"))):
+        full = os.path.join(mmseqs_dir, "bin", f)
+        if os.path.isfile(full):
+            binaries.append((full, os.path.join("mmseqs", "bin")))
+    if os.path.isfile(os.path.join(mmseqs_dir, "mmseqs.bat")):         # Windows launcher (sets up BusyBox)
+        datas.append((os.path.join(mmseqs_dir, "mmseqs.bat"), "mmseqs"))
+else:
+    print("PLIN_MMSEQS_DIR not set: building without a bundled MMseqs2 (v4.1 typing of plasmids with new "
+          "proteins then needs MMseqs2 on the user's system).")
+
 datas += collect_data_files("streamlit")
 datas += copy_metadata("streamlit")
 datas += copy_metadata("altair")  # streamlit's charting dep also introspects its own metadata
@@ -112,6 +128,14 @@ datas += [
     # the release founder trees query mode places new plasmids against.
     (os.path.join(REPO_ROOT, "plin_founder.py"), "."),
     (os.path.join(REPO_ROOT, "plin_backbone.py"), "."),
+    # pLIN v4.1 typing (plin_v41_typer) and the modules it imports. The v4.1 database itself (1.6 GB)
+    # is not bundled: the app downloads it on first use into ~/.plin/plin_v41.
+    (os.path.join(REPO_ROOT, "plin_kmers.py"), "."),
+    (os.path.join(REPO_ROOT, "plin_v4.py"), "."),
+    (os.path.join(REPO_ROOT, "plin_v41.py"), "."),
+    (os.path.join(REPO_ROOT, "plin_v41_nn.py"), "."),
+    (os.path.join(REPO_ROOT, "plin_v41_typer.py"), "."),
+    (os.path.join(REPO_ROOT, "validate_alignment_backbone.py"), "."),
     (os.path.join(REPO_ROOT, "data", "plin_founder_tree_training.npz"), "data"),
     (os.path.join(REPO_ROOT, "data", "plin_founder_tree_reference.npz"), "data"),
     (os.path.join(REPO_ROOT, "data", "inc_classifier.npz"), "data"),
@@ -137,6 +161,7 @@ hiddenimports = []
 hiddenimports += collect_submodules("streamlit")
 hiddenimports += collect_submodules("Bio")
 hiddenimports += ["pyrodigal"]   # backbone protein comparison (plin_backbone.py)
+hiddenimports += ["scipy.stats", "requests"]   # imported by the v4.1 modules bundled as data files above
 hiddenimports += [
     "sklearn.utils._typedefs",
     "sklearn.neighbors._partition_nodes",

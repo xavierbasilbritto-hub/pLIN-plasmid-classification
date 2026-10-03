@@ -25,6 +25,7 @@ import gzip
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 import numpy as np
@@ -41,7 +42,22 @@ LEVEL_NAMES = ["backbone family", "backbone group", "shared backbone", "backbone
                "near-identical"]
 
 
+RELEASE_URL = "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/download/{tag}/{file}"
+DEFAULT_RELEASE_TAG = "db-2026.10.03"
+
+
 def find_mmseqs():
+    """MMseqs2: $PLIN_MMSEQS, the copy bundled with the desktop app, PATH, then common conda locations."""
+    candidates = [os.environ.get("PLIN_MMSEQS", "")]
+    for base in (getattr(sys, "_MEIPASS", None), os.path.dirname(os.path.abspath(__file__))):
+        if base and os.name == "nt":
+            # the official Windows build runs its workflows through BusyBox, which mmseqs.bat sets up on first use
+            candidates.append(os.path.join(base, "mmseqs", "mmseqs.bat"))
+        elif base:
+            candidates.append(os.path.join(base, "mmseqs", "bin", "mmseqs"))
+    for c in candidates:
+        if c and os.path.isfile(c):
+            return c
     hit = shutil.which("mmseqs")
     if hit:
         return hit
@@ -49,6 +65,53 @@ def find_mmseqs():
         if os.path.exists(os.path.expanduser(p)):
             return os.path.expanduser(p)
     return None
+
+
+def download_release(dest, tag=DEFAULT_RELEASE_TAG, progress=None):
+    """Download a pLIN v4.1 database release into dest and check every file against the SHA-256
+    checksums in its DATABASE_VERSION.json. Files already present with the right checksum are kept.
+    progress(fraction, message) is called as the download proceeds. Returns dest."""
+    import hashlib
+    import json
+    import requests
+
+    def sha256(path):
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for block in iter(lambda: f.read(1 << 22), b""):
+                h.update(block)
+        return h.hexdigest()
+
+    os.makedirs(dest, exist_ok=True)
+    r = requests.get(RELEASE_URL.format(tag=tag, file="DATABASE_VERSION.json"), timeout=60)
+    r.raise_for_status()
+    info = r.json()
+    files, sizes = info["sha256"], info.get("bytes", {})
+    total = sum(sizes.get(f, 0) for f in files) or 1
+    done = 0
+    for f, want in files.items():
+        out = os.path.join(dest, f)
+        if os.path.exists(out) and sha256(out) == want:
+            done += sizes.get(f, 0)
+            continue
+        part = out + ".part"
+        with requests.get(RELEASE_URL.format(tag=tag, file=f), stream=True, timeout=60) as resp:
+            resp.raise_for_status()
+            with open(part, "wb") as fh:
+                for chunk in resp.iter_content(1 << 20):
+                    fh.write(chunk)
+                    done += len(chunk)
+                    if progress:
+                        progress(min(done / total, 1.0), f"Downloading {f}")
+        if sha256(part) != want:
+            os.remove(part)
+            raise RuntimeError(f"checksum mismatch for {f}; download again")
+        os.replace(part, out)
+    with open(os.path.join(dest, "DATABASE_VERSION.json"), "w") as fh:
+        json.dump(info, fh, indent=1)
+    if progress:
+        progress(1.0, "Database ready")
+    return dest
 
 
 def missing_files(release_dir):
