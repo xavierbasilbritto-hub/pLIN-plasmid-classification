@@ -31,7 +31,7 @@ STALE = {
     "% ANI)": "levels are not ANI bands", "based on tetranucleotide (4-mer) composition distances": "v3 method",
     "Inc Groups Supported (20)": "28 groups",
 }
-ALLOW = {"plin_app.py": {"133,305"}, "check_docs.py": set(STALE) | {"—"}, "manuscript/verify_packages.py": {"—"}}
+ALLOW = {"plin_app.py": {"133,305"}, "check_docs.py": set(STALE) | {"—"}}
 AI = re.compile(r"Co-Authored-By: Claude|Generated with \[Claude|noreply@anthropic|\U0001F916|\bChatGPT\b")
 README_FACTS = ["db_plasmids", "clusters_L6", "lineage_F1", "lineage_F1_MOB", "lineage_F1_CI", "backbone_F1",
                 "backbone_F1_MOB", "stability_runs", "requery_n", "speed_related_s", "speed_divergent_s",
@@ -63,7 +63,7 @@ def main():
             problems.append(f"{f}: {text.count(chr(0x2014))} em dash(es)")
         if f != "check_docs.py" and any(e in text for e in ("&mdash;", "&#8212;", "\\u2014")):
             problems.append(f"{f}: escaped em dash")
-        if AI.search(text) and f not in ("check_docs.py", "manuscript/verify_packages.py"):
+        if AI.search(text) and f != "check_docs.py":
             problems.append(f"{f}: AI-tool marker")
     facts = json.load(open(os.path.join(BASE_DIR, "docs", "PLIN_FACTS.json")))
     readme = open(os.path.join(BASE_DIR, "README.md"), encoding="utf-8").read()
