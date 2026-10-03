@@ -44,6 +44,33 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+def selftest(base_dir):
+    """`pLIN --selftest`: check, inside the packaged app, that pLIN v4.1 typing can run (gene prediction
+    with pyrodigal, k-mer sketching, the v4.1 modules and the bundled MMseqs2). Exit code 0 when all pass."""
+    import subprocess
+    sys.path.insert(0, base_dir)
+    import pyrodigal
+    from Bio import SeqIO
+    from plin_kmers import adaptive_sketch
+    from plin_v41_typer import PlinV41Release, find_mmseqs  # noqa: F401  (import check)
+    fasta = os.path.join(base_dir, "sample_data", "swiss_vim1_outbreak", "NARACHVIM12_plasmids.fasta")
+    seq = str(next(SeqIO.parse(fasta, "fasta")).seq)
+    genes = pyrodigal.GeneFinder(meta=True).find_genes(seq.encode())
+    print(f"pyrodigal: {len(genes)} genes predicted")
+    sk, scale = adaptive_sketch(seq)
+    print(f"k-mer sketch: {len(sk)} hashes (scale {scale})")
+    mm = find_mmseqs()
+    print(f"MMseqs2: {mm}")
+    if not mm or not len(genes):
+        return 1
+    r = subprocess.run([mm, "version"], capture_output=True, text=True)
+    print(f"MMseqs2 version: {r.stdout.strip()}")
+    if r.returncode != 0:
+        return 1
+    print("SELFTEST PASSED")
+    return 0
+
+
 def find_free_port(preferred=8501):
     """Use the preferred port if free, otherwise let the OS pick one."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -86,6 +113,9 @@ def main():
     # places: run from base_dir so both resolve the same way as a normal
     # `streamlit run plin_app.py` invocation from the repo root would.
     os.chdir(base_dir)
+
+    if "--selftest" in sys.argv:
+        sys.exit(selftest(base_dir))
 
     port = find_free_port(8501)
     url = f"http://localhost:{port}"

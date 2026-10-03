@@ -162,6 +162,15 @@ hiddenimports += collect_submodules("streamlit")
 hiddenimports += collect_submodules("Bio")
 hiddenimports += ["pyrodigal"]   # backbone protein comparison (plin_backbone.py)
 hiddenimports += ["scipy.stats", "requests"]   # imported by the v4.1 modules bundled as data files above
+hiddenimports += collect_submodules("pyrodigal")   # gene prediction for v4.1 typing
+datas += collect_data_files("pyrodigal")
+# pyrodigal loads CPU-specific compiled backends from pyrodigal/impl/ (a namespace package without
+# __init__.py, so collect_submodules misses them): bundle every compiled module found there.
+import pyrodigal as _pyrodigal
+_impl = os.path.join(os.path.dirname(_pyrodigal.__file__), "impl")
+for _f in glob.glob(os.path.join(_impl, "*.so")) + glob.glob(os.path.join(_impl, "*.pyd")):
+    binaries.append((_f, os.path.join("pyrodigal", "impl")))
+    hiddenimports.append("pyrodigal.impl." + os.path.basename(_f).split(".")[0])
 hiddenimports += [
     "sklearn.utils._typedefs",
     "sklearn.neighbors._partition_nodes",

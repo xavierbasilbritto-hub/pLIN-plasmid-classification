@@ -138,6 +138,7 @@ jobs:
           esac
           test -n "$(find dist -name plin_v41_typer.py | head -1)" || { echo "v4.1 modules missing from bundle"; exit 1; }
           test -n "$(find dist -path '*mmseqs*' -name 'mmseqs*' -type f | head -1)" || { echo "MMseqs2 missing from bundle"; exit 1; }
+          "$EXE" --selftest || { echo "packaged-app self-test failed"; exit 1; }
           "$EXE" > app.log 2>&1 &
           for i in $(seq 1 120); do curl -sf http://localhost:8501/_stcore/health && break; sleep 2; done
           curl -sf http://localhost:8501/_stcore/health || { echo "app did not start"; cat app.log; exit 1; }
