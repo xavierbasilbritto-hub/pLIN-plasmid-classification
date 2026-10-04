@@ -46,7 +46,7 @@ is reported next to the code. Switching classifiers can change that label and
 anything that keys off it for display, never the six numbers of the code.
 
 The KNN classifier reaches 91.1% cross-validated accuracy, but macro-F1 0.67
-over 28 groups: it is reliable mainly for the common groups, which is another
+over 29 groups: it is reliable mainly for the common groups, which is another
 reason the code does not depend on it.
 
 --------------------------------------------------------------------------------

@@ -144,7 +144,7 @@ restart the app so it can detect the newly-installed tool.
 ### A note on the classifier choice
 
 pLIN's default classifier is KNN (k-nearest-neighbour on raw tetranucleotide
-composition, 91.1% cross-validated accuracy): fully interpretable, and what
+composition, 91.0% cross-validated accuracy): fully interpretable, and what
 the accompanying manuscript's validation is built on. When you select
 "Auto-detect" for the Incompatibility Group, a **Classifier** option appears
 letting you additionally try a contrastive-encoder classifier as a second
@@ -182,7 +182,7 @@ matching tool installed and want that extra analysis.
 Click **▶ Run Analysis**. The app then, automatically:
 
 1. Predicts each plasmid's Inc/Rep replicon group (k-nearest-neighbour
-   classifier: 91.1% cross-validated accuracy, macro-F1 0.67, 28 groups;
+   classifier: 91.0% cross-validated accuracy, macro-F1 0.67, 29 groups;
    accuracy is high mainly for common groups)
 2. Assigns the six-level pLIN v4.1 code: proteins are matched to the
    protein-family catalogue and a k-mer sketch is taken. A plasmid with a near

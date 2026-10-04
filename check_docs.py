@@ -29,7 +29,7 @@ STALE = {
     "72,556": "old database size", "82,477": "old code count", "57,886": "old code count",
     "1.1.2.4.7.13": "old single-linkage Swiss VIM-1 code", "ANI Equivalent": "levels are not ANI bands",
     "% ANI)": "levels are not ANI bands", "based on tetranucleotide (4-mer) composition distances": "v3 method",
-    "Inc Groups Supported (20)": "28 groups",
+    "Inc Groups Supported (20)": "29 groups",
 }
 ALLOW = {"plin_app.py": {"133,305"}, "check_docs.py": set(STALE) | {"—"}}
 AI = re.compile(r"Co-Authored-By: Claude|Generated with \[Claude|noreply@anthropic|\U0001F916|\bChatGPT\b")

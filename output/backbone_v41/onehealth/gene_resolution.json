@@ -1,0 +1,39 @@
+{
+ "plasmids_with_metadata": 72556,
+ "carriers": 10461,
+ "single_gene_plasmids": 9148,
+ "distinct_genes": 217,
+ "min_carriers_per_group": 10,
+ "levels": {
+  "Inc/Rep type": {
+   "groups": 22,
+   "median_dominant_pct": 40.9,
+   "pct_groups_at_least_75": 13.6,
+   "AMI_with_resistance_gene": 0.329
+  },
+  "pLIN L1 family": {
+   "groups": 75,
+   "median_dominant_pct": 50.0,
+   "pct_groups_at_least_75": 25.3,
+   "AMI_with_resistance_gene": 0.411
+  },
+  "pLIN L5 lineage": {
+   "groups": 150,
+   "median_dominant_pct": 92.1,
+   "pct_groups_at_least_75": 70.7,
+   "AMI_with_resistance_gene": 0.473
+  },
+  "pLIN L6 clone": {
+   "groups": 112,
+   "median_dominant_pct": 100.0,
+   "pct_groups_at_least_75": 93.8,
+   "AMI_with_resistance_gene": 0.372
+  }
+ },
+ "example": {
+  "inc_type": "IncFII",
+  "carriers": 3750,
+  "distinct_key_genes": 120,
+  "lineages_shown": 8
+ }
+}

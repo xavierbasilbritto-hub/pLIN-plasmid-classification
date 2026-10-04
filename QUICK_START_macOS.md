@@ -315,7 +315,7 @@ amrfinder --update
 | `pLIN_macOS.sh` | Installer and launcher script for macOS |
 | `setup_pLIN.py` | Cross-platform installer (alternative) |
 | `requirements.txt` | List of Python packages needed |
-| `data/inc_classifier.npz` | Classification model (trained on 8,077 plasmids) |
+| `data/inc_classifier.npz` | Classification model (trained on 8,404 plasmids) |
 | `data/inc_centroids.npz` | Group centroids for distance calculation |
 | `output/pLIN_assignments.tsv` | pLIN v3 (legacy) codes; the v4.1 database is downloaded separately into `data/plin_v41/` (see README) |
 | `test_plasmids/IncX/*.fasta` | 22 sample plasmid sequences for testing |

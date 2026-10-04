@@ -188,24 +188,104 @@
   "source": "output/backbone_v41/case_studies/swiss_vim1_pairs.tsv"
  },
  "replicon_groups": {
-  "value": 28,
-  "text": "28",
+  "value": 29,
+  "text": "29",
   "source": "data/inc_classifier.npz"
  },
  "replicon_training": {
-  "value": 8077,
-  "text": "8,077",
+  "value": 8404,
+  "text": "8,404",
   "source": "data/inc_classifier.npz"
  },
  "replicon_cv_accuracy": {
-  "value": 0.911,
-  "text": "91.1%",
+  "value": 0.91,
+  "text": "91.0%",
   "source": "data/inc_classifier.npz"
  },
  "replicon_macro_F1": {
   "value": 0.67,
   "text": "0.67",
   "source": "data/inc_classifier.npz"
+ },
+ "replicon_IncLM_F1": {
+  "value": 0.98,
+  "text": "0.98",
+  "source": "data/inc_classifier.npz"
+ },
+ "gene_res_carriers": {
+  "value": 10461,
+  "text": "10,461",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_single": {
+  "value": 9148,
+  "text": "9,148",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_genes": {
+  "value": 217,
+  "text": "217",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_inc_ami": {
+  "value": 0.329,
+  "text": "0.33",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_inc_pure": {
+  "value": 40.9,
+  "text": "41%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_inc_groups75": {
+  "value": 13.6,
+  "text": "14%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L5_ami": {
+  "value": 0.473,
+  "text": "0.47",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L5_pure": {
+  "value": 92.1,
+  "text": "92%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L5_groups75": {
+  "value": 70.7,
+  "text": "71%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L6_ami": {
+  "value": 0.372,
+  "text": "0.37",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L6_pure": {
+  "value": 100.0,
+  "text": "100%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_L6_groups75": {
+  "value": 93.8,
+  "text": "94%",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_example_inc": {
+  "value": "IncFII",
+  "text": "IncFII",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_example_genes": {
+  "value": 120,
+  "text": "120",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
+ },
+ "gene_res_example_n": {
+  "value": 3750,
+  "text": "3,750",
+  "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "loo_n": {
   "value": 66,

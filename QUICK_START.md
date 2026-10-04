@@ -238,7 +238,7 @@ pLIN uses a multi-signal scoring system that combines four lines of evidence:
 | Signal | What it checks | Score impact |
 |--------|---------------|--------------|
 | **Sequence length** | Sequences >500 kb are likely chromosomal | -50 to +30 |
-| **KNN distance** | 4-mer (tetranucleotide) distance to 8,077 known plasmids | -25 to +30 |
+| **KNN distance** | 4-mer (tetranucleotide) distance to 8,404 known plasmids | -25 to +30 |
 | **Header keywords** | "plasmid", "chromosome", "genome" in FASTA headers | -20 to +15 |
 | **Inc group confidence** | Strong Inc/Rep group match suggests plasmid | -5 to +15 |
 
@@ -412,7 +412,7 @@ This shows the status of Python, packages, bioinformatics tools, conda environme
 | `plin_app.py` | Main application (do not edit) |
 | `setup_pLIN.py` | Cross-platform installer and launcher |
 | `requirements.txt` | Python package dependencies |
-| `data/inc_classifier.npz` | KNN classifier (8,077 plasmids, 28 groups) |
+| `data/inc_classifier.npz` | KNN classifier (8,404 plasmids, 29 groups) |
 | `data/inc_centroids.npz` | Group centroids for distance calculation |
 | `output/pLIN_assignments.tsv` | Training database pLIN assignments |
 | `output/pLIN_reference_assignments.tsv` | pLIN v3 (legacy) codes, db-2026.10.02; v4.1 database in `data/plin_v41/` (see README) |

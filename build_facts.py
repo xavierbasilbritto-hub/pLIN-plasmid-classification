@@ -107,6 +107,27 @@ def main():
     add("replicon_training", len(d["y"]), f"{len(d['y']):,}", clf_path)
     add("replicon_cv_accuracy", round(float(d["cv_accuracy"][0]), 3), f"{100 * float(d['cv_accuracy'][0]):.1f}%", clf_path)
     add("replicon_macro_F1", round(float(np.mean(f1)), 2), f"{np.mean(f1):.2f}", clf_path)
+    add("replicon_IncLM_F1", round(m["IncLM"]["f1"], 2), f"{m['IncLM']['f1']:.2f}", clf_path)
+
+    # does a pLIN lineage predict the resistance gene better than a replicon type? (v41_gene_resolution.py)
+    gr_path = os.path.join(V41, "onehealth", "gene_resolution.json")
+    if os.path.exists(gr_path):
+        gr = json.load(open(gr_path))
+        lv = gr["levels"]
+        add("gene_res_carriers", gr["carriers"], f"{gr['carriers']:,}", gr_path)
+        add("gene_res_single", gr["single_gene_plasmids"], f"{gr['single_gene_plasmids']:,}", gr_path)
+        add("gene_res_genes", gr["distinct_genes"], str(gr["distinct_genes"]), gr_path)
+        for key, lab in (("inc", "Inc/Rep type"), ("L5", "pLIN L5 lineage"), ("L6", "pLIN L6 clone")):
+            add(f"gene_res_{key}_ami", lv[lab]["AMI_with_resistance_gene"],
+                f"{lv[lab]['AMI_with_resistance_gene']:.2f}", gr_path)
+            add(f"gene_res_{key}_pure", lv[lab]["median_dominant_pct"],
+                f"{lv[lab]['median_dominant_pct']:.0f}%", gr_path)
+            add(f"gene_res_{key}_groups75", lv[lab]["pct_groups_at_least_75"],
+                f"{lv[lab]['pct_groups_at_least_75']:.0f}%", gr_path)
+        add("gene_res_example_inc", gr["example"]["inc_type"], gr["example"]["inc_type"], gr_path)
+        add("gene_res_example_genes", gr["example"]["distinct_key_genes"],
+            str(gr["example"]["distinct_key_genes"]), gr_path)
+        add("gene_res_example_n", gr["example"]["carriers"], f"{gr['example']['carriers']:,}", gr_path)
 
     cs = os.path.join(V41, "case_studies")
     loo_path = os.path.join(cs, "loo_metrics.tsv")

@@ -27,7 +27,7 @@ A plasmid with a near relative in the database (L5 similarity) copies that relat
 
 | Category | Features |
 |----------|----------|
-| **Classification** | Permanent six-level pLIN codes (L1-L6); replicon (Inc/Rep) group prediction for 28 groups; flagging of new (provisional) codes |
+| **Classification** | Permanent six-level pLIN codes (L1-L6); replicon (Inc/Rep) group prediction for 29 groups; flagging of new (provisional) codes |
 | **AMR Surveillance** | AMRFinderPlus integration (AMR + stress + virulence genes), critical gene alerts, drug class analysis |
 | **Genomic Analysis** | Mash/MinHash ANI estimation, FastANI, minimap2 SNP sub-typing within lineages |
 | **Epidemiology** | Plasmid mobility prediction (MOB-suite + AMRFinderPlus), outbreak detection, temporal outbreak clustering (30-day window) |
@@ -45,7 +45,7 @@ Pre-registered on GitHub before the test data were drawn ([v4.1 pre-registration
 - **Reproducibility:** 100% of 500 plasmids re-typed from sequence received their published code.
 - **Robustness:** 100% kept L1-L5 after 0.1% random substitutions (97% kept L6).
 - **Speed (8 threads):** instant for a plasmid already in the database; 0.25 s per new plasmid related to the database and 1.08 s when divergent, against 1.25 s for MOB-suite on the same machine.
-- **Replicon prediction:** 91.1% cross-validated accuracy, macro-F1 0.67, over 28 groups (8,077 training plasmids). Accuracy is high mainly for common groups.
+- **Replicon prediction:** 91.0% cross-validated accuracy, macro-F1 0.67, over 29 groups (8,404 training plasmids). Accuracy is high mainly for common groups.
 
 All numbers are generated from the result files by [`build_facts.py`](build_facts.py) into [`docs/PLIN_FACTS.json`](docs/PLIN_FACTS.json).
 
@@ -426,7 +426,7 @@ pLIN-plasmid-classification/
 ├── docs/PLIN_FACTS.json           # Every published number, with its source file
 ├── data/
 │   ├── plin_v41/                  # v4.1 database (download from Releases)
-│   ├── inc_classifier.npz         # Replicon (Inc/Rep) classifier (28 groups, 8,077 training plasmids)
+│   ├── inc_classifier.npz         # Replicon (Inc/Rep) classifier (29 groups, 8,404 training plasmids)
 │   └── inc_centroids.npz          # Inc group centroids
 ├── test_plasmids/
 │   └── IncX/ (22 test FASTA files)
@@ -443,9 +443,9 @@ pLIN-plasmid-classification/
 
 ---
 
-## Replicon (Inc/Rep) Groups Supported (28)
+## Replicon (Inc/Rep) Groups Supported (29)
 
-ColE, ColRNAI, IncA, IncAC2, IncC, IncF, IncFIB, IncFIBK, IncFIC, IncFII, IncHI1, IncHI2, IncI, IncI1, IncI2, IncN, IncR, IncX1, IncX3, IncX4, repAci1, repAci_large, repEF_conj, repEF_res, repPae_large, repPae_small, repSA_large, repSA_small
+ColE, ColRNAI, IncA, IncAC2, IncC, IncF, IncFIB, IncFIBK, IncFIC, IncFII, IncHI1, IncHI2, IncI, IncI1, IncI2, IncLM, IncN, IncR, IncX1, IncX3, IncX4, repAci1, repAci_large, repEF_conj, repEF_res, repPae_large, repPae_small, repSA_large, repSA_small
 
 ---
 

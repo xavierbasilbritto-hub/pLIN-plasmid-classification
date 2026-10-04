@@ -266,7 +266,7 @@ NT_STRIDE = 2500
 
 @st.cache_resource(show_spinner=False)
 def load_inc_classifier():
-    """Load precomputed Inc-group KNN classifier (91.1% CV accuracy, 28 groups)."""
+    """Load precomputed Inc-group KNN classifier (91.0% CV accuracy, 29 groups)."""
     if os.path.exists(CLASSIFIER_PATH):
         data = np.load(CLASSIFIER_PATH, allow_pickle=True)
         X_train = data["X"]
@@ -842,9 +842,11 @@ def _replicon_blast_inc_types(sequence: str) -> list:
             # Collapse sub-types: IncHI2A → IncHI2, IncHI1B → IncHI1, IncN2/IncN3 → IncN
             inc_group = re.sub(r"([A-Z])$", "", raw_group)   # strip trailing letter sub-type
             inc_group = re.sub(r"\d+$", "", inc_group) if inc_group.endswith(("2","3")) and "HI" not in inc_group else inc_group
-            # Keep only groups in our 28-group classifier
+            if raw_group.startswith(("IncL", "IncM")):       # IncL/M, IncL, IncM: one group, set after the
+                inc_group = "IncLM"                          # sub-type regexes so they cannot truncate it
+            # Keep only groups in our 29-group classifier
             if inc_group not in ("IncA","IncAC2","IncC","IncF","IncFIB","IncFIBK","IncFIC","IncFII",
-                                  "IncHI1","IncHI2","IncI","IncI1","IncI2","IncN","IncR",
+                                  "IncHI1","IncHI2","IncI","IncI1","IncI2","IncLM","IncN","IncR",
                                   "IncX1","IncX3","IncX4","ColE","ColRNAI"):
                 continue
             if inc_group not in detected or detected[inc_group][0] < pident:
@@ -5475,7 +5477,7 @@ if not st.session_state.analysis_done:
             _classifier_help = (
                 "KNN (k=5, cosine distance on raw 4-mer composition) is the "
                 "validated default used throughout the accompanying manuscript "
-                "(91.1% CV accuracy, 28 groups) and is fully interpretable: "
+                "(91.0% CV accuracy, 29 groups) and is fully interpretable: "
                 "every call traces to its actual nearest-neighbour training "
                 "plasmids. The contrastive-encoder option learns a nonlinear "
                 "embedding before the same k=5 cosine-KNN vote; independent, "
@@ -6512,7 +6514,7 @@ with tab_overview:
         st.markdown("""
         1. **Upload** plasmid FASTA sequences
         2. **Predict** the Inc/Rep group (KNN classifier: 91.1% cross-validated accuracy,
-           macro-F1 0.67, 28 groups)
+           macro-F1 0.67, 29 groups)
         3. **Type** each plasmid with pLIN v4.1: proteins are matched to the protein-family
            catalogue and a k-mer sketch is taken; a plasmid with a near relative in the
            database copies its backbone and lineage, otherwise it is placed in the backbone
@@ -7096,7 +7098,7 @@ with tab_results:
                 st.markdown(
                     f"**Overall KNN accuracy:** {cv_data['accuracy']*100:.1f}% "
                     f"(5-fold stratified cross-validation on {len(INC_GROUPS)}-group, "
-                    f"8,077-plasmid training set)")
+                    f"8,404-plasmid training set)")
 
                 # Per-Inc-group table
                 if cv_data["per_class"]:
