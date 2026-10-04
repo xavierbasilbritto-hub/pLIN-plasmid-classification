@@ -1,5 +1,7 @@
 # pLIN: Plasmid Lineage Identification Number
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23126057.svg)](https://doi.org/10.5281/zenodo.23126057)
+
 A permanent, multi-level nomenclature for bacterial plasmids, from backbone families to outbreak clones, with integrated antimicrobial resistance (AMR) gene surveillance.
 
 **Author:** Basil Britto Xavier | **License:** GPL-3.0 with mandatory citation clause | **Citation Required:** See [CITATION.cff](CITATION.cff)
@@ -113,7 +115,7 @@ pLIN separates two version numbers that change on different schedules:
 | **App version** | Code: the Streamlit app, classification logic, modules | `PLIN_APP_VERSION` in `plin_app.py`; shown in the app's Export tab |
 | **Database version** (currently `db-2026.10.03`) | Content: the plasmid codes, protein-family catalogue and k-mer index | `data/plin_v41/DATABASE_VERSION.json` |
 
-**Download the database.** The pLIN v4.1 database is about 1.6 GB, too large for the code repository. Download the files of release `db-2026.10.03` from the [Releases](../../releases) page and place them in `data/plin_v41/`:
+**Download the database.** The pLIN v4.1 database is about 1.6 GB, too large for the code repository. Download the files of release `db-2026.10.03` from the [Releases](../../releases) page or from its permanent archive on Zenodo ([doi:10.5281/zenodo.23126057](https://doi.org/10.5281/zenodo.23126057)) and place them in `data/plin_v41/`:
 
 ```
 plin_v41_codes.tsv.gz        codes for every database plasmid (also usable on its own)
