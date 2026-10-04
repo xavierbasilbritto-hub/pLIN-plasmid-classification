@@ -52,4 +52,22 @@ All results are reported whatever their direction.
 
 ## Deviations
 
-(none yet)
+**Deviation 1 (2026-10-04, before any typing).** Completeness criterion. The plasmid records of E1 are
+WGS-type GenBank records whose titles read "plasmid pX, whole genome shotgun sequence"; none says
+"complete sequence", so the registered title rule would exclude every plasmid. Completeness is instead taken
+from the GenBank topology field: a record is included when its title contains "plasmid", its topology is
+"circular" and it is at least 1,000 bp. All 121 E1 plasmid records are circular. No sequence had been typed.
+
+**Deviation 2 (2026-10-04, before any typing).** E2 yields no plasmid. PRJNA924056 links 377 assemblies, of
+which 6 are complete (5 Pseudomonas aeruginosa genomes, all records chromosomal); no nuccore record of the
+project is a plasmid. Under section 2, E2 is reported but not analysed. To keep two independent datasets, one
+replacement was chosen before typing, by literature search for public hospital plasmid collections with
+long-read assemblies published after the development data were frozen:
+- **E3**: carbapenemase-producing Enterobacterales from 30 hospital laboratories in the United Kingdom,
+  2021 to 2023, long-read sequenced to study within-hospital "plasmid outbreaks" (UKHSA; bioRxiv
+  10.1101/2024.03.19.585710; NCBI BioProject PRJNA1010831).
+E3 uses the inclusion rules of section 2 with Deviation 1 (306 plasmid records, 294 after excluding
+development accessions). Primary endpoints are pooled over the analysed datasets (E1 and E3), bootstrapping
+plasmids within datasets as registered. The E3 secondary endpoint is the share of pairs of plasmids carrying
+the same carbapenemase allele (AMRFinderPlus; blaKPC, blaNDM, blaOXA-48-like, blaIMP, blaVIM) that share each
+level, because E3 has several carbapenemases instead of one outbreak gene.
