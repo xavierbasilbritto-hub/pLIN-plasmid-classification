@@ -55,12 +55,24 @@ Release **db-2026.10.03**: 127,517 unique plasmids, 93,440 L6 codes, 72,685 line
 
 ## Installation
 
-> **Just want to use the app, no Python setup?** Download a standalone
-> desktop build for macOS, Windows, or Linux from the
-> [Releases](../../releases) page: no separate Python install required.
-> See the [Desktop App User Manual](desktop_app/USER_MANUAL.md) for
-> download, install, and usage instructions. The steps below are for
-> running pLIN from source instead.
+### Desktop app (recommended: no Python or conda needed)
+
+1. Go to the [latest release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest) and download the zip for your system:
+   `pLIN-windows.zip` (Windows 10/11), `pLIN-macos.zip` (Apple silicon Macs) or `pLIN-linux.zip` (64-bit Linux from 2024 or later).
+2. Unzip it and open **`README_FIRST.txt`** inside: it gives the exact steps for your system.
+   In short:
+   - **Windows:** Extract All, open the `pLIN` folder, double-click `pLIN.exe` (at "Windows protected your PC": More info, Run anyway).
+   - **macOS:** drag `pLIN.app` to Applications; the first time, right-click it and choose Open, then Open.
+   - **Linux:** `chmod +x pLIN/pLIN` and run `./pLIN/pLIN`.
+3. pLIN opens in your web browser. Keep the code scheme on **v4.1** and click **Download the pLIN v4.1 database (1.6 GB)** (once).
+4. Try the example: upload the 8 files in `sample_data/swiss_vim1_outbreak` (included in the zip), click **Run Analysis** and compare with `expected_pLIN_results.tsv`. The first analysis builds a search index once (12 to 16 GB, several minutes).
+5. To stop pLIN, click **Quit pLIN** in the left sidebar.
+
+Allow about 20 GB of free disk space. Full instructions and troubleshooting: [Desktop App User Manual](desktop_app/USER_MANUAL.md).
+
+### From source (for developers and command-line use)
+
+The steps below install pLIN with Python and conda.
 
 ### Prerequisites
 
@@ -146,11 +158,14 @@ conda activate pLIN_tools
 
 #### Step 4: Install Python Dependencies
 ```bash
-pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
+pip install -r requirements.txt
 ```
 
-#### Step 5: Install Optional Bioinformatics Tools
+#### Step 5: Install MMseqs2 (required for pLIN v4.1) and optional tools
 ```bash
+# MMseqs2: matches the proteins of new plasmids to the pLIN protein families (required)
+conda install -c bioconda -c conda-forge "mmseqs2=18.8cc5c" -y
+
 # AMRFinderPlus (AMR gene detection)
 conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
 amrfinder --update  # Download latest database
@@ -215,11 +230,14 @@ conda activate pLIN_tools
 
 #### Step 4: Install Python Dependencies
 ```bash
-pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
+pip install -r requirements.txt
 ```
 
-#### Step 5: Install Optional Bioinformatics Tools
+#### Step 5: Install MMseqs2 (required for pLIN v4.1) and optional tools
 ```bash
+# MMseqs2: matches the proteins of new plasmids to the pLIN protein families (required)
+conda install -c bioconda -c conda-forge "mmseqs2=18.8cc5c" -y
+
 # AMRFinderPlus
 conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
 amrfinder --update
@@ -259,11 +277,15 @@ conda activate pLIN_tools
 
 #### Step 3: Install Python Dependencies
 ```cmd
-pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
+pip install -r requirements.txt
 ```
 
-#### Step 4: Install Optional Bioinformatics Tools
+#### Step 4: Install MMseqs2 (required for pLIN v4.1) and optional tools
 ```cmd
+:: MMseqs2 (required): bioconda has no Windows build, so download the official Windows build
+:: into the pLIN folder, where pLIN finds it (install_pLIN.bat does this for you)
+powershell -Command "Invoke-WebRequest https://github.com/soedinglab/MMseqs2/releases/download/18-8cc5c/mmseqs-win64.zip -OutFile mmseqs-win64.zip; Expand-Archive mmseqs-win64.zip ."
+
 :: AMRFinderPlus
 conda install -c bioconda -c conda-forge ncbi-amrfinderplus -y
 amrfinder --update

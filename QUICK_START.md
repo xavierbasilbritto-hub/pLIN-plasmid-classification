@@ -20,6 +20,12 @@ You give it plasmid DNA sequence files, and it:
 
 ---
 
+## Easiest way: the desktop app
+
+Download the zip for your system from the [latest release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest) (`pLIN-windows.zip`, `pLIN-macos.zip` for Apple silicon, or `pLIN-linux.zip`), unzip it and follow **`README_FIRST.txt`** inside. Step-by-step versions for each system are at the top of [QUICK_START_Windows.md](QUICK_START_Windows.md), [QUICK_START_macOS.md](QUICK_START_macOS.md) and [QUICK_START_Linux.md](QUICK_START_Linux.md). The rest of this guide installs pLIN from source.
+
+---
+
 ## Before You Start
 
 | Requirement | macOS | Linux | Windows |

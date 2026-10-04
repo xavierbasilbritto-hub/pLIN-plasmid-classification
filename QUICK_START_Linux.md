@@ -17,6 +17,28 @@ You give it plasmid DNA sequence files, and it:
 
 ---
 
+## Easiest way: the desktop app (about 15 minutes, no installation)
+
+For 64-bit Linux from 2024 or later (e.g. Ubuntu 24.04; glibc 2.39 or newer). On older systems, follow the rest of this guide to install from source.
+
+1. Open the [latest release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest) and download **`pLIN-linux.zip`**.
+2. In a terminal:
+   ```bash
+   unzip pLIN-linux.zip -d pLIN-app
+   cd pLIN-app
+   cat README_FIRST.txt
+   chmod +x pLIN/pLIN
+   ./pLIN/pLIN
+   ```
+3. pLIN opens in your browser after about 30 seconds. Keep the terminal open.
+4. Click **Download the pLIN v4.1 database (1.6 GB)** (only the first time).
+5. Upload the 8 files in `sample_data/swiss_vim1_outbreak`, click **Run Analysis**, and compare the Results tab with `expected_pLIN_results.tsv`. The first analysis builds a search index once (12 to 16 GB, several minutes).
+6. To stop pLIN, click **Quit pLIN** in the left sidebar or press `Ctrl+C` in the terminal.
+
+You need about 20 GB of free disk space. The rest of this guide installs pLIN from source instead (for developers and older systems).
+
+---
+
 ## Before You Start
 
 You need:

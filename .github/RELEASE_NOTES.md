@@ -1,27 +1,31 @@
 ## pLIN desktop app
 
-pLIN gives every plasmid a permanent six-level code, from backbone family (L1) to near-identical outbreak clone (L6). This release runs **pLIN v4.1** codes on Windows, macOS and Linux.
+pLIN gives every plasmid a permanent six-level code, from backbone family (L1) to near-identical outbreak clone (L6). This release runs **pLIN v4.1** codes on Windows, macOS and Linux, with no Python or conda installation.
 
 ### Download
 
-| System | File |
-|---|---|
-| Windows 10/11 | `pLIN-windows.zip`: unzip and run `pLIN\pLIN.exe` |
-| macOS | `pLIN-macos.zip`: unzip and open `pLIN.app` (first time: right-click, Open) |
-| Linux | `pLIN-linux.zip`: unzip and run `pLIN/pLIN` |
+| System | File | Requirements |
+|---|---|---|
+| Windows | `pLIN-windows.zip` | Windows 10 or 11, 64-bit |
+| macOS | `pLIN-macos.zip` | Mac with Apple silicon (M1 or later) |
+| Linux | `pLIN-linux.zip` | 64-bit Linux from 2024 or later (e.g. Ubuntu 24.04) |
 
-The app opens in your web browser; keep its terminal window open while you work.
+Each zip contains the app, **`README_FIRST.txt`** with step-by-step instructions for that system, and example data (`sample_data/swiss_vim1_outbreak`). Allow about 20 GB of free disk space.
 
-### First use
+### Quick steps
 
-1. Keep the code scheme on **v4.1** and click **Download the pLIN v4.1 database (1.6 GB)**. Every file is checked against its published SHA-256 checksum and saved in `~/.plin/plin_v41` (Windows: `%USERPROFILE%\.plin\plin_v41`).
-2. The first time a plasmid with proteins new to the database is typed, a search index is built once (about 12 to 16 GB of disk, a few minutes to half an hour).
-3. To try the app, upload the 8 FASTA files in `sample_data/swiss_vim1_outbreak` (included) and compare with `expected_pLIN_results.tsv`.
+1. Unzip and start the app:
+   - **Windows:** Extract All, open the `pLIN` folder, double-click `pLIN.exe` (at "Windows protected your PC": More info, Run anyway).
+   - **macOS:** drag `pLIN.app` to Applications; the first time, right-click it and choose Open, then Open (or System Settings > Privacy & Security > Open Anyway).
+   - **Linux:** `chmod +x pLIN/pLIN` and run `./pLIN/pLIN`.
+2. pLIN opens in your web browser. Click **Download the pLIN v4.1 database (1.6 GB)** (once; every file is checked against its published checksum).
+3. Try the example: upload the 8 files in `sample_data/swiss_vim1_outbreak`, click **Run Analysis**, and compare with `expected_pLIN_results.tsv`. The first analysis builds a search index once (12 to 16 GB, several minutes).
+4. To stop pLIN, click **Quit pLIN** in the left sidebar.
 
-MMseqs2 (18-8cc5c) is included. On Windows, the first search may ask once for administrator permission to set up MMseqs2's helper tools.
+MMseqs2 (18-8cc5c) is included. On Windows, the first MMseqs2 search may ask once for administrator permission to set up its helper tools.
 
 ### Reproducibility
 
-The same sequences give the same codes on any computer. Codes of database plasmids, and every level that exists in the database, never change. Parts of a code that are new to the database are marked as provisional (`provisional_from`) and are comparable within one analysis; analyse isolates of one investigation together. Every export records the app and database version.
+The same sequences give the same codes on any computer. Codes of database plasmids, and every level that exists in the database, never change. Parts of a code that are new to the database are marked as provisional (`provisional_from`) and are comparable within one analysis, so analyse the isolates of one investigation together. Every export records the app and database version.
 
-Database release: `db-2026.10.03` (127,517 plasmids). Documentation: README and `desktop_app/USER_MANUAL.md`.
+Database release: `db-2026.10.03` (127,517 plasmids). Full instructions: `desktop_app/USER_MANUAL.md` and the README.

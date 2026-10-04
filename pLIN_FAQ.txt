@@ -63,7 +63,7 @@ Without them, the app says so and assigns the earlier v3 (legacy) codes.
 
 Two version numbers change on different schedules:
 
-  - App version (example: 4.1.0): the code of the application.
+  - App version (example: 4.1.1): the code of the application.
   - Database version (example: db-2026.10.03): the plasmid codes,
     protein-family catalogue and k-mer index.
 

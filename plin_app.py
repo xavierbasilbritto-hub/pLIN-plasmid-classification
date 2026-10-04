@@ -17,6 +17,7 @@ works must cite:
 """
 
 import os
+import sys
 import io
 import glob
 import hashlib
@@ -98,7 +99,7 @@ TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 # in query mode is only reproducible against the exact database version
 # that assigned it (see USER_MANUAL.md's "Will two colleagues get the
 # same code" section).
-PLIN_APP_VERSION = "4.1.0"
+PLIN_APP_VERSION = "4.1.1"
 
 # Paths to precomputed Inc-group classifier data
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -5810,6 +5811,15 @@ with st.sidebar:
             del st.session_state[key]
         st.cache_data.clear()
         st.rerun()
+
+    # Desktop app only: on macOS the bundled app runs without a terminal window or Dock icon, so this
+    # button is the way to stop it (on Windows/Linux closing the console window also works).
+    if getattr(sys, "frozen", False):
+        if st.button("Quit pLIN", use_container_width=True, key="quit_app",
+                     help="Stop the pLIN desktop app. Results you have not exported will be lost."):
+            st.success("pLIN has stopped. You can close this browser tab.")
+            import threading
+            threading.Timer(1.5, lambda: os._exit(0)).start()
 
     if st.session_state.analysis_done:
         if st.button("📂 New Analysis", use_container_width=True, type="primary"):

@@ -17,6 +17,21 @@ You give it plasmid DNA sequence files, and it:
 
 ---
 
+## Easiest way: the desktop app (about 15 minutes, no installation)
+
+1. Open the [latest release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest) and download **`pLIN-windows.zip`** (Windows 10/11, 64-bit).
+2. Right-click the zip, choose **Extract All**, then **Extract**. Do not run the app from inside the zip.
+3. Open the extracted folder and read **`README_FIRST.txt`**. Then open the `pLIN` folder and double-click **`pLIN.exe`**.
+4. If **"Windows protected your PC"** appears, click **More info**, then **Run anyway**.
+5. A console window opens and pLIN opens in your browser after about 30 seconds. Keep the console window open.
+6. Click **Download the pLIN v4.1 database (1.6 GB)** (only the first time).
+7. Upload the 8 files in `sample_data\swiss_vim1_outbreak`, click **Run Analysis**, and compare the Results tab with `expected_pLIN_results.tsv`. The first analysis builds a search index once (12 to 16 GB, 10 to 30 minutes); if Windows asks for administrator permission for MMseqs2, click **Yes**.
+8. To stop pLIN, click **Quit pLIN** in the left sidebar or close the console window.
+
+You need about 20 GB of free disk space. The rest of this guide installs pLIN from source instead (for developers).
+
+---
+
 ## Before You Start
 
 You need:

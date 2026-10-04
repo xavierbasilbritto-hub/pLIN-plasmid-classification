@@ -119,23 +119,36 @@ jobs:
         run: |
           pyinstaller desktop_app/pLIN.spec --noconfirm
 
+      # Each zip holds the app, a step-by-step README_FIRST.txt for that system and the example data.
+      - name: Add install guide and example data
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Windows) G=README_FIRST_Windows.txt ;;
+            macOS)   G=README_FIRST_macOS.txt ;;
+            Linux)   G=README_FIRST_Linux.txt ;;
+          esac
+          cp "desktop_app/install/$G" dist/README_FIRST.txt
+          mkdir -p dist/sample_data
+          cp -R sample_data/swiss_vim1_outbreak dist/sample_data/
+
       - name: Package build output (Windows/Linux)
         if: matrix.os != 'macos-latest'
         shell: bash
         run: |
           cd dist
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            powershell -Command "\$ErrorActionPreference = 'Stop'; Compress-Archive -Path pLIN -DestinationPath ../pLIN-windows.zip"
+            powershell -Command "\$ErrorActionPreference = 'Stop'; Compress-Archive -Path pLIN,README_FIRST.txt,sample_data -DestinationPath ../pLIN-windows.zip"
             test -s ../pLIN-windows.zip
           else
-            zip -r ../pLIN-linux.zip pLIN
+            zip -r ../pLIN-linux.zip pLIN README_FIRST.txt sample_data
           fi
 
       - name: Package build output (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           cd dist
-          zip -r ../pLIN-macos.zip pLIN.app
+          zip -r -y ../pLIN-macos.zip pLIN.app README_FIRST.txt sample_data
 
       # Smoke tests on every platform (after zipping, so the shipped build is exactly what was built): the bundled MMseqs2 searches, the v4.1 database downloads with
       # matching checksums, known plasmids get their published codes, and the packaged app starts.

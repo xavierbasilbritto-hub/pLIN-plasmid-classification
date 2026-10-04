@@ -17,6 +17,22 @@ You give it plasmid DNA sequence files, and it:
 
 ---
 
+## Easiest way: the desktop app (about 15 minutes, no installation)
+
+For Macs with Apple silicon (M1 or later). On an Intel Mac, follow the rest of this guide to install from source.
+
+1. Open the [latest release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest) and download **`pLIN-macos.zip`**.
+2. Double-click the zip, read **`README_FIRST.txt`**, and drag **`pLIN.app`** into **Applications**.
+3. The first time: right-click (or Control-click) `pLIN.app`, choose **Open**, then **Open** again. If macOS only offers **Done**, go to **System Settings > Privacy & Security** and click **Open Anyway** next to the message about pLIN.
+4. pLIN has no window of its own: it opens in your browser after about 30 seconds (or open `http://localhost:8501`).
+5. Click **Download the pLIN v4.1 database (1.6 GB)** (only the first time).
+6. Upload the 8 files in `sample_data/swiss_vim1_outbreak`, click **Run Analysis**, and compare the Results tab with `expected_pLIN_results.tsv`. The first analysis builds a search index once (12 to 16 GB, several minutes).
+7. To stop pLIN, click **Quit pLIN** in the left sidebar (closing the browser tab does not stop it).
+
+You need about 20 GB of free disk space. The rest of this guide installs pLIN from source instead (for developers and Intel Macs).
+
+---
+
 ## Before You Start
 
 You need:

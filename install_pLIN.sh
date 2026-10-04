@@ -46,20 +46,9 @@ echo "      Python: $(python3 --version)"
 echo ""
 echo "[2/5] Installing Python dependencies..."
 pip install --upgrade pip
-pip install \
-    streamlit \
-    numpy \
-    pandas \
-    scipy \
-    biopython \
-    scikit-learn \
-    matplotlib \
-    seaborn \
-    plotly \
-    python-pptx \
-    requests
+pip install -r "$(dirname "$0")/requirements.txt"
 
-echo "      Core Python packages installed."
+echo "      Core Python packages installed (including pyrodigal for pLIN v4.1)."
 
 # ── Install bioinformatics tools via conda ───────────────────────────────
 echo ""
@@ -67,6 +56,12 @@ echo "[3/5] Installing bioinformatics tools (conda-forge + bioconda)..."
 
 # Ensure bioconda channel is available
 conda config --add channels bioconda 2>/dev/null || true
+
+# MMseqs2: required by pLIN v4.1 to type plasmids with proteins new to the database
+# (18.8cc5c is the version that built the database)
+conda install -c bioconda -c conda-forge "mmseqs2=18.8cc5c" -y 2>/dev/null && \
+    echo "      [OK] MMseqs2 installed" || \
+    echo "      [!] MMseqs2 not installed: run  conda install -c bioconda mmseqs2  (needed for pLIN v4.1)"
 conda config --add channels conda-forge 2>/dev/null || true
 
 echo "      Installing AMRFinderPlus..."

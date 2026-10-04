@@ -14,43 +14,64 @@ everything from there on applies either way.
 
 ## 1. Download and install
 
-Downloads are attached to each [GitHub Release](../../releases) as three
-platform-specific zip files: `pLIN-macos.zip`, `pLIN-windows.zip`,
-`pLIN-linux.zip`.
+Download the zip for your system from the latest [GitHub Release](https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/latest).
+Each zip contains the app, a step-by-step guide (`README_FIRST.txt`) and the Swiss VIM-1 example data
+(`sample_data/swiss_vim1_outbreak`). Allow about 20 GB of free disk space (app, database and a search
+index built once) and an internet connection for the first start.
 
-### macOS
-
-1. Download `pLIN-macos.zip` and unzip it: you'll get `pLIN.app`.
-2. Move `pLIN.app` to your Applications folder (or anywhere you like).
-3. **First launch only**: macOS will refuse to open an app from an
-   unidentified developer by default. Right-click (or Control-click)
-   `pLIN.app` → **Open** → **Open** again in the dialog that appears.
-   After this first time, double-clicking works normally.
-4. A terminal window opens showing startup logs, and your default browser
-   opens automatically to the app. **Leave the terminal window open**:
-   closing it quits pLIN. To quit, close that window or press `Ctrl+C`
-   inside it.
+| System | Download | Requirements |
+|---|---|---|
+| Windows | `pLIN-windows.zip` | Windows 10 or 11, 64-bit |
+| macOS | `pLIN-macos.zip` | Apple silicon Mac (M1 or later); Intel Macs: install from source |
+| Linux | `pLIN-linux.zip` | 64-bit Linux from 2024 or later (e.g. Ubuntu 24.04; glibc 2.39 or newer); older systems: install from source |
 
 ### Windows
 
-1. Download `pLIN-windows.zip` and unzip it: you'll get a `pLIN` folder
-   containing `pLIN.exe` and its supporting files. Keep the whole folder
-   together; don't move `pLIN.exe` out on its own.
-2. Double-click `pLIN.exe`.
-3. **Windows Defender SmartScreen may show "Windows protected your PC"**
-   the first time, since the app isn't code-signed. Click **More info**,
-   then **Run anyway**.
-4. A console window opens with startup logs, and your default browser
-   opens automatically to the app. Leave the console window open while
-   using pLIN; closing it quits the app.
+1. Right-click `pLIN-windows.zip`, choose **Extract All**, then **Extract**. Do not run the app from
+   inside the zip.
+2. In the extracted folder, open `pLIN` and double-click `pLIN.exe`. Keep the whole `pLIN` folder
+   together.
+3. If **"Windows protected your PC"** appears (the app is not code-signed), click **More info**, then
+   **Run anyway**.
+4. A console window opens and, after about 30 seconds, pLIN opens in your browser. Keep the console
+   window open while you work.
+
+### macOS
+
+1. Double-click `pLIN-macos.zip` and drag `pLIN.app` into **Applications**.
+2. **First time only** (the app is not signed with an Apple developer certificate): right-click (or
+   Control-click) `pLIN.app`, choose **Open**, then **Open** again. If macOS only offers **Done** or
+   **Move to Trash**, choose **Done**, open **System Settings > Privacy & Security**, scroll down and click
+   **Open Anyway** next to the message about pLIN.
+3. pLIN has no window of its own: after about 30 seconds it opens in your browser
+   (e.g. `http://localhost:8501`).
 
 ### Linux
 
-1. Download `pLIN-linux.zip` and unzip it: you'll get a `pLIN` folder.
-2. Make the binary executable if needed: `chmod +x pLIN/pLIN`
-3. Run it from a terminal: `./pLIN/pLIN`
-4. Your default browser opens automatically to the app. Leave the
-   terminal open; `Ctrl+C` there quits the app.
+```
+unzip pLIN-linux.zip -d pLIN-app
+cd pLIN-app
+chmod +x pLIN/pLIN
+./pLIN/pLIN
+```
+
+pLIN opens in your browser after about 30 seconds. Keep the terminal open while you work.
+
+### First start (all systems)
+
+1. Keep **pLIN code scheme** on **v4.1 (recommended)** and click **Download the pLIN v4.1 database
+   (1.6 GB)**. The files are checked against their published checksums and saved in `~/.plin/plin_v41`
+   (Windows: `%USERPROFILE%\.plin\plin_v41`).
+2. Upload the 8 files in `sample_data/swiss_vim1_outbreak`, click **Run Analysis**, and compare the
+   Results tab with `expected_pLIN_results.tsv`. The first analysis builds a search index once
+   (12 to 16 GB, several minutes); on Windows, MMseqs2 may ask once for administrator permission to set
+   up its helper tools (click **Yes**).
+
+### Quitting pLIN
+
+Click **Quit pLIN** in the left sidebar. On Windows and Linux, closing the console window or pressing
+`Ctrl+C` in the terminal also quits. On macOS, closing the browser tab does not stop pLIN; use
+**Quit pLIN** (or Activity Monitor > pLIN > Quit).
 
 ### If your browser doesn't open automatically
 
@@ -265,7 +286,7 @@ find the same database relatives, which always yield the same code. Two people r
 different computers, at different times, get identical results, provided
 both installations report the same `database_version` (see
 `DATABASE_VERSION.json`, or the version shown in the Export tab). The
-**app version** (e.g. `v4.1.0`) and the **database version** (e.g.
+**app version** (e.g. `v4.1.1`) and the **database version** (e.g.
 `db-2026.10.03`) are tracked separately and can differ even between two
 installs on the same app version: one of you may have downloaded a
 newer standalone database update without upgrading the app itself, or

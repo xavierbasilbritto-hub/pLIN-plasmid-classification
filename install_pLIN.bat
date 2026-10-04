@@ -47,8 +47,17 @@ REM ── Install Python dependencies ─────────────�
 echo.
 echo [2/5] Installing Python dependencies...
 pip install --upgrade pip
-pip install streamlit numpy pandas scipy biopython scikit-learn matplotlib seaborn plotly python-pptx requests
-echo       Core Python packages installed.
+pip install -r "%~dp0requirements.txt"
+echo       Core Python packages installed (including pyrodigal for pLIN v4.1).
+
+REM ── MMseqs2 (needed by pLIN v4.1 to type plasmids with new proteins) ────
+REM bioconda has no Windows build: download the official Windows build of MMseqs2 18-8cc5c
+REM (the version that built the database) into the pLIN folder, where pLIN finds it.
+if not exist "%~dp0mmseqs\mmseqs.bat" (
+    echo       Downloading MMseqs2 18-8cc5c for Windows...
+    powershell -Command "$ErrorActionPreference='Stop'; Invoke-WebRequest -Uri https://github.com/soedinglab/MMseqs2/releases/download/18-8cc5c/mmseqs-win64.zip -OutFile '%TEMP%\mmseqs-win64.zip'; Expand-Archive -Force '%TEMP%\mmseqs-win64.zip' '%~dp0'"
+    if exist "%~dp0mmseqs\mmseqs.bat" (echo       [OK] MMseqs2 installed in %~dp0mmseqs) else (echo       [!] MMseqs2 download failed; pLIN v4.1 cannot type plasmids with new proteins)
+)
 
 REM ── Install bioinformatics tools via conda ───────────────────────────────
 echo.
