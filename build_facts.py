@@ -42,6 +42,20 @@ def main():
     for k, v in dv["clusters_per_level"].items():
         add(f"clusters_{k}", v, f"{v:,}", dv_path)
     add("db_no_protein", dv["plasmids_without_proteins"], f"{dv['plasmids_without_proteins']:,}", dv_path)
+    codes_path = os.path.join(V41, "release", "plin_v41_codes.tsv.gz")
+    lens = pd.read_csv(codes_path, sep="\t", usecols=["length_bp"]).length_bp
+    add("db_len_min", int(lens.min()), f"{lens.min():,} bp", codes_path)
+    add("db_len_max", int(lens.max()), f"{lens.max() / 1e6:.1f} Mb", codes_path)
+    from plin_kmers import adaptive_scaled
+    add("sketch_small_bp", 5000, "5 kb", "plin_kmers.py")
+    add("sketch_small_n", 5000 // adaptive_scaled(5000), str(5000 // adaptive_scaled(5000)), "plin_kmers.py")
+    se_path = os.path.join(V41, "size_example.json")
+    if os.path.exists(se_path):
+        se = json.load(open(se_path))
+        add("size_ex_whole", se["source_bp"], f"{se['source_bp'] / 1000:.0f} kb", se_path)
+        add("size_ex_segment", se["segment_bp"], f"{se['segment_bp'] // 1000} kb", se_path)
+        add("size_ex_cont", se["containment_segment_in_whole"], f"{se['containment_segment_in_whole']:.2f}", se_path)
+        add("size_ex_sym", se["symmetric_similarity"], f"{se['symmetric_similarity']:.2f}", se_path)
 
     ep_path = os.path.join(V41, "confirm", "endpoints.json")
     ep = json.load(open(ep_path))
@@ -349,6 +363,16 @@ def main():
     add("v4_E1", round(e["difference"], 2), f"+{e['difference']:.2f} (95% CI {e['lo']:.2f} to {e['hi']:.2f})", v4e_path)
     add("v4_test_pairs", v4e["test_pairs"], f"{v4e['test_pairs']:,}", v4e_path)
     cmp_path = os.path.join(V41, "dev", "compare.tsv")
+    dv_cmp = pd.read_csv(cmp_path, sep="\t")
+    for eng, short in (("founder", "fo"), ("hybrid", "hy"), ("nn", "nn")):
+        g = dv_cmp[dv_cmp.engine == eng]
+        bb = [float(x.split("@")[0]) for x in g.backbone_F1_best]
+        ln = [float(x.split("@")[0]) for x in g.lineage_F1_best]
+        add(f"dev_{short}_n", len(g), str(len(g)), cmp_path)
+        add(f"dev_{short}_bb", round(max(bb), 2), f"{max(bb):.2f}", cmp_path)
+        add(f"dev_{short}_lin", round(max(ln), 2), f"{max(ln):.2f}", cmp_path)
+        add(f"dev_{short}_requery", round(g.requery.min(), 2), f"{100 * g.requery.min():.0f}%", cmp_path)
+
     add("dev_designs", len(pd.read_csv(cmp_path, sep="\t")), str(len(pd.read_csv(cmp_path, sep="\t"))), cmp_path)
     sha_path = os.path.join(V41, "PREREGISTRATION_v4.1.sha256")
     sha = open(sha_path).read().split()[0]

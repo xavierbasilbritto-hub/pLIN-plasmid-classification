@@ -1,0 +1,9 @@
+{
+ "source": "NZ_CP026661.1",
+ "source_bp": 310921,
+ "segment_bp": 10000,
+ "containment_segment_in_whole": 1.0,
+ "symmetric_similarity": 0.03,
+ "segment_hashes": 627,
+ "whole_hashes": 1143
+}

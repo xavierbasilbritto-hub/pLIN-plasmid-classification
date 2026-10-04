@@ -49,6 +49,46 @@
   "text": "985",
   "source": "output/backbone_v41/release/DATABASE_VERSION.json"
  },
+ "db_len_min": {
+  "value": 100,
+  "text": "100 bp",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "db_len_max": {
+  "value": 11850240,
+  "text": "11.9 Mb",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "sketch_small_bp": {
+  "value": 5000,
+  "text": "5 kb",
+  "source": "plin_kmers.py"
+ },
+ "sketch_small_n": {
+  "value": 625,
+  "text": "625",
+  "source": "plin_kmers.py"
+ },
+ "size_ex_whole": {
+  "value": 310921,
+  "text": "311 kb",
+  "source": "output/backbone_v41/size_example.json"
+ },
+ "size_ex_segment": {
+  "value": 10000,
+  "text": "10 kb",
+  "source": "output/backbone_v41/size_example.json"
+ },
+ "size_ex_cont": {
+  "value": 1.0,
+  "text": "1.00",
+  "source": "output/backbone_v41/size_example.json"
+ },
+ "size_ex_sym": {
+  "value": 0.03,
+  "text": "0.03",
+  "source": "output/backbone_v41/size_example.json"
+ },
  "test_pairs": {
   "value": 3337,
   "text": "3,337",
@@ -1362,6 +1402,66 @@
   "value": 2765,
   "text": "2,765",
   "source": "output/backbone_v4/evaluation/primary_endpoints.json"
+ },
+ "dev_fo_n": {
+  "value": 2,
+  "text": "2",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_fo_bb": {
+  "value": 0.32,
+  "text": "0.32",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_fo_lin": {
+  "value": 0.73,
+  "text": "0.73",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_fo_requery": {
+  "value": 0.75,
+  "text": "75%",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_hy_n": {
+  "value": 6,
+  "text": "6",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_hy_bb": {
+  "value": 0.38,
+  "text": "0.38",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_hy_lin": {
+  "value": 0.84,
+  "text": "0.84",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_hy_requery": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_nn_n": {
+  "value": 6,
+  "text": "6",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_nn_bb": {
+  "value": 0.12,
+  "text": "0.12",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_nn_lin": {
+  "value": 0.73,
+  "text": "0.73",
+  "source": "output/backbone_v41/dev/compare.tsv"
+ },
+ "dev_nn_requery": {
+  "value": 1.0,
+  "text": "100%",
+  "source": "output/backbone_v41/dev/compare.tsv"
  },
  "dev_designs": {
   "value": 14,
