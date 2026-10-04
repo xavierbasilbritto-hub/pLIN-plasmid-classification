@@ -357,7 +357,7 @@ def fig4():
     # a: Swiss VIM-1, levels shared vs alignment
     ax = fig.add_axes([0.04, 0.53, 0.36, 0.42]); label(ax, "a", x=-0.08, y=1.03)
     ids = sorted(set(vp.contig_shorter) | set(vp.contig_longer), key=lambda s: int(s.split("VIM")[1].split("_")[0]))
-    short = {i: "VIM" + i.split("VIM")[1].split("_")[0] for i in ids}
+    short = {i: i.split("VIM")[1].split("_")[0] for i in ids}   # isolate numbers (NARACHVIM11 -> 11); all plasmids carry blaVIM-1
     n = len(ids); pos = {i: k for k, i in enumerate(ids)}
     agree = 0
     for _, r in vp.iterrows():
@@ -373,12 +373,13 @@ def fig4():
         if not ok:
             ax.text(a + 0.86, n - 1 - b + 0.84, "*", ha="center", va="center", fontsize=8, color=INK, zorder=5)
     ax.set_xlim(0, n - 1); ax.set_ylim(0, n - 1); ax.set_aspect("equal")
-    ax.set_xticks(np.arange(n - 1) + 0.5); ax.set_xticklabels([short[i] for i in ids[:-1]], rotation=90)
+    ax.set_xticks(np.arange(n - 1) + 0.5); ax.set_xticklabels([short[i] for i in ids[:-1]])
+    ax.set_xlabel("Isolate"); ax.set_ylabel("Isolate")
     ax.set_yticks(np.arange(n - 1) + 0.5); ax.set_yticklabels([short[i] for i in ids[1:]][::-1])
     for s in ax.spines.values():
         s.set_visible(False)
     ax.tick_params(length=0)
-    ax.set_title(f"Swiss blaVIM-1 outbreak plasmids:\n{agree} of {len(vp)} pairs agree with alignment",
+    ax.set_title(f"Swiss outbreak: the blaVIM-1 plasmids of {n} isolates\n{agree} of {len(vp)} pairs agree with alignment",
                  loc="left", fontweight="bold", fontsize=6.5)
     ax.text(n - 1, n - 1.6, "Number = pLIN levels shared\nOutlined = same lineage by alignment\n(aligned fraction ≥ 0.80,"
             " identity ≥ 99%)\n* = disagreement", ha="right", va="top", fontsize=6, color=INK2, linespacing=1.3)
@@ -418,7 +419,7 @@ def fig4():
              "isolate of its own outbreak (%)", "False alarm: linked to an earlier isolate\nof another outbreak (%)",
              offsets={"pLIN v4.1 L6": (-4, 0, "right"), "pLIN v4.1 L5": (4, -5, "left"), "pLIN v4.1 L3": (4, -7, "left"),
                       "MOB-suite primary": (-4, 0, "right"), "MOB-suite secondary": (-4, 6, "right")})
-    ax.text(0.02, 0.97, "MOB-suite clusters come from its fixed reference\ndatabase, which includes plasmids deposited later",
+    ax.text(0.02, 0.97, "MOB-suite clusters come from its\nfixed reference database, which\nincludes plasmids deposited later",
             transform=ax.transAxes, ha="left", va="top", fontsize=5.8, color=INK2)
     ax.set_xlim(35, 80); ax.set_ylim(0, 50)
     ax.set_title(f"Prospective simulation: {int(pr.isolates_with_earlier_outbreak_isolate.iloc[0])} isolates typed "
