@@ -16,7 +16,8 @@ the ZENODO_TOKEN environment variable or the file ~/.zenodo_token; it is never p
 Usage:
   python zenodo_deposit.py [--release-dir DIR] [--sandbox]      create the draft, reserve the DOI
   python zenodo_deposit.py --publish [--sandbox]                 publish the draft (permanent)
-Output: zenodo_deposition.json (deposition id, reserved DOI, links)
+  python zenodo_deposit.py --code v4.1.2 [--publish-code]        archive the source code of a git tag
+Output: zenodo_deposition.json (deposition id, reserved DOI, links); zenodo_code_<tag>.json for --code
 """
 
 import argparse
@@ -133,14 +134,62 @@ def publish(api, headers):
     print(f"Published. DOI {st['doi']}: https://doi.org/{st['doi']}")
 
 
+def code_deposit(api, headers, tag, publish_now):
+    """Archive the source code of a git tag (git archive) as a Zenodo software record."""
+    import subprocess
+    import tempfile
+    version = tag.lstrip("v")
+    name = f"pLIN-plasmid-classification-{version}.zip"
+    path = os.path.join(tempfile.mkdtemp(), name)
+    subprocess.run(["git", "archive", "--format=zip", f"--prefix=pLIN-plasmid-classification-{version}/", "-o", path, tag],
+                   cwd=BASE_DIR, check=True)
+    commit = subprocess.run(["git", "rev-list", "-n", "1", tag], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
+    meta = {
+        "title": f"pLIN: permanent plasmid nomenclature software, version {version}",
+        "upload_type": "software",
+        "description": (f"<p>Source code of pLIN {version} (plasmid lineage identification number), git tag {tag} "
+                        f"(commit {commit}) of <a href=\"{REPO}\">{REPO}</a>: the typing software, desktop application, "
+                        f"database build, and the scripts of the pre-registered confirmatory evaluation, the registered "
+                        f"external validation and the sensitivity analyses.</p><p>The matching database release "
+                        f"db-2026.10.03 is archived at https://doi.org/10.5281/zenodo.23126057.</p>"),
+        "creators": CREATORS, "access_right": "open", "license": "gpl-3.0-or-later", "version": version,
+        "keywords": ["plasmid", "plasmid typing", "nomenclature", "pLIN", "antimicrobial resistance", "software"],
+        "related_identifiers": [
+            {"identifier": f"{REPO}/tree/{tag}", "relation": "isIdenticalTo", "resource_type": "software"},
+            {"identifier": "10.5281/zenodo.23126057", "relation": "isSupplementedBy", "resource_type": "dataset"}],
+        "prereserve_doi": True,
+    }
+    r = requests.post(f"{api}/deposit/depositions", headers=headers, json={"metadata": meta}, timeout=60)
+    r.raise_for_status()
+    dep = r.json()
+    doi = dep["metadata"]["prereserve_doi"]["doi"]
+    with open(path, "rb") as fh:
+        u = requests.put(f"{dep['links']['bucket']}/{name}", data=fh, headers=headers, timeout=None)
+    u.raise_for_status()
+    if u.json().get("checksum", "").replace("md5:", "") != digest(path, "md5"):
+        sys.exit("Checksum mismatch after upload; the draft is not published")
+    state = {"id": dep["id"], "doi": doi, "tag": tag, "commit": commit, "published": False}
+    if publish_now:
+        p = requests.post(f"{api}/deposit/depositions/{dep['id']}/actions/publish", headers=headers, timeout=120)
+        p.raise_for_status()
+        state["published"] = True
+    json.dump(state, open(os.path.join(BASE_DIR, f"zenodo_code_{tag}.json"), "w"), indent=1)
+    print(f"Code {tag} ({commit[:7]}) {'published' if publish_now else 'drafted'}: DOI {doi}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--release-dir", default=os.path.join(BASE_DIR, "output", "backbone_v41", "release"))
     ap.add_argument("--sandbox", action="store_true", help="use sandbox.zenodo.org (test DOIs)")
     ap.add_argument("--publish", action="store_true", help="publish the draft recorded in zenodo_deposition.json")
+    ap.add_argument("--code", metavar="TAG", help="archive the source code of this git tag instead of the database")
+    ap.add_argument("--publish-code", action="store_true", help="with --code: publish immediately (permanent)")
     args = ap.parse_args()
     api = "https://sandbox.zenodo.org/api" if args.sandbox else "https://zenodo.org/api"
     headers = {"Authorization": f"Bearer {token()}"}
+    if args.code:
+        code_deposit(api, headers, args.code, args.publish_code)
+        return
     if args.publish:
         publish(api, headers)
     else:

@@ -1,6 +1,6 @@
 # pLIN: Plasmid Lineage Identification Number
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23126057.svg)](https://doi.org/10.5281/zenodo.23126057)
+Software: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23138103.svg)](https://doi.org/10.5281/zenodo.23138103) Database: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23126057.svg)](https://doi.org/10.5281/zenodo.23126057)
 
 A permanent, multi-level nomenclature for bacterial plasmids, from backbone families to outbreak clones, with integrated antimicrobial resistance (AMR) gene surveillance.
 
