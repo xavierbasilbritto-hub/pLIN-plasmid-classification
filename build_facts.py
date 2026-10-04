@@ -410,6 +410,15 @@ def main():
         add(f"ext_{ds}_carrier_pairs", sec[ds]["carrier_pairs"], f"{sec[ds]['carrier_pairs']:,}", xe_path)
         for meth, k in (("pLIN v4.1 L5", "L5"), ("pLIN v4.1 L6", "L6"), ("MOB-suite secondary", "MOBsec")):
             add(f"ext_{ds}_carb_{k}", sec[ds][meth], f"{sec[ds][meth]:.1f}%", xe_path)
+    tb_path = os.path.join(V41, "confirm", "taxon_breakdown.json")
+    if os.path.exists(tb_path):
+        tb = json.load(open(tb_path))
+        for key, short in (("gram_positive", "gp"), ("nonfermenter", "nf"), ("enterobacterales", "ent")):
+            if key in tb:
+                add(f"taxon_{short}_pairs", tb[key]["pairs"], f"{tb[key]['pairs']:,}", tb_path)
+                add(f"taxon_{short}_plin", round(tb[key]["pLIN_L5"], 2), f"{tb[key]['pLIN_L5']:.2f}", tb_path)
+                add(f"taxon_{short}_mob", round(tb[key]["MOB_secondary"], 2), f"{tb[key]['MOB_secondary']:.2f}", tb_path)
+
     cs_path = os.path.join(V41, "confirm", "comparator_sensitivity.tsv")
     cs = pd.read_csv(cs_path, sep="\t")
     n_settings = cs.assign(t=cs.tool.str.split().str[0]).drop_duplicates(["t", "setting"]).shape[0]   # pling and mge-cluster runs

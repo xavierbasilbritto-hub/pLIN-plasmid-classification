@@ -1,0 +1,20 @@
+{
+ "gram_positive": {
+  "pairs": 128,
+  "same_lineage_pairs": 29,
+  "pLIN_L5": 0.908,
+  "MOB_secondary": 0.517
+ },
+ "nonfermenter": {
+  "pairs": 124,
+  "same_lineage_pairs": 18,
+  "pLIN_L5": 0.748,
+  "MOB_secondary": 0.626
+ },
+ "enterobacterales": {
+  "pairs": 2632,
+  "same_lineage_pairs": 263,
+  "pLIN_L5": 0.866,
+  "MOB_secondary": 0.581
+ }
+}

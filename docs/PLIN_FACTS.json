@@ -1605,6 +1605,51 @@
   "text": "45.0%",
   "source": "output/backbone_v41/external/external_endpoints.json"
  },
+ "taxon_gp_pairs": {
+  "value": 128,
+  "text": "128",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_gp_plin": {
+  "value": 0.91,
+  "text": "0.91",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_gp_mob": {
+  "value": 0.52,
+  "text": "0.52",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_nf_pairs": {
+  "value": 124,
+  "text": "124",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_nf_plin": {
+  "value": 0.75,
+  "text": "0.75",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_nf_mob": {
+  "value": 0.63,
+  "text": "0.63",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_ent_pairs": {
+  "value": 2632,
+  "text": "2,632",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_ent_plin": {
+  "value": 0.87,
+  "text": "0.87",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
+ "taxon_ent_mob": {
+  "value": 0.58,
+  "text": "0.58",
+  "source": "output/backbone_v41/confirm/taxon_breakdown.json"
+ },
  "cs_settings": {
   "value": 18,
   "text": "18",
