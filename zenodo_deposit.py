@@ -202,12 +202,12 @@ def code_deposit(api, headers, tag, publish_now):
                         f"(commit {commit}) of <a href=\"{REPO}\">{REPO}</a>: the typing software, desktop application, "
                         f"database build, and the scripts of the pre-registered confirmatory evaluation, the registered "
                         f"external validation and the sensitivity analyses.</p><p>The matching database release "
-                        f"db-2026.10.03 is archived at https://doi.org/10.5281/zenodo.23126057.</p>"),
+                        f"db-2026.10.03 is archived at https://doi.org/10.5281/zenodo.23126056.</p>"),
         "creators": CREATORS, "access_right": "open", "license": "gpl-3.0-or-later", "version": version,
         "keywords": ["plasmid", "plasmid typing", "nomenclature", "pLIN", "antimicrobial resistance", "software"],
         "related_identifiers": [
             {"identifier": f"{REPO}/tree/{tag}", "relation": "isIdenticalTo", "resource_type": "software"},
-            {"identifier": "10.5281/zenodo.23126057", "relation": "isSupplementedBy", "resource_type": "dataset"}],
+            {"identifier": "10.5281/zenodo.23126056", "relation": "isSupplementedBy", "resource_type": "dataset"}],
         "prereserve_doi": True,
     }
     r = requests.post(f"{api}/deposit/depositions", headers=headers, json={"metadata": meta}, timeout=60)

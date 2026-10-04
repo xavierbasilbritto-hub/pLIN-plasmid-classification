@@ -38,4 +38,4 @@ The replicon classifier gains the **IncL/M** group. Without it, pOXA-48-like pla
 
 **pLIN codes are unchanged.** Every code, sketch, protein family and sequence hash is identical to db-2026.10.03, so codes issued from the previous release stay valid; only the replicon annotation changed.
 
-Database release: `db-2026.10.05` (127,517 plasmids). Archived on Zenodo: https://doi.org/10.5281/zenodo.23126057 (concept DOI, resolves to the latest version). Full instructions: `desktop_app/USER_MANUAL.md` and the README.
+Database release: `db-2026.10.05` (127,517 plasmids). Archived on Zenodo: https://doi.org/10.5281/zenodo.23126056 (concept DOI, resolves to the latest version). Full instructions: `desktop_app/USER_MANUAL.md` and the README.
