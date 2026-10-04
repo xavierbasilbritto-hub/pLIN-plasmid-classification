@@ -44,7 +44,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 V41 = os.path.join(BASE_DIR, "output", "backbone_v41")
 V4REL = os.path.join(BASE_DIR, "output", "backbone_v4", "release")
 REL = os.path.join(V41, "release")
-RELEASE, SCHEME = "db-2026.10.03", "pLIN v4.1"
+RELEASE, SCHEME = "db-2026.10.05", "pLIN v4.1"
 PREREG = ("https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/blob/"
           "preregistration-v4/output/backbone_v41/PREREGISTRATION_v4.1.md")
 

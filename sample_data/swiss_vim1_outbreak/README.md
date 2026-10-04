@@ -5,7 +5,7 @@ Eight clinical isolates from a Swiss investigation of VIM-1-producing *Enterobac
 ## What's here
 
 - `NARACHVIM11_plasmids.fasta` ... `NARACHVIM56_plasmids.fasta`: 8 isolates, each with that isolate's assembled plasmid contigs only (19 contigs in total; chromosomal sequence removed).
-- `expected_pLIN_results.tsv`: the pLIN v4.1 codes (database db-2026.10.03) produced when all 8 files are analysed together, the most similar database plasmid for each contig, and, for the blaVIM-1 plasmids, the lineage found by whole-plasmid alignment.
+- `expected_pLIN_results.tsv`: the pLIN v4.1 codes (database db-2026.10.05) produced when all 8 files are analysed together, the most similar database plasmid for each contig, and, for the blaVIM-1 plasmids, the lineage found by whole-plasmid alignment.
 
 ## How to use
 

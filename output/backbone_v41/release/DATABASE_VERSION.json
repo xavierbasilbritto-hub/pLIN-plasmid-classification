@@ -1,46 +1,55 @@
 {
-  "scheme": "pLIN v4.1",
+ "scheme": "pLIN v4.1",
+ "database_version": "db-2026.10.05",
+ "built_utc": "2026-10-03T12:32:06Z",
+ "unique_plasmids": 127517,
+ "plasmids_without_proteins": 985,
+ "clusters_per_level": {
+  "L1": 27333,
+  "L2": 39727,
+  "L3": 49522,
+  "L4": 62735,
+  "L5": 72685,
+  "L6": 93440
+ },
+ "levels": {
+  "L1": "backbone family: protein-family containment >= 0.40 (founder)",
+  "L2": "backbone group: protein-family containment >= 0.60 (founder)",
+  "L3": "shared backbone: k-mer containment >= 0.50 (founder)",
+  "L4": "backbone variant: k-mer containment >= 0.80 (founder)",
+  "L5": "lineage: symmetric k-mer similarity >= 0.80 (nearest-neighbour copy)",
+  "L6": "near-identical / outbreak clone: symmetric k-mer similarity >= 0.95 (nearest-neighbour copy)"
+ },
+ "kmers": "canonical 21-mers, splitmix64, FracMinHash with power-of-two scale (>= 400 kept, max 256)",
+ "software": {
+  "pyrodigal": "3.7.0",
+  "mmseqs2": "18.8cc5c",
+  "python": "3.10.19",
+  "numpy": "2.2.6"
+ },
+ "release_checks": "R1\u2013R4 passed; see PREREGISTRATION_v4.1 and output/backbone_v41/confirm/",
+ "preregistration": "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/blob/preregistration-v4/output/backbone_v41/PREREGISTRATION_v4.1.md",
+ "sha256": {
+  "family_exact_lookup.npz": "2d4113898d8ef79558e75272a3aa020945cf5919493e25a5736151371026d945",
+  "family_members.faa.gz": "6cbf1fa8524c0057bfb80fc2a6dc3172e164514aab0ddb8604e1355501e4349d",
+  "plasmid_hashes.tsv.gz": "30907c528bcb988932f626edf4d7c5c62cd545a01b79c71a57f61561d1184610",
+  "plin_v41_codes.tsv.gz": "76b03a7b39ccbbe97ddf866e1ebcba96377fb90af3cb4882cbac54ecff77e524",
+  "plin_v41_index.npz": "eb1c16ae5fa2ad9490f1298c6af934044fdb02fd57530a7eb6a28ab5b185ab1b"
+ },
+ "bytes": {
+  "family_exact_lookup.npz": 71482394,
+  "family_members.faa.gz": 816725617,
+  "plasmid_hashes.tsv.gz": 1722857,
+  "plin_v41_codes.tsv.gz": 6830014,
+  "plin_v41_index.npz": 743011857
+ },
+ "supersedes": {
   "database_version": "db-2026.10.03",
-  "built_utc": "2026-10-03T12:32:06Z",
-  "unique_plasmids": 127517,
-  "plasmids_without_proteins": 985,
-  "clusters_per_level": {
-    "L1": 27333,
-    "L2": 39727,
-    "L3": 49522,
-    "L4": 62735,
-    "L5": 72685,
-    "L6": 93440
-  },
-  "levels": {
-    "L1": "backbone family: protein-family containment >= 0.40 (founder)",
-    "L2": "backbone group: protein-family containment >= 0.60 (founder)",
-    "L3": "shared backbone: k-mer containment >= 0.50 (founder)",
-    "L4": "backbone variant: k-mer containment >= 0.80 (founder)",
-    "L5": "lineage: symmetric k-mer similarity >= 0.80 (nearest-neighbour copy)",
-    "L6": "near-identical / outbreak clone: symmetric k-mer similarity >= 0.95 (nearest-neighbour copy)"
-  },
-  "kmers": "canonical 21-mers, splitmix64, FracMinHash with power-of-two scale (>= 400 kept, max 256)",
-  "software": {
-    "pyrodigal": "3.7.0",
-    "mmseqs2": "18.8cc5c",
-    "python": "3.10.19",
-    "numpy": "2.2.6"
-  },
-  "release_checks": "R1\u2013R4 passed; see PREREGISTRATION_v4.1 and output/backbone_v41/confirm/",
-  "preregistration": "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/blob/preregistration-v4/output/backbone_v41/PREREGISTRATION_v4.1.md",
-  "sha256": {
-    "family_exact_lookup.npz": "2d4113898d8ef79558e75272a3aa020945cf5919493e25a5736151371026d945",
-    "family_members.faa.gz": "6cbf1fa8524c0057bfb80fc2a6dc3172e164514aab0ddb8604e1355501e4349d",
-    "plasmid_hashes.tsv.gz": "30907c528bcb988932f626edf4d7c5c62cd545a01b79c71a57f61561d1184610",
-    "plin_v41_codes.tsv.gz": "307bace3d5a1678aff9f2e783153b87a36182cda13046dab806cc527976709c9",
-    "plin_v41_index.npz": "eb1c16ae5fa2ad9490f1298c6af934044fdb02fd57530a7eb6a28ab5b185ab1b"
-  },
-  "bytes": {
-    "family_exact_lookup.npz": 71482394,
-    "family_members.faa.gz": 816725617,
-    "plasmid_hashes.tsv.gz": 1722857,
-    "plin_v41_codes.tsv.gz": 6830014,
-    "plin_v41_index.npz": 743011857
-  }
+  "change": "inc_type column regenerated with the IncL/M group added to the replicon classifier; pLIN codes, sketches, protein families and hashes are unchanged"
+ },
+ "replicon_classifier": {
+  "groups": 29,
+  "training_plasmids": 8404,
+  "cv_accuracy": 0.9104
+ }
 }

@@ -5,8 +5,8 @@
   "source": "output/backbone_v41/release/DATABASE_VERSION.json"
  },
  "database_version": {
-  "value": "db-2026.10.03",
-  "text": "db-2026.10.03",
+  "value": "db-2026.10.05",
+  "text": "db-2026.10.05",
   "source": "output/backbone_v41/release/DATABASE_VERSION.json"
  },
  "db_plasmids": {
@@ -228,17 +228,17 @@
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "gene_res_inc_ami": {
-  "value": 0.329,
+  "value": 0.331,
   "text": "0.33",
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "gene_res_inc_pure": {
-  "value": 40.9,
-  "text": "41%",
+  "value": 40.1,
+  "text": "40%",
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "gene_res_inc_groups75": {
-  "value": 13.6,
+  "value": 14.3,
   "text": "14%",
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
@@ -278,13 +278,13 @@
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "gene_res_example_genes": {
-  "value": 120,
-  "text": "120",
+  "value": 118,
+  "text": "118",
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "gene_res_example_n": {
-  "value": 3750,
-  "text": "3,750",
+  "value": 3788,
+  "text": "3,788",
   "source": "output/backbone_v41/onehealth/gene_resolution.json"
  },
  "loo_n": {
@@ -438,8 +438,8 @@
   "source": "output/backbone_v41/shortread/vim_metrics.tsv"
  },
  "simpson_replicon": {
-  "value": 0.8863,
-  "text": "0.886",
+  "value": 0.8868,
+  "text": "0.887",
   "source": "output/backbone_v41/diversity.json"
  },
  "simpson_L5": {

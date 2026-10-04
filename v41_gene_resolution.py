@@ -42,12 +42,6 @@ def load():
                       usecols=["NUCCORE_ACC", "gene_symbol"], dtype=str)
     key = pd.concat([amr[amr.gene_symbol.str.contains(rx, regex=True, na=False)].assign(group=g)
                      for g, rx in AMR_GROUPS.items()]).drop_duplicates(["NUCCORE_ACC", "gene_symbol"])
-    # the release inc_type column predates the IncL/M group; correct the affected plasmids so that
-    # replicon typing is compared at its best (file written by v41_incLM_screen, see Methods)
-    fix = os.path.join(OH, "incLM_accessions.txt")
-    if os.path.exists(fix):
-        lm = {l.strip() for l in open(fix) if l.strip()}
-        rel.loc[rel.accession.isin(lm), "inc_type"] = "IncLM"
     m = sec[["NUCCORE_ACC", "accession"]].merge(rel, on="accession")
     carriers = key.merge(m, on="NUCCORE_ACC")
     for df in (m, carriers):

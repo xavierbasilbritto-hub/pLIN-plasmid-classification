@@ -51,7 +51,7 @@ All numbers are generated from the result files by [`build_facts.py`](build_fact
 
 ### Database
 
-Release **db-2026.10.03**: 127,517 unique plasmids, 93,440 L6 codes, 72,685 lineages (L5) and 27,333 backbone families (L1).
+Release **db-2026.10.05**: 127,517 unique plasmids, 93,440 L6 codes, 72,685 lineages (L5) and 27,333 backbone families (L1).
 
 ---
 
@@ -113,9 +113,9 @@ pLIN separates two version numbers that change on different schedules:
 | | Tracks | Where to check |
 |---|---|---|
 | **App version** | Code: the Streamlit app, classification logic, modules | `PLIN_APP_VERSION` in `plin_app.py`; shown in the app's Export tab |
-| **Database version** (currently `db-2026.10.03`) | Content: the plasmid codes, protein-family catalogue and k-mer index | `data/plin_v41/DATABASE_VERSION.json` |
+| **Database version** (currently `db-2026.10.05`) | Content: the plasmid codes, protein-family catalogue and k-mer index | `data/plin_v41/DATABASE_VERSION.json` |
 
-**Download the database.** The pLIN v4.1 database is about 1.6 GB, too large for the code repository. Download the files of release `db-2026.10.03` from the [Releases](../../releases) page or from its permanent archive on Zenodo ([doi:10.5281/zenodo.23126057](https://doi.org/10.5281/zenodo.23126057)) and place them in `data/plin_v41/`:
+**Download the database.** The pLIN v4.1 database is about 1.6 GB, too large for the code repository. Download the files of release `db-2026.10.05` from the [Releases](../../releases) page or from its permanent archive on Zenodo ([doi:10.5281/zenodo.23126057](https://doi.org/10.5281/zenodo.23126057)) and place them in `data/plin_v41/`:
 
 ```
 plin_v41_codes.tsv.gz        codes for every database plasmid (also usable on its own)

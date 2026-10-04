@@ -134,6 +134,57 @@ def publish(api, headers):
     print(f"Published. DOI {st['doi']}: https://doi.org/{st['doi']}")
 
 
+def new_version(api, headers, release_dir, publish_now):
+    """Publish a new version of the archived database under the same concept DOI.
+
+    Zenodo keeps every version and resolves the concept DOI to the latest, so earlier codes and
+    citations stay valid while users land on the current release.
+    """
+    st = json.load(open(STATE))
+    r = requests.post(f"{api}/deposit/depositions/{st['id']}/actions/newversion", headers=headers, timeout=120)
+    r.raise_for_status()
+    draft = r.json()["links"]["latest_draft"]
+    dep = requests.get(draft, headers=headers, timeout=60).json()
+    # a new version starts as a copy: remove the inherited files before uploading this release
+    for f in dep.get("files", []):
+        requests.delete(f"{api}/deposit/depositions/{dep['id']}/files/{f['id']}", headers=headers, timeout=60)
+    dv = json.load(open(os.path.join(release_dir, "DATABASE_VERSION.json")))
+    files = list(dv["sha256"]) + ["DATABASE_VERSION.json"]
+    print(f"Checking files of {dv['database_version']} ...")
+    md5 = {}
+    for f in files:
+        p_ = os.path.join(release_dir, f)
+        if f in dv["sha256"] and digest(p_, "sha256") != dv["sha256"][f]:
+            sys.exit(f"SHA-256 mismatch for {f}; not uploading")
+        md5[f] = digest(p_, "md5")
+    meta = metadata(dv)
+    meta.pop("prereserve_doi", None)
+    r = requests.put(f"{api}/deposit/depositions/{dep['id']}", headers=headers,
+                     json={"metadata": meta}, timeout=60)
+    r.raise_for_status()
+    bucket = r.json()["links"]["bucket"]
+    for f in files:
+        size = os.path.getsize(os.path.join(release_dir, f))
+        print(f"Uploading {f} ({size / 1e6:.0f} MB) ...", flush=True)
+        with open(os.path.join(release_dir, f), "rb") as fh:
+            u = requests.put(f"{bucket}/{f}", data=fh, headers=headers, timeout=None)
+        u.raise_for_status()
+        if u.json().get("checksum", "").replace("md5:", "") != md5[f]:
+            sys.exit(f"Checksum mismatch after upload of {f}; the draft is not published")
+        print(f"  ok  {f}")
+    if publish_now:
+        p2 = requests.post(f"{api}/deposit/depositions/{dep['id']}/actions/publish", headers=headers, timeout=300)
+        p2.raise_for_status()
+        doi = p2.json()["doi"]
+        json.dump({"id": dep["id"], "doi": doi, "links": p2.json()["links"], "sandbox": "sandbox" in api,
+                   "published": True, "version": dv["database_version"],
+                   "concept_doi": p2.json().get("conceptdoi")}, open(STATE, "w"), indent=1)
+        print(f"\nPublished {dv['database_version']}: https://doi.org/{doi}")
+        print(f"Concept DOI (always latest): {p2.json().get('conceptdoi')}")
+    else:
+        print(f"\nDraft ready and NOT public: {dep['links']['html']}")
+
+
 def code_deposit(api, headers, tag, publish_now):
     """Archive the source code of a git tag (git archive) as a Zenodo software record."""
     import subprocess
@@ -182,11 +233,16 @@ def main():
     ap.add_argument("--release-dir", default=os.path.join(BASE_DIR, "output", "backbone_v41", "release"))
     ap.add_argument("--sandbox", action="store_true", help="use sandbox.zenodo.org (test DOIs)")
     ap.add_argument("--publish", action="store_true", help="publish the draft recorded in zenodo_deposition.json")
+    ap.add_argument("--new-version", action="store_true",
+                    help="publish a new version of the database under the same concept DOI")
     ap.add_argument("--code", metavar="TAG", help="archive the source code of this git tag instead of the database")
     ap.add_argument("--publish-code", action="store_true", help="with --code: publish immediately (permanent)")
     args = ap.parse_args()
     api = "https://sandbox.zenodo.org/api" if args.sandbox else "https://zenodo.org/api"
     headers = {"Authorization": f"Bearer {token()}"}
+    if args.new_version:
+        new_version(api, headers, args.release_dir, args.publish)
+        return
     if args.code:
         code_deposit(api, headers, args.code, args.publish_code)
         return

@@ -32,4 +32,10 @@ The same sequences give the same codes on any computer. Codes of database plasmi
 
 Licence is now the plain GNU General Public License v3.0 or later (the earlier mandatory-citation clause is replaced by a citation request in CITATION.cff). The typing method, thresholds and database are unchanged, so codes are identical to 4.1.1. Adds the scripts of the external validation and sensitivity analyses.
 
-Database release: `db-2026.10.03` (127,517 plasmids). Archived on Zenodo: https://doi.org/10.5281/zenodo.23126057. Full instructions: `desktop_app/USER_MANUAL.md` and the README.
+### Changes in the database (db-2026.10.05)
+
+The replicon classifier gains the **IncL/M** group. Without it, pOXA-48-like plasmids were assigned to the nearest available type, usually IncFII; this affected 1,352 plasmids including the largest epidemic clone in the database. The classifier now covers 29 groups (8,404 training plasmids, 91.0% cross-validated accuracy, IncL/M F1 0.98) and the `inc_type` column of the release has been regenerated with it.
+
+**pLIN codes are unchanged.** Every code, sketch, protein family and sequence hash is identical to db-2026.10.03, so codes issued from the previous release stay valid; only the replicon annotation changed.
+
+Database release: `db-2026.10.05` (127,517 plasmids). Archived on Zenodo: https://doi.org/10.5281/zenodo.23126057 (concept DOI, resolves to the latest version). Full instructions: `desktop_app/USER_MANUAL.md` and the README.

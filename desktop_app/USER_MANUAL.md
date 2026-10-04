@@ -287,7 +287,7 @@ different computers, at different times, get identical results, provided
 both installations report the same `database_version` (see
 `DATABASE_VERSION.json`, or the version shown in the Export tab). The
 **app version** (e.g. `v4.1.2`) and the **database version** (e.g.
-`db-2026.10.03`) are tracked separately and can differ even between two
+`db-2026.10.05`) are tracked separately and can differ even between two
 installs on the same app version: one of you may have downloaded a
 newer standalone database update without upgrading the app itself, or
 vice versa. Check both before assuming two runs are comparable.

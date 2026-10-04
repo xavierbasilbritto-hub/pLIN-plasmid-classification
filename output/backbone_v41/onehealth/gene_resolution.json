@@ -6,10 +6,10 @@
  "min_carriers_per_group": 10,
  "levels": {
   "Inc/Rep type": {
-   "groups": 22,
-   "median_dominant_pct": 40.9,
-   "pct_groups_at_least_75": 13.6,
-   "AMI_with_resistance_gene": 0.329
+   "groups": 21,
+   "median_dominant_pct": 40.1,
+   "pct_groups_at_least_75": 14.3,
+   "AMI_with_resistance_gene": 0.331
   },
   "pLIN L1 family": {
    "groups": 75,
@@ -32,8 +32,8 @@
  },
  "example": {
   "inc_type": "IncFII",
-  "carriers": 3750,
-  "distinct_key_genes": 120,
+  "carriers": 3788,
+  "distinct_key_genes": 118,
   "lineages_shown": 8
  }
 }
