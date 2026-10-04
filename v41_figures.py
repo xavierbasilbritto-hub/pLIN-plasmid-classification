@@ -694,6 +694,128 @@ def sfig7():
     save(fig, "SFig7")
 
 
+def fig6():
+    """Permanence across tools: what happens to earlier groups when more plasmids are added."""
+    fl = json.load(open(os.path.join(BASE_DIR, "docs", "PLIN_FACTS.json")))
+    v = lambda k: fl[k]["value"]
+    rows = [("pLIN v4.1, database grows", PLIN, 100.0, 0.0, 0),
+            ("pling community, update", PLING, v("pling_add_comm_labels"), v("pling_add_comm_splitpct"), v("pling_add_comm_merged")),
+            ("pling subcommunity, update", PLING, v("pling_add_sub_labels"), v("pling_add_sub_splitpct"), v("pling_add_sub_merged")),
+            ("pling community, rerun", PLING, v("pling_rebuild_comm_labels"), v("pling_rebuild_comm_splitpct"), v("pling_rebuild_comm_merged")),
+            ("pling subcommunity, rerun", PLING, v("pling_rebuild_sub_labels"), v("pling_rebuild_sub_splitpct"), v("pling_rebuild_sub_merged")),
+            ("mge-cluster, existing model", MGE, v("mge_existing_labels"), v("mge_existing_split"), v("mge_existing_merged")),
+            ("mge-cluster, rebuilt model", MGE, v("mge_rebuild_labels"), v("mge_rebuild_split"), v("mge_rebuild_merged"))]
+    fig, axes = plt.subplots(1, 3, figsize=(180 * MM, 72 * MM), sharey=True)
+    ys = np.arange(len(rows))[::-1]
+    specs = [("Labels kept (%)", 2, "{:.1f}", 112), ("Earlier same-group pairs split (%)", 3, "{:.1f}", 70),
+             ("Earlier pairs newly grouped (number)", 4, "{:,.0f}", 13500)]
+    for ax, (title, col, fmt, xmax), lt in zip(axes, specs, "abc"):
+        vals = [r[col] for r in rows]
+        ax.barh(ys, vals, 0.62, color=[r[1] for r in rows], zorder=3)
+        for y, val in zip(ys, vals):
+            ax.text(val + xmax * 0.015, y, fmt.format(val), va="center", fontsize=6)
+        ax.set_xlim(0, xmax)
+        ax.set_title(title, loc="left", fontweight="bold", fontsize=6.8)
+        style(ax, grid="x")
+        label(ax, lt, x=-0.06 if lt != "a" else -0.95)
+    axes[0].set_yticks(ys); axes[0].set_yticklabels([r[0] for r in rows])
+    fig.subplots_adjust(wspace=0.12, left=0.22, right=0.98, bottom=0.12)
+    save(fig, "Fig6")
+
+
+def sfig8():
+    """Speed and scaling on one machine (8 threads)."""
+    fl = json.load(open(os.path.join(BASE_DIR, "docs", "PLIN_FACTS.json")))
+    sp = js("speed_v41.json")
+    fig, axes = plt.subplots(1, 2, figsize=(180 * MM, 70 * MM))
+    ax = axes[0]
+    names = ["pLIN\nknown", "pLIN\nrelated", "pLIN\ndivergent", "MOB-suite", "pling"]
+    vals = [sp["known"]["seconds_per_plasmid"], sp["related"]["seconds_per_plasmid"], sp["divergent"]["seconds_per_plasmid"],
+            fl["speed_MOB_s"]["value"], fl["speed_pling_100_s"]["value"] / 100]
+    cols = [PLIN, PLIN, PLIN, MOB, PLING]
+    ax.bar(range(5), vals, 0.6, color=cols, zorder=3)
+    for i, val in enumerate(vals):
+        ax.text(i, val + 0.03, "< 0.01" if val < 0.01 else f"{val:.2f}", ha="center", fontsize=6)
+    ax.set_xticks(range(5)); ax.set_xticklabels(names, fontsize=6)
+    ax.set_ylabel("Seconds per plasmid")
+    ax.set_title("Time per plasmid", loc="left", fontweight="bold")
+    style(ax); label(ax, "a", x=-0.18)
+    ax = axes[1]
+    for tool, key, col, ns in (("MOB-suite", "mob", MOB, (100, 500, 1000)), ("pling", "pling", PLING, (100, 250, 500))):
+        xs = [n for n in ns]; yv = [fl[f"speed_{key}_{n}_s"]["value"] for n in ns]
+        ax.plot(xs, yv, "-o", color=col, lw=1.5, ms=4, mec=SURF, mew=0.8, zorder=3)
+        ax.text(xs[-1] * 1.05, yv[-1], tool, fontsize=6.5, va="center")
+    for cond, mk in (("related", "o"), ("divergent", "s")):
+        ax.plot([100], [sp[cond]["seconds"]], mk, color=PLIN, ms=5, mec=SURF, mew=0.8, zorder=4)
+        ax.text(110, sp[cond]["seconds"], f"pLIN ({cond})", fontsize=6.5, va="center")
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.set_xlabel("Plasmids typed"); ax.set_ylabel("Wall time (s)")
+    ax.set_xlim(80, 2500)
+    ax.set_title("Total time (8 threads, same computer)", loc="left", fontweight="bold")
+    style(ax, grid="both"); label(ax, "b", x=-0.18)
+    fig.subplots_adjust(wspace=0.35)
+    save(fig, "SFig8")
+
+
+def sfig9():
+    """Discriminatory power and cluster sizes per level."""
+    d = js("diversity.json")
+    fl = json.load(open(os.path.join(BASE_DIR, "docs", "PLIN_FACTS.json")))
+    fig, axes = plt.subplots(1, 2, figsize=(180 * MM, 68 * MM))
+    ax = axes[0]
+    names = ["Replicon"] + [f"L{k}" for k in range(1, 7)]
+    vals = [d["replicon_typing"]] + [d[f"pLIN_L{k}"] for k in range(1, 7)]
+    types = [d["replicon_types"]] + [d[f"pLIN_L{k}_types"] for k in range(1, 7)]
+    ax.bar(range(7), vals, 0.6, color=[MUTED] + LEVEL_RAMP, zorder=3)
+    for i, (val, n) in enumerate(zip(vals, types)):
+        ax.text(i, val + 0.004, f"{val:.4f}" if i else f"{val:.3f}", ha="center", fontsize=5.6)
+    ax.set_ylim(0.83, 1.012); ax.set_xticks(range(7))
+    ax.set_xticklabels([f"{nm}\n({n:,})" for nm, n in zip(names, types)], fontsize=5.6)
+    ax.set_xlabel("Typing scheme (number of types)", fontsize=6.5)
+    ax.set_ylabel("Simpson's index of diversity")
+    ax.set_title(f"Discriminatory power ({d['plasmids']:,} plasmids)", loc="left", fontweight="bold")
+    style(ax); label(ax, "a", x=-0.2)
+    ax = axes[1]
+    sing = [100 * fl[f"singleton_L{k}"]["value"] for k in range(1, 7)]
+    big = [fl[f"largest_L{k}"]["value"] for k in range(1, 7)]
+    ax.bar(range(6), sing, 0.6, color=LEVEL_RAMP, zorder=3)
+    for i, (sv, b) in enumerate(zip(sing, big)):
+        ax.text(i, sv + 1.5, f"{sv:.0f}%", ha="center", fontsize=6)
+        ax.text(i, 4, f"max\n{b:,}", ha="center", fontsize=5.4, color="#ffffff" if i > 1 else INK)
+    ax.set_xticks(range(6)); ax.set_xticklabels([f"L{k}" for k in range(1, 7)])
+    ax.set_ylim(0, 100); ax.set_ylabel("Clusters with one plasmid (%)")
+    ax.set_title("Cluster sizes per level", loc="left", fontweight="bold")
+    style(ax); label(ax, "b", x=-0.2)
+    fig.subplots_adjust(wspace=0.32)
+    save(fig, "SFig9")
+
+
+def sfig10():
+    """Key resistance genes in the largest resistance-carrying L6 clones."""
+    m = tsv("onehealth", "clone_amr_matrix.tsv").set_index("pLIN_L6_clone")
+    n = m.pop("plasmids")
+    fig = plt.figure(figsize=(180 * MM, 120 * MM))
+    ax = fig.add_axes([0.27, 0.06, 0.6, 0.74])
+    from matplotlib.colors import LinearSegmentedColormap
+    cmap = LinearSegmentedColormap.from_list("blues", ["#ffffff"] + RAMP[1:])
+    ax.imshow(m.values, aspect="auto", cmap=cmap, vmin=0, vmax=100)
+    for i in range(m.shape[0]):
+        for j in range(m.shape[1]):
+            val = m.values[i, j]
+            if val > 0:
+                ax.text(j, i, f"{val:.0f}", ha="center", va="center", fontsize=5.2, color="#ffffff" if val >= 60 else INK)
+    ax.set_xticks(range(m.shape[1])); ax.set_xticklabels(m.columns, rotation=50, ha="left", fontsize=6, style="italic")
+    ax.xaxis.set_ticks_position("top")
+    ax.set_yticks(range(m.shape[0])); ax.set_yticklabels([f"{c}  (n = {k})" for c, k in zip(m.index, n)], fontsize=6)
+    ax.tick_params(length=0)
+    for sp_ in ax.spines.values():
+        sp_.set_visible(False)
+    ax.set_xticks(np.arange(-0.5, m.shape[1]), minor=True); ax.set_yticks(np.arange(-0.5, m.shape[0]), minor=True)
+    ax.grid(which="minor", color=SURF, lw=1.2); ax.tick_params(which="minor", length=0)
+    fig.text(0.27, 0.02, "Cells: % of the clone's plasmids carrying the gene (PLSDB AMRFinderPlus calls)", fontsize=6, color=INK2)
+    save(fig, "SFig10")
+
+
 def graphical_abstract():
     """Graphical abstract (NAR Genomics and Bioinformatics): the code levels and the headline results."""
     fl = json.load(open(os.path.join(BASE_DIR, "docs", "PLIN_FACTS.json")))
@@ -725,5 +847,5 @@ def graphical_abstract():
 
 
 if __name__ == "__main__":
-    for f in (fig1, fig2, fig3, fig4, fig5, sfig1, sfig2, sfig4, sfig5, sfig6, sfig7, graphical_abstract):
+    for f in (fig1, fig2, fig3, fig4, fig5, fig6, sfig1, sfig2, sfig4, sfig5, sfig6, sfig7, sfig8, sfig9, sfig10, graphical_abstract):
         f()

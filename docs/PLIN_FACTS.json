@@ -1055,6 +1055,191 @@
   "text": "0.44",
   "source": "output/backbone_v41/ptu_agreement.tsv"
  },
+ "pling_add_sub_labels": {
+  "value": 4.6,
+  "text": "4.6%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_sub_splitpct": {
+  "value": 45.97,
+  "text": "46.0%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_sub_merged": {
+  "value": 333,
+  "text": "333",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_comm_labels": {
+  "value": 0.5,
+  "text": "0.5%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_comm_splitpct": {
+  "value": 0.0,
+  "text": "0.0%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_add_comm_merged": {
+  "value": 10652,
+  "text": "10,652",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_sub_labels": {
+  "value": 5.4,
+  "text": "5.4%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_sub_splitpct": {
+  "value": 47.05,
+  "text": "47.0%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_sub_merged": {
+  "value": 387,
+  "text": "387",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_comm_labels": {
+  "value": 35.8,
+  "text": "35.8%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_comm_splitpct": {
+  "value": 0.0,
+  "text": "0.0%",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "pling_rebuild_comm_merged": {
+  "value": 10652,
+  "text": "10,652",
+  "source": "output/backbone_v4/evaluation/stability_pling.tsv"
+ },
+ "mge_existing_labels": {
+  "value": 98.7,
+  "text": "98.7%",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "mge_existing_merged": {
+  "value": 5718,
+  "text": "5,718",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "mge_rebuild_labels": {
+  "value": 46.2,
+  "text": "46.2%",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "mge_rebuild_merged": {
+  "value": 3121,
+  "text": "3,121",
+  "source": "output/backbone_v4/evaluation/stability_mge_cluster.tsv"
+ },
+ "speed_mob_100_s": {
+  "value": 121.44,
+  "text": "121 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "speed_mob_500_s": {
+  "value": 636.01,
+  "text": "636 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "speed_mob_1000_s": {
+  "value": 1238.96,
+  "text": "1,239 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "speed_pling_100_s": {
+  "value": 42.96,
+  "text": "43 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "speed_pling_250_s": {
+  "value": 84.17,
+  "text": "84 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "speed_pling_500_s": {
+  "value": 123.31,
+  "text": "123 s",
+  "source": "output/backbone_v4/speed/speed_results.tsv"
+ },
+ "singleton_L1": {
+  "value": 0.683,
+  "text": "68%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L1": {
+  "value": 3965,
+  "text": "3,965",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "singleton_L2": {
+  "value": 0.723,
+  "text": "72%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L2": {
+  "value": 1893,
+  "text": "1,893",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "singleton_L3": {
+  "value": 0.767,
+  "text": "77%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L3": {
+  "value": 1810,
+  "text": "1,810",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "singleton_L4": {
+  "value": 0.801,
+  "text": "80%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L4": {
+  "value": 862,
+  "text": "862",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "singleton_L5": {
+  "value": 0.832,
+  "text": "83%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L5": {
+  "value": 565,
+  "text": "565",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "singleton_L6": {
+  "value": 0.893,
+  "text": "89%",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "largest_L6": {
+  "value": 486,
+  "text": "486",
+  "source": "output/backbone_v41/release/plin_v41_codes.tsv.gz"
+ },
+ "clone_amr_n": {
+  "value": 20,
+  "text": "20",
+  "source": "output/backbone_v41/onehealth/clone_amr_matrix.tsv"
+ },
+ "clone_amr_dominant75": {
+  "value": 19,
+  "text": "19",
+  "source": "output/backbone_v41/onehealth/clone_amr_matrix.tsv"
+ },
+ "clone_amr_genes": {
+  "value": 13,
+  "text": "13",
+  "source": "output/backbone_v41/onehealth/clone_amr_matrix.tsv"
+ },
  "vim_isolates": {
   "value": 8,
   "text": "8",

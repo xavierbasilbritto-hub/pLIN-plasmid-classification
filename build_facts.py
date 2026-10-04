@@ -272,6 +272,44 @@ def main():
     add("ptu_test_ARI_L1", round(pts.at["pLIN v4.1 L1", "ARI"], 2), f"{pts.at['pLIN v4.1 L1', 'ARI']:.2f}", ptu_path)
     add("ptu_test_ARI_MOBprim", round(pts.at["MOB-suite primary", "ARI"], 2), f"{pts.at['MOB-suite primary', 'ARI']:.2f}", ptu_path)
 
+    # tool stability (development data: v4 evaluation plasmids, half coded first, the rest added)
+    for (mode, level), key in ((("add", "subcommunity"), "pling_add_sub"), (("add", "community"), "pling_add_comm"),
+                               (("rebuild", "subcommunity"), "pling_rebuild_sub"), (("rebuild", "community"), "pling_rebuild_comm")):
+        r = ps.loc[(mode, level)]
+        add(f"{key}_labels", float(r.label_retained_pct), pct(r.label_retained_pct, 1), ps_path)
+        add(f"{key}_splitpct", float(r.pairs_split_pct), pct(r.pairs_split_pct, 1), ps_path)
+        add(f"{key}_merged", int(r.pairs_merged), f"{int(r.pairs_merged):,}", ps_path)
+    for mode in ("existing", "rebuild"):
+        r = ms.loc[mode]
+        add(f"mge_{mode}_labels", float(r.label_retained_pct), pct(r.label_retained_pct, 1), ms_path)
+        add(f"mge_{mode}_merged", int(r.pairs_merged), f"{int(r.pairs_merged):,}", ms_path)
+
+    # speed and scaling on the same machine (benchmark_speed.py; pLIN v4.1 in speed_v41.json)
+    bs2_path = os.path.join(BASE_DIR, "output", "backbone_v4", "speed", "speed_results.tsv")
+    bsp = pd.read_csv(bs2_path, sep="\t")
+    bsp = bsp[bsp.source == "measured"]
+    for tool, key in (("MOB-suite", "mob"), ("pling", "pling")):
+        t = bsp[(bsp.tool == tool) & (bsp.step == "type plasmids")].sort_values("n_plasmids")
+        for _, r in t.iterrows():
+            add(f"speed_{key}_{int(r.n_plasmids)}_s", float(r.wall_s), f"{r.wall_s:,.0f} s", bs2_path)
+
+    # cluster sizes per level (release codes)
+    rc_codes = os.path.join(V41, "release", "plin_v41_codes.tsv.gz")
+    cc = pd.read_csv(rc_codes, sep="\t", dtype=str)
+    for k in range(1, 7):
+        sizes = cc.groupby(cc.pLIN_v41.str.split(".").str[:k].str.join(".")).size()
+        add(f"singleton_L{k}", round(float((sizes == 1).sum() / len(sizes)), 3), pct(100 * (sizes == 1).sum() / len(sizes)), rc_codes)
+        add(f"largest_L{k}", int(sizes.max()), f"{int(sizes.max()):,}", rc_codes)
+
+    # key resistance genes in the largest L6 clones (v41_clone_amr.py)
+    ca_path = os.path.join(V41, "onehealth", "clone_amr_matrix.tsv")
+    ca = pd.read_csv(ca_path, sep="\t", index_col=0)
+    genes = ca.drop(columns="plasmids")
+    add("clone_amr_n", len(ca), str(len(ca)), ca_path)
+    dom = int((genes.max(axis=1) >= 75).sum())
+    add("clone_amr_dominant75", dom, str(dom), ca_path)
+    add("clone_amr_genes", genes.shape[1], str(genes.shape[1]), ca_path)
+
     vc_path = os.path.join(V41, "case_studies", "swiss_vim1_codes.tsv")
     vc = pd.read_csv(vc_path, sep="\t")
     vim = vc[vc.key_genes.fillna("").str.contains("blaVIM-1")]
