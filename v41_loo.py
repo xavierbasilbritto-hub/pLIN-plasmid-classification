@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
-# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
+# See LICENSE. Please cite pLIN (CITATION.cff).
 """
 Leave-one-out outbreak validation of pLIN v4.1 (secondary analysis, not pre-registered;
 mirrors the leave-one-out test of the earlier manuscript).

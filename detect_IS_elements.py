@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 """
 Detect IS elements in pLIN training plasmids using blastn against
 curated IS element reference sequences from ISfinder/NCBI.

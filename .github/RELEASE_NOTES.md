@@ -28,4 +28,8 @@ MMseqs2 (18-8cc5c) is included. On Windows, the first MMseqs2 search may ask onc
 
 The same sequences give the same codes on any computer. Codes of database plasmids, and every level that exists in the database, never change. Parts of a code that are new to the database are marked as provisional (`provisional_from`) and are comparable within one analysis, so analyse the isolates of one investigation together. Every export records the app and database version.
 
-Database release: `db-2026.10.03` (127,517 plasmids). Full instructions: `desktop_app/USER_MANUAL.md` and the README.
+### Changes in 4.1.2
+
+Licence is now the plain GNU General Public License v3.0 or later (the earlier mandatory-citation clause is replaced by a citation request in CITATION.cff). The typing method, thresholds and database are unchanged, so codes are identical to 4.1.1. Adds the scripts of the external validation and sensitivity analyses.
+
+Database release: `db-2026.10.03` (127,517 plasmids). Archived on Zenodo: https://doi.org/10.5281/zenodo.23126057. Full instructions: `desktop_app/USER_MANUAL.md` and the README.

@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 #  pLIN Launcher for macOS
-#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 #  Double-click this file to install dependencies and launch pLIN
 # ============================================================
 set -e

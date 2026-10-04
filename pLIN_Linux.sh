@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════════
 #  pLIN: All-in-One Setup & Launch for Linux
-#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 #
 #  Single file: installs everything + launches the pLIN web application.
 #

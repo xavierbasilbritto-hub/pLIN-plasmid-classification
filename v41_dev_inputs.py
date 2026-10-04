@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
-# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
+# See LICENSE. Please cite pLIN (CITATION.cff).
 """
 Query-side inputs for v4.1 development (protein families via the release's
 nearest-catalogued-protein search, and adaptive k-mer sketches), cached once:

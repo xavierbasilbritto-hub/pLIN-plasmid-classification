@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
-# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
+# See LICENSE. Please cite pLIN (CITATION.cff).
 """
 Evaluate one candidate v4.1 design on DEVELOPMENT data (all previously seen).
 Engine: "founder" (plin_v41.V41Tree) or "nn" (plin_v41_nn.NNIndex, LIN-code style).

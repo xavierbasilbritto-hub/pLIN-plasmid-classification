@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
-# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
+# See LICENSE. Please cite pLIN (CITATION.cff).
 """
 External validation of pLIN v4.1 on independent hospital datasets, as registered in
 output/backbone_v41/PREREGISTRATION_external_v4.1.md (branch preregistration-v4, commit dda3947).

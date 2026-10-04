@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
-# See LICENSE and CITATION.cff for terms. Citation is MANDATORY.
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
+# See LICENSE. Please cite pLIN (CITATION.cff).
 """
 Agreement with published plasmid taxonomic units (PTUs; Redondo-Salvo et al.
 2020, Nat Commun 11:3602, Supplementary Data 2).

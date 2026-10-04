@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 #
 # PyInstaller spec for the standalone pLIN desktop app.
 #

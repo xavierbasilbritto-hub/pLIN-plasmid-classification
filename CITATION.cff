@@ -1,9 +1,8 @@
 cff-version: 1.2.0
 title: "pLIN: plasmid Lineage Identification Number"
 message: >-
-  If you use this software, you MUST cite it using the
-  metadata from this file. Citation is a mandatory
-  requirement of the license (GPL-3.0 with citation clause).
+  If you use pLIN in published work, please cite it using the
+  metadata from this file.
 type: software
 authors:
   - given-names: Basil Britto
@@ -27,8 +26,8 @@ keywords:
   - bacterial genomics
   - bioinformatics
 license: GPL-3.0-or-later
-version: "2.1.0"
-date-released: "2025-02-13"
+version: "4.1.2"
+date-released: "2026-10-04"
 preferred-citation:
   type: article
   title: "pLIN: a permanent, multi-resolution nomenclature for bacterial plasmids, from backbone families to outbreak clones"

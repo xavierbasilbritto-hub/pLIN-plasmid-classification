@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+# Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 """
 Compare pLIN's uniform, IncX-calibrated thresholds against per-Inc-group
 adaptive thresholds derived independently from each group's own within-group

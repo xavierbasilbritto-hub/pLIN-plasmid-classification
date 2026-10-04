@@ -1,7 +1,7 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════
 REM pLIN Tool: Installation Script (Windows)
-REM Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+REM Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 REM ═══════════════════════════════════════════════════════════════════════════
 
 echo ═══════════════════════════════════════════════════════════════

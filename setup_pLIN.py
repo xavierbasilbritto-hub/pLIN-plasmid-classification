@@ -14,7 +14,7 @@ Usage:
 
 Works on: macOS (Intel/Apple Silicon), Linux (Ubuntu/Debian/Fedora/Arch/RHEL/openSUSE), Windows 10/11
 
-Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 """
 
 import os

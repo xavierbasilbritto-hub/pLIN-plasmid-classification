@@ -4,7 +4,7 @@
 
 A permanent, multi-level nomenclature for bacterial plasmids, from backbone families to outbreak clones, with integrated antimicrobial resistance (AMR) gene surveillance.
 
-**Author:** Basil Britto Xavier | **License:** GPL-3.0 with mandatory citation clause | **Citation Required:** See [CITATION.cff](CITATION.cff)
+**Author:** Basil Britto Xavier | **License:** GPL-3.0-or-later | **How to cite:** see [CITATION.cff](CITATION.cff)
 
 ---
 
@@ -482,4 +482,4 @@ Earlier version (preprint):
 
 ## License
 
-This project is licensed under **GPL-3.0** with a mandatory citation clause. See [LICENSE](LICENSE) and [CITATION.cff](CITATION.cff) for details.
+Copyright (C) 2025-2026 Basil Britto Xavier. This project is licensed under the **GNU General Public License v3.0 or later** (see [LICENSE](LICENSE)). If you use pLIN in published work, please cite it as described in [CITATION.cff](CITATION.cff).

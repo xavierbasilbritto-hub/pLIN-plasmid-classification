@@ -1,7 +1,7 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════════
 REM  pLIN: All-in-One Setup & Launch for Windows
-REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 REM
 REM  Single file: installs everything + launches the pLIN web application.
 REM

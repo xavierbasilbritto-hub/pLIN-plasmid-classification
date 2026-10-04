@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  pLIN Launcher for Windows
-REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+REM  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 REM  Double-click this file to install dependencies and launch pLIN
 REM ============================================================
 title pLIN - Plasmid Lineage Identification Number System

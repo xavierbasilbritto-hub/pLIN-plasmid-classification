@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 #  pLIN Launcher for Linux
-#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0 + Citation clause
+#  Copyright (C) 2025 Basil Xavier Britto. License: GPL-3.0-or-later
 #  Run: chmod +x launch_pLIN.sh && ./launch_pLIN.sh
 # ============================================================
 set -e

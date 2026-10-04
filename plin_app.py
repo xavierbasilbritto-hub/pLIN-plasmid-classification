@@ -5,14 +5,8 @@ Plasmid Lineage Identification Number system with AMRFinderPlus integration.
 Run: streamlit run plin_app.py
 
 Copyright (C) 2025 Basil Xavier Britto
-Licensed under GPL-3.0 with mandatory citation clause.
-See LICENSE and CITATION.cff for details.
-
-CITATION REQUIRED: Any use of this software in publications or derivative
-works must cite:
-    Xavier, B. (2025). pLIN: A Plasmid Lineage Identification Number System
-    for Hierarchical, Permanent Classification of Bacterial Plasmids
-    Integrated with Antimicrobial Resistance Gene Surveillance.
+Licensed under the GNU General Public License v3.0 or later (see LICENSE).
+If you use pLIN in published work, please cite it (see CITATION.cff):
     https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification
 """
 
@@ -99,7 +93,7 @@ TYPE_COLORS = {"AMR": "#E53935", "STRESS": "#FB8C00", "VIRULENCE": "#8E24AA"}
 # in query mode is only reproducible against the exact database version
 # that assigned it (see USER_MANUAL.md's "Will two colleagues get the
 # same code" section).
-PLIN_APP_VERSION = "4.1.1"
+PLIN_APP_VERSION = "4.1.2"
 
 # Paths to precomputed Inc-group classifier data
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
