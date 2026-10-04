@@ -447,6 +447,16 @@ def main():
                 add(f"taxon_{short}_plin", round(tb[key]["pLIN_L5"], 2), f"{tb[key]['pLIN_L5']:.2f}", tb_path)
                 add(f"taxon_{short}_mob", round(tb[key]["MOB_secondary"], 2), f"{tb[key]['MOB_secondary']:.2f}", tb_path)
 
+    mc_path = os.path.join(V41, "confirm", "measure_comparison.json")
+    if os.path.exists(mc_path):
+        mc = json.load(open(mc_path))
+        add("measure_pairs", mc["pairs"], f"{mc['pairs']:,}", mc_path)
+        for key, short in (("cosine", "cos"), ("prot_cont", "protc"), ("prot_jacc", "protj"),
+                           ("kcont", "kcont"), ("kmin", "kmin")):
+            v = mc["measures"][key]
+            add(f"meas_{short}_lin", v["AUC_same_lineage"], f"{v['AUC_same_lineage']:.2f}", mc_path)
+            add(f"meas_{short}_bb", v["AUC_related_backbone"], f"{v['AUC_related_backbone']:.2f}", mc_path)
+
     cs_path = os.path.join(V41, "confirm", "comparator_sensitivity.tsv")
     cs = pd.read_csv(cs_path, sep="\t")
     n_settings = cs.assign(t=cs.tool.str.split().str[0]).drop_duplicates(["t", "setting"]).shape[0]   # pling and mge-cluster runs

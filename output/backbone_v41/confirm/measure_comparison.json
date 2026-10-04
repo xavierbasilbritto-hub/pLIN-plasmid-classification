@@ -1,0 +1,32 @@
+{
+ "pairs": 3307,
+ "same_lineage_pairs": 308,
+ "related_backbone_pairs": 1529,
+ "measures": {
+  "cosine": {
+   "name": "4-mer cosine similarity (earlier method)",
+   "AUC_same_lineage": 0.782,
+   "AUC_related_backbone": 0.761
+  },
+  "prot_cont": {
+   "name": "protein-family containment",
+   "AUC_same_lineage": 0.949,
+   "AUC_related_backbone": 0.974
+  },
+  "prot_jacc": {
+   "name": "protein-family Jaccard",
+   "AUC_same_lineage": 0.974,
+   "AUC_related_backbone": 0.947
+  },
+  "kcont": {
+   "name": "k-mer containment",
+   "AUC_same_lineage": 0.975,
+   "AUC_related_backbone": 0.984
+  },
+  "kmin": {
+   "name": "symmetric k-mer similarity",
+   "AUC_same_lineage": 0.995,
+   "AUC_related_backbone": 0.946
+  }
+ }
+}
