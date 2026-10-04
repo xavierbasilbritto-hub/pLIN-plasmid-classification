@@ -265,6 +265,10 @@ def main():
     add("sr_real_L5", float(rg.L5_kept_pct), f"{round(rg.L5_kept_pct / 100 * rg.plasmids):.0f} of {int(rg.plasmids)}", vr_path)
     add("sr_real_L6", float(rg.L6_kept_pct), f"{rg.L6_kept_pct:.1f}%", vr_path)
     add("sr_real_vim_L5", float(rv.L5_kept_pct), f"{round(rv.L5_kept_pct / 100 * rv.plasmids):.0f} of {int(rv.plasmids)}", vr_path)
+    rs = vr[vr.index.str.startswith("< 90%")].iloc[0]
+    add("sr_real_split_n", int(rs.plasmids), str(int(rs.plasmids)), vr_path)
+    add("sr_real_split_L1", float(rs.L1_kept_pct), f"{rs.L1_kept_pct:.0f}%", vr_path)
+    add("sr_real_split_L4", float(rs.L4_kept_pct), f"{rs.L4_kept_pct:.0f}%", vr_path)
     vb_bins = pd.read_csv(os.path.join(V41, "shortread", "vim_real_bins.tsv"), sep="\t")
     add("sr_real_vim_isolates", vb_bins.contig_id.str.split("_").str[0].nunique(), str(vb_bins.contig_id.str.split("_").str[0].nunique()), vr_path)
 

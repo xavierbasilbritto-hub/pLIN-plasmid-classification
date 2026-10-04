@@ -995,6 +995,21 @@
   "text": "7 of 8",
   "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
  },
+ "sr_real_split_n": {
+  "value": 8,
+  "text": "8",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_split_L1": {
+  "value": 37.5,
+  "text": "38%",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
+ "sr_real_split_L4": {
+  "value": 0.0,
+  "text": "0%",
+  "source": "output/backbone_v41/shortread/vim_real_metrics.tsv"
+ },
  "sr_real_vim_isolates": {
   "value": 8,
   "text": "8",
