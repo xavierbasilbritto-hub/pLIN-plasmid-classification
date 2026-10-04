@@ -329,6 +329,82 @@ def main():
     sha = open(sha_path).read().split()[0]
     add("prereg_sha256", sha, sha, sha_path)
 
+    # sensitivity of the confirmatory comparison to the truth definitions (v41_truth_sensitivity.py)
+    ts_path = os.path.join(V41, "confirm", "truth_sensitivity_best.tsv")
+    ts = pd.read_csv(ts_path, sep="\t")
+    best = ts[ts.tool != "registered comparison"].pivot_table(index=["truth", "definition"], columns="tool", values="F1_w")
+    others = best.drop(columns=["pLIN v4.1", "pLIN v4"]).max(axis=1)
+    lin, bb = best.loc["same_lineage"], best.loc["related_backbone"]
+    lin_o, bb_o = others.loc["same_lineage"], others.loc["related_backbone"]
+    reg = ts[ts.tool == "registered comparison"]
+    lin_reg, bb_reg = reg[reg.truth == "same_lineage"], reg[reg.truth == "related_backbone"]
+    add("ts_lineage_defs", len(lin), str(len(lin)), ts_path)
+    add("ts_lineage_top", int((lin["pLIN v4.1"] > lin_o).sum()), str(int((lin["pLIN v4.1"] > lin_o).sum())), ts_path)
+    add("ts_lineage_plin_range", [round(lin["pLIN v4.1"].min(), 2), round(lin["pLIN v4.1"].max(), 2)],
+        f"{lin['pLIN v4.1'].min():.2f} to {lin['pLIN v4.1'].max():.2f}", ts_path)
+    add("ts_lineage_other_range", [round(lin_o.min(), 2), round(lin_o.max(), 2)],
+        f"{lin_o.min():.2f} to {lin_o.max():.2f}", ts_path)
+    add("ts_lineage_reg_sig", int((lin_reg.diff_lo > 0).sum()), str(int((lin_reg.diff_lo > 0).sum())), ts_path)
+    add("ts_backbone_defs", len(bb), str(len(bb)), ts_path)
+    add("ts_backbone_sig", int((bb_reg.diff_lo > 0).sum()), str(int((bb_reg.diff_lo > 0).sum())), ts_path)
+    add("ts_backbone_worse", int((bb_reg.diff_hi < 0).sum()), str(int((bb_reg.diff_hi < 0).sum())), ts_path)
+    # external validation on independent hospital datasets (v41_external.py; PREREGISTRATION_external_v4.1.md)
+    xe_path = os.path.join(V41, "external", "external_endpoints.json")
+    xe = json.load(open(xe_path))
+    xm_path = os.path.join(V41, "external", "external_metrics.tsv")
+    xm = pd.read_csv(xm_path, sep="\t")
+    for ds in ("E1", "E3"):
+        d = xe["datasets"][ds]
+        add(f"ext_{ds}_n", d["after_excluding_development"], str(d["after_excluding_development"]), xe_path)
+        add(f"ext_{ds}_identical", d["in_database_identical"], str(d["in_database_identical"]), xe_path)
+    add("ext_n", sum(xe["datasets"][k]["after_excluding_development"] for k in ("E1", "E3")),
+        str(sum(xe["datasets"][k]["after_excluding_development"] for k in ("E1", "E3"))), xe_path)
+    add("ext_pairs", xe["pairs"], f"{xe['pairs']:,}", xe_path)
+    add("ext_lineage_pairs", xe["same_lineage_pairs"], f"{xe['same_lineage_pairs']:,}", xe_path)
+    add("ext_backbone_pairs", xe["related_backbone_pairs"], f"{xe['related_backbone_pairs']:,}", xe_path)
+    for key, e in (("ext_P1", xe["P1_lineage_L5_vs_MOBsecondary"]), ("ext_P2", xe["P2_backbone_L1_vs_MOBprimary"])):
+        add(f"{key}_F1", round(e["F1"], 2), f"{e['F1']:.2f}", xe_path)
+        add(f"{key}_F1_CI", [round(e["F1_lo"], 2), round(e["F1_hi"], 2)], f"{e['F1_lo']:.2f} to {e['F1_hi']:.2f}", xe_path)
+        add(f"{key}_F1_MOB", round(e["F1_comparator"], 2), f"{e['F1_comparator']:.2f}", xe_path)
+        add(f"{key}_diff", round(e["difference"], 2),
+            f"{e['difference']:+.2f} (95% CI {e['lo']:.2f} to {e['hi']:.2f})", xe_path)
+    f1 = lambda scope, meth, t: xm[(xm.scope == scope) & (xm.method == meth) & (xm.truth == t)].F1_w.iloc[0]
+    for scope in ("E1", "E3"):
+        for meth, k in (("pLIN v4.1 L5", "L5"), ("MOB-suite secondary", "MOBsec"), ("pLIN v4.1 L1", "L1"),
+                        ("MOB-suite primary", "MOBpri")):
+            t = "same_lineage" if k in ("L5", "MOBsec") else "related_backbone"
+            add(f"ext_{scope}_{k}", round(f1(scope, meth, t), 2), f"{f1(scope, meth, t):.2f}", xm_path)
+    for k in ("L2", "L3"):
+        add(f"ext_bb_{k}", round(f1("pooled", f"pLIN v4.1 {k}", "related_backbone"), 2),
+            f"{f1('pooled', f'pLIN v4.1 {k}', 'related_backbone'):.2f}", xm_path)
+    add("ext_pling_lineage", round(f1("pooled", "pling subcommunity", "same_lineage"), 2),
+        f"{f1('pooled', 'pling subcommunity', 'same_lineage'):.2f}", xm_path)
+    add("ext_pling_backbone", round(f1("pooled", "pling subcommunity", "related_backbone"), 2),
+        f"{f1('pooled', 'pling subcommunity', 'related_backbone'):.2f}", xm_path)
+    p = xm[(xm.scope == "E3") & (xm.method == "pLIN v4.1 L1") & (xm.truth == "related_backbone")].iloc[0]
+    add("ext_E3_L1_precision", round(p.precision_w, 2), f"{p.precision_w:.2f}", xm_path)
+    sec = xe["carbapenemase_plasmids_grouped_pct"]
+    for ds in ("E1", "E3"):
+        add(f"ext_{ds}_carriers", sec[ds]["carrier_plasmids"], str(sec[ds]["carrier_plasmids"]), xe_path)
+        add(f"ext_{ds}_carrier_pairs", sec[ds]["carrier_pairs"], f"{sec[ds]['carrier_pairs']:,}", xe_path)
+        for meth, k in (("pLIN v4.1 L5", "L5"), ("pLIN v4.1 L6", "L6"), ("MOB-suite secondary", "MOBsec")):
+            add(f"ext_{ds}_carb_{k}", sec[ds][meth], f"{sec[ds][meth]:.1f}%", xe_path)
+    cs_path = os.path.join(V41, "confirm", "comparator_sensitivity.tsv")
+    cs = pd.read_csv(cs_path, sep="\t")
+    n_settings = cs.assign(t=cs.tool.str.split().str[0]).drop_duplicates(["t", "setting"]).shape[0]   # pling and mge-cluster runs
+    add("cs_settings", n_settings, str(n_settings), cs_path)
+    for truth, key in (("same_lineage", "lineage"), ("related_backbone", "backbone")):
+        d = cs[cs.truth == truth]
+        b = d.loc[d.F1_w.idxmax()]
+        add(f"cs_{key}_best", round(b.F1_w, 2), f"{b.F1_w:.2f}", cs_path)
+        add(f"cs_{key}_best_setting", f"{b.tool}, {b.setting}", f"{b.tool} with {b.setting.replace('dcj', 'DCJ-Indel threshold')}", cs_path)
+        mg = d[d.tool == "mge-cluster"].F1_w.max()
+        add(f"cs_{key}_mge_max", round(mg, 2), f"{mg:.2f}", cs_path)
+    for t in (0.3, 0.4, 0.7):
+        k = f"backbone AF>={t}"
+        add(f"ts_bb{int(t * 10)}_plin", round(bb.loc[k, "pLIN v4.1"], 2), f"{bb.loc[k, 'pLIN v4.1']:.2f}", ts_path)
+        add(f"ts_bb{int(t * 10)}_other", round(bb_o.loc[k], 2), f"{bb_o.loc[k]:.2f}", ts_path)
+
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     json.dump(facts, open(OUT, "w"), indent=1)
     for k, v in facts.items():

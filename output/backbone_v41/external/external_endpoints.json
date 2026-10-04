@@ -1,0 +1,67 @@
+{
+ "datasets": {
+  "E1": {
+   "bioproject": "PRJNA981541",
+   "plasmid_records": 121,
+   "after_excluding_development": 119,
+   "analysed": true,
+   "in_database_identical": 51
+  },
+  "E2": {
+   "bioproject": "PRJNA924056",
+   "plasmid_records": 0,
+   "after_excluding_development": 0,
+   "analysed": false
+  },
+  "E3": {
+   "bioproject": "PRJNA1010831",
+   "plasmid_records": 306,
+   "after_excluding_development": 294,
+   "analysed": true,
+   "in_database_identical": 294
+  }
+ },
+ "pairs": 4992,
+ "same_lineage_pairs": 790,
+ "related_backbone_pairs": 1810,
+ "P1_lineage_L5_vs_MOBsecondary": {
+  "F1": 0.8784507601729585,
+  "F1_comparator": 0.836423576088493,
+  "difference": 0.042027184084465485,
+  "lo": 0.01604246678888156,
+  "hi": 0.07854652666061687,
+  "F1_lo": 0.8116006835948876,
+  "F1_hi": 0.9334539329359174
+ },
+ "P2_backbone_L1_vs_MOBprimary": {
+  "F1": 0.7726626287632364,
+  "F1_comparator": 0.879377896413163,
+  "difference": -0.10671526764992656,
+  "lo": -0.17640522341631,
+  "hi": -0.045612718626246114,
+  "F1_lo": 0.7031341000610579,
+  "F1_hi": 0.8423088964348289
+ },
+ "carbapenemase_plasmids_grouped_pct": {
+  "E1": {
+   "gene": "NDM-5",
+   "carrier_plasmids": 23,
+   "carrier_pairs": 253,
+   "pLIN v4.1 L1": 83.0,
+   "pLIN v4.1 L5": 83.0,
+   "pLIN v4.1 L6": 75.1,
+   "MOB-suite primary": 83.0,
+   "MOB-suite secondary": 83.0
+  },
+  "E3": {
+   "gene": "same carbapenemase allele",
+   "carrier_plasmids": 84,
+   "carrier_pairs": 626,
+   "pLIN v4.1 L1": 62.3,
+   "pLIN v4.1 L5": 39.3,
+   "pLIN v4.1 L6": 27.8,
+   "MOB-suite primary": 66.8,
+   "MOB-suite secondary": 45.0
+  }
+ }
+}

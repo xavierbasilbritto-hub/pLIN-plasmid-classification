@@ -1,0 +1,103 @@
+truth	definition	registered	tool	best_level	F1_w	diff_lo	diff_hi
+same_lineage	AF>=0.6, ANI>=98.0	False	MOB-suite	MOB-suite secondary	0.5890390635275549		
+same_lineage	AF>=0.6, ANI>=98.0	False	mge-cluster	mge-cluster	0.002738127658766821		
+same_lineage	AF>=0.6, ANI>=98.0	False	pLIN v4	pLIN v4 L4	0.5221066937139945		
+same_lineage	AF>=0.6, ANI>=98.0	False	pLIN v4.1	pLIN v4.1 L4	0.6254774969972444		
+same_lineage	AF>=0.6, ANI>=98.0	False	pling	pling subcommunity	0.3606302456998384		
+same_lineage	AF>=0.6, ANI>=98.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.007028476784380899	-0.08266521387310811	0.1211860503520715
+same_lineage	AF>=0.6, ANI>=99.0	False	MOB-suite	MOB-suite secondary	0.6138956502181966		
+same_lineage	AF>=0.6, ANI>=99.0	False	mge-cluster	mge-cluster	0.00206363783579771		
+same_lineage	AF>=0.6, ANI>=99.0	False	pLIN v4	pLIN v4 L4	0.5075483246651553		
+same_lineage	AF>=0.6, ANI>=99.0	False	pLIN v4.1	pLIN v4.1 L4	0.7047717716559297		
+same_lineage	AF>=0.6, ANI>=99.0	False	pling	pling subcommunity	0.36065318586833617		
+same_lineage	AF>=0.6, ANI>=99.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.08227478798660182	-0.019572724952228084	0.20320368874998013
+same_lineage	AF>=0.6, ANI>=99.5	False	MOB-suite	MOB-suite secondary	0.591063506707927		
+same_lineage	AF>=0.6, ANI>=99.5	False	mge-cluster	mge-cluster	0.0016439304661765687		
+same_lineage	AF>=0.6, ANI>=99.5	False	pLIN v4	pLIN v4 L4	0.48058629380173945		
+same_lineage	AF>=0.6, ANI>=99.5	False	pLIN v4.1	pLIN v4.1 L5	0.7195985704487202		
+same_lineage	AF>=0.6, ANI>=99.5	False	pling	pling subcommunity	0.33748550501787367		
+same_lineage	AF>=0.6, ANI>=99.5	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.12853506374079327	0.01694257984013001	0.25362429345001725
+same_lineage	AF>=0.7, ANI>=98.0	False	MOB-suite	MOB-suite secondary	0.644183245314386		
+same_lineage	AF>=0.7, ANI>=98.0	False	mge-cluster	mge-cluster	0.0018206126062450562		
+same_lineage	AF>=0.7, ANI>=98.0	False	pLIN v4	pLIN v4 L4	0.513522599520187		
+same_lineage	AF>=0.7, ANI>=98.0	False	pLIN v4.1	pLIN v4.1 L5	0.7414653432949775		
+same_lineage	AF>=0.7, ANI>=98.0	False	pling	pling subcommunity	0.36146827326531417		
+same_lineage	AF>=0.7, ANI>=98.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.09728209798059151	-0.01258436165785349	0.2283370160353283
+same_lineage	AF>=0.7, ANI>=99.0	False	MOB-suite	MOB-suite secondary	0.6268141626197199		
+same_lineage	AF>=0.7, ANI>=99.0	False	mge-cluster	mge-cluster	0.0014925599236116274		
+same_lineage	AF>=0.7, ANI>=99.0	False	pLIN v4	pLIN v4 L5	0.4917383128481651		
+same_lineage	AF>=0.7, ANI>=99.0	False	pLIN v4.1	pLIN v4.1 L5	0.8092025100523945		
+same_lineage	AF>=0.7, ANI>=99.0	False	pling	pling subcommunity	0.3510783188838958		
+same_lineage	AF>=0.7, ANI>=99.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.18238834743267462	0.07145073953620022	0.31825535863112725
+same_lineage	AF>=0.7, ANI>=99.5	False	MOB-suite	MOB-suite secondary	0.5787991122059848		
+same_lineage	AF>=0.7, ANI>=99.5	False	mge-cluster	mge-cluster	0.0012556528030412764		
+same_lineage	AF>=0.7, ANI>=99.5	False	pLIN v4	pLIN v4 L5	0.45782866372481024		
+same_lineage	AF>=0.7, ANI>=99.5	False	pLIN v4.1	pLIN v4.1 L5	0.7943908996897621		
+same_lineage	AF>=0.7, ANI>=99.5	False	pling	pling subcommunity	0.32966047831390466		
+same_lineage	AF>=0.7, ANI>=99.5	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.21559178748377728	0.10190461827109536	0.3496980141992523
+same_lineage	AF>=0.8, ANI>=98.0	False	MOB-suite	MOB-suite secondary	0.5971568917770691		
+same_lineage	AF>=0.8, ANI>=98.0	False	mge-cluster	mge-cluster	0.001212910968358558		
+same_lineage	AF>=0.8, ANI>=98.0	False	pLIN v4	pLIN v4 L4	0.45265528808017147		
+same_lineage	AF>=0.8, ANI>=98.0	False	pLIN v4.1	pLIN v4.1 L5	0.8260452227332293		
+same_lineage	AF>=0.8, ANI>=98.0	False	pling	pling subcommunity	0.3538831793806215		
+same_lineage	AF>=0.8, ANI>=98.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.22888833095616024	0.10786879222782088	0.3643411867497264
+same_lineage	AF>=0.8, ANI>=99.0	True	MOB-suite	MOB-suite secondary	0.5752781470090702		
+same_lineage	AF>=0.8, ANI>=99.0	True	mge-cluster	mge-cluster	0.001051249654400658		
+same_lineage	AF>=0.8, ANI>=99.0	True	pLIN v4	pLIN v4 L6	0.46989705454256764		
+same_lineage	AF>=0.8, ANI>=99.0	True	pLIN v4.1	pLIN v4.1 L5	0.8622819799926694		
+same_lineage	AF>=0.8, ANI>=99.0	True	pling	pling subcommunity	0.34115070841368633		
+same_lineage	AF>=0.8, ANI>=99.0	True	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.2870038329835992	0.16808661826340668	0.41836864576328886
+same_lineage	AF>=0.8, ANI>=99.5	False	MOB-suite	MOB-suite secondary	0.5192973095198976		
+same_lineage	AF>=0.8, ANI>=99.5	False	mge-cluster	mge-cluster	0.000911534331712631		
+same_lineage	AF>=0.8, ANI>=99.5	False	pLIN v4	pLIN v4 L6	0.4794508670520231		
+same_lineage	AF>=0.8, ANI>=99.5	False	pLIN v4.1	pLIN v4.1 L5	0.817348438166564		
+same_lineage	AF>=0.8, ANI>=99.5	False	pling	pling subcommunity	0.31191803431845794		
+same_lineage	AF>=0.8, ANI>=99.5	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.2980511286466664	0.18204569871659615	0.4219491243775836
+same_lineage	AF>=0.9, ANI>=98.0	False	MOB-suite	MOB-suite secondary	0.4617305106776812		
+same_lineage	AF>=0.9, ANI>=98.0	False	mge-cluster	mge-cluster	0.0008060529518637402		
+same_lineage	AF>=0.9, ANI>=98.0	False	pLIN v4	pLIN v4 L6	0.5525321115928986		
+same_lineage	AF>=0.9, ANI>=98.0	False	pLIN v4.1	pLIN v4.1 L6	0.7675670540549099		
+same_lineage	AF>=0.9, ANI>=98.0	False	pling	pling subcommunity	0.28956066389358304		
+same_lineage	AF>=0.9, ANI>=98.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.25379310328535776	0.14755649250377376	0.3757690182682612
+same_lineage	AF>=0.9, ANI>=99.0	False	MOB-suite	MOB-suite secondary	0.44615419603479917		
+same_lineage	AF>=0.9, ANI>=99.0	False	mge-cluster	mge-cluster	0.0007416232852028183		
+same_lineage	AF>=0.9, ANI>=99.0	False	pLIN v4	pLIN v4 L6	0.5616089002995294		
+same_lineage	AF>=0.9, ANI>=99.0	False	pLIN v4.1	pLIN v4.1 L6	0.7967520010584112		
+same_lineage	AF>=0.9, ANI>=99.0	False	pling	pling subcommunity	0.27314357648017884		
+same_lineage	AF>=0.9, ANI>=99.0	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.2631690010932762	0.1602364957672202	0.37766135915812676
+same_lineage	AF>=0.9, ANI>=99.5	False	MOB-suite	MOB-suite secondary	0.39954232172620396		
+same_lineage	AF>=0.9, ANI>=99.5	False	mge-cluster	mge-cluster	0.0006419287547263889		
+same_lineage	AF>=0.9, ANI>=99.5	False	pLIN v4	pLIN v4 L6	0.5672004865193594		
+same_lineage	AF>=0.9, ANI>=99.5	False	pLIN v4.1	pLIN v4.1 L6	0.8556459347138848		
+same_lineage	AF>=0.9, ANI>=99.5	False	pling	pling subcommunity	0.24591982980500787		
+same_lineage	AF>=0.9, ANI>=99.5	False	registered comparison	pLIN v4.1 L5 minus MOB-suite secondary	0.25904759743269523	0.15748978042340972	0.3671995732607415
+related_backbone	backbone AF>=0.3	False	MOB-suite	MOB-suite primary	0.16045445635299654		
+related_backbone	backbone AF>=0.3	False	mge-cluster	mge-cluster	0.03552683045422183		
+related_backbone	backbone AF>=0.3	False	pLIN v4	pLIN v4 L1	0.41683362868440144		
+related_backbone	backbone AF>=0.3	False	pLIN v4.1	pLIN v4.1 L1	0.5427445309038493		
+related_backbone	backbone AF>=0.3	False	pling	pling community	0.14791780583590058		
+related_backbone	backbone AF>=0.3	False	registered comparison	pLIN v4.1 L1 minus MOB-suite primary	0.3822900745508528	0.13462834085790146	0.7127953696935154
+related_backbone	backbone AF>=0.4	False	MOB-suite	MOB-suite primary	0.1869174474204662		
+related_backbone	backbone AF>=0.4	False	mge-cluster	mge-cluster	0.027250450242379334		
+related_backbone	backbone AF>=0.4	False	pLIN v4	pLIN v4 L1	0.3908535868044982		
+related_backbone	backbone AF>=0.4	False	pLIN v4.1	pLIN v4.1 L1	0.5868908673524795		
+related_backbone	backbone AF>=0.4	False	pling	pling community	0.12104118873271572		
+related_backbone	backbone AF>=0.4	False	registered comparison	pLIN v4.1 L1 minus MOB-suite primary	0.3999734199320133	0.1280632188563714	0.737357916049038
+related_backbone	backbone AF>=0.5	True	MOB-suite	MOB-suite primary	0.25768438729127263		
+related_backbone	backbone AF>=0.5	True	mge-cluster	mge-cluster	0.02123554956669413		
+related_backbone	backbone AF>=0.5	True	pLIN v4	pLIN v4 L1	0.40843675200482865		
+related_backbone	backbone AF>=0.5	True	pLIN v4.1	pLIN v4.1 L1	0.3798037056557746		
+related_backbone	backbone AF>=0.5	True	pling	pling subcommunity	0.1603826967463331		
+related_backbone	backbone AF>=0.5	True	registered comparison	pLIN v4.1 L1 minus MOB-suite primary	0.12211931836450196	-0.0931004377144157	0.28418962615245835
+related_backbone	backbone AF>=0.6	False	MOB-suite	MOB-suite primary	0.291803475858845		
+related_backbone	backbone AF>=0.6	False	mge-cluster	mge-cluster	0.015082117851440252		
+related_backbone	backbone AF>=0.6	False	pLIN v4	pLIN v4 L2	0.3591039356616939		
+related_backbone	backbone AF>=0.6	False	pLIN v4.1	pLIN v4.1 L1	0.3412260900698282		
+related_backbone	backbone AF>=0.6	False	pling	pling subcommunity	0.1684811648009375		
+related_backbone	backbone AF>=0.6	False	registered comparison	pLIN v4.1 L1 minus MOB-suite primary	0.04942261421098321	-0.20285189189331035	0.20113560874107858
+related_backbone	backbone AF>=0.7	False	MOB-suite	MOB-suite primary	0.29322773059205565		
+related_backbone	backbone AF>=0.7	False	mge-cluster	mge-cluster	0.010213141625088		
+related_backbone	backbone AF>=0.7	False	pLIN v4	pLIN v4 L3	0.2920070907023929		
+related_backbone	backbone AF>=0.7	False	pLIN v4.1	pLIN v4.1 L1	0.27810331509902236		
+related_backbone	backbone AF>=0.7	False	pling	pling subcommunity	0.17116721386661027		
+related_backbone	backbone AF>=0.7	False	registered comparison	pLIN v4.1 L1 minus MOB-suite primary	-0.015124415493033283	-0.27830772619259836	0.11073252830218483

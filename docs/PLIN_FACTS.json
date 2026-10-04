@@ -1277,5 +1277,317 @@
   "value": "f0689ab7bc035f92cfbffcd3ac16eb41dc280d3375ba3ba1caa320df62f0b4ce",
   "text": "f0689ab7bc035f92cfbffcd3ac16eb41dc280d3375ba3ba1caa320df62f0b4ce",
   "source": "output/backbone_v41/PREREGISTRATION_v4.1.sha256"
+ },
+ "ts_lineage_defs": {
+  "value": 12,
+  "text": "12",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_lineage_top": {
+  "value": 12,
+  "text": "12",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_lineage_plin_range": {
+  "value": [
+   0.63,
+   0.86
+  ],
+  "text": "0.63 to 0.86",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_lineage_other_range": {
+  "value": [
+   0.4,
+   0.64
+  ],
+  "text": "0.40 to 0.64",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_lineage_reg_sig": {
+  "value": 9,
+  "text": "9",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_backbone_defs": {
+  "value": 5,
+  "text": "5",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_backbone_sig": {
+  "value": 2,
+  "text": "2",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_backbone_worse": {
+  "value": 0,
+  "text": "0",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ext_E1_n": {
+  "value": 119,
+  "text": "119",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_identical": {
+  "value": 51,
+  "text": "51",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_n": {
+  "value": 294,
+  "text": "294",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_identical": {
+  "value": 294,
+  "text": "294",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_n": {
+  "value": 413,
+  "text": "413",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_pairs": {
+  "value": 4992,
+  "text": "4,992",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_lineage_pairs": {
+  "value": 790,
+  "text": "790",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_backbone_pairs": {
+  "value": 1810,
+  "text": "1,810",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P1_F1": {
+  "value": 0.88,
+  "text": "0.88",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P1_F1_CI": {
+  "value": [
+   0.81,
+   0.93
+  ],
+  "text": "0.81 to 0.93",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P1_F1_MOB": {
+  "value": 0.84,
+  "text": "0.84",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P1_diff": {
+  "value": 0.04,
+  "text": "+0.04 (95% CI 0.02 to 0.08)",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P2_F1": {
+  "value": 0.77,
+  "text": "0.77",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P2_F1_CI": {
+  "value": [
+   0.7,
+   0.84
+  ],
+  "text": "0.70 to 0.84",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P2_F1_MOB": {
+  "value": 0.88,
+  "text": "0.88",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_P2_diff": {
+  "value": -0.11,
+  "text": "-0.11 (95% CI -0.18 to -0.05)",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_L5": {
+  "value": 0.99,
+  "text": "0.99",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E1_MOBsec": {
+  "value": 0.97,
+  "text": "0.97",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E1_L1": {
+  "value": 0.84,
+  "text": "0.84",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E1_MOBpri": {
+  "value": 0.79,
+  "text": "0.79",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E3_L5": {
+  "value": 0.86,
+  "text": "0.86",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E3_MOBsec": {
+  "value": 0.81,
+  "text": "0.81",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E3_L1": {
+  "value": 0.76,
+  "text": "0.76",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E3_MOBpri": {
+  "value": 0.89,
+  "text": "0.89",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_bb_L2": {
+  "value": 0.85,
+  "text": "0.85",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_bb_L3": {
+  "value": 0.85,
+  "text": "0.85",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_pling_lineage": {
+  "value": 0.71,
+  "text": "0.71",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_pling_backbone": {
+  "value": 0.67,
+  "text": "0.67",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E3_L1_precision": {
+  "value": 0.74,
+  "text": "0.74",
+  "source": "output/backbone_v41/external/external_metrics.tsv"
+ },
+ "ext_E1_carriers": {
+  "value": 23,
+  "text": "23",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_carrier_pairs": {
+  "value": 253,
+  "text": "253",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_carb_L5": {
+  "value": 83.0,
+  "text": "83.0%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_carb_L6": {
+  "value": 75.1,
+  "text": "75.1%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E1_carb_MOBsec": {
+  "value": 83.0,
+  "text": "83.0%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_carriers": {
+  "value": 84,
+  "text": "84",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_carrier_pairs": {
+  "value": 626,
+  "text": "626",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_carb_L5": {
+  "value": 39.3,
+  "text": "39.3%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_carb_L6": {
+  "value": 27.8,
+  "text": "27.8%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "ext_E3_carb_MOBsec": {
+  "value": 45.0,
+  "text": "45.0%",
+  "source": "output/backbone_v41/external/external_endpoints.json"
+ },
+ "cs_settings": {
+  "value": 18,
+  "text": "18",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_lineage_best": {
+  "value": 0.42,
+  "text": "0.42",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_lineage_best_setting": {
+  "value": "pling subcommunity, dcj 1, containment 0.5",
+  "text": "pling subcommunity with DCJ-Indel threshold 1, containment 0.5",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_lineage_mge_max": {
+  "value": 0.0,
+  "text": "0.00",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_backbone_best": {
+  "value": 0.26,
+  "text": "0.26",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_backbone_best_setting": {
+  "value": "pling subcommunity, dcj 10, containment 0.5",
+  "text": "pling subcommunity with DCJ-Indel threshold 10, containment 0.5",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "cs_backbone_mge_max": {
+  "value": 0.03,
+  "text": "0.03",
+  "source": "output/backbone_v41/confirm/comparator_sensitivity.tsv"
+ },
+ "ts_bb3_plin": {
+  "value": 0.54,
+  "text": "0.54",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_bb3_other": {
+  "value": 0.16,
+  "text": "0.16",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_bb4_plin": {
+  "value": 0.59,
+  "text": "0.59",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_bb4_other": {
+  "value": 0.19,
+  "text": "0.19",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_bb7_plin": {
+  "value": 0.28,
+  "text": "0.28",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
+ },
+ "ts_bb7_other": {
+  "value": 0.29,
+  "text": "0.29",
+  "source": "output/backbone_v41/confirm/truth_sensitivity_best.tsv"
  }
 }
