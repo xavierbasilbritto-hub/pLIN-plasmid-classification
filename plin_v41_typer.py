@@ -43,7 +43,7 @@ LEVEL_NAMES = ["backbone family", "backbone group", "shared backbone", "backbone
 
 
 RELEASE_URL = "https://github.com/xavierbasilbritto-hub/pLIN-plasmid-classification/releases/download/{tag}/{file}"
-DEFAULT_RELEASE_TAG = "db-2026.10.03"
+DEFAULT_RELEASE_TAG = "db-2026.10.05"
 
 
 def find_mmseqs():
