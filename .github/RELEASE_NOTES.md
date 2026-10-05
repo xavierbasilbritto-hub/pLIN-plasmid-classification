@@ -28,6 +28,10 @@ MMseqs2 (18-8cc5c) is included. On Windows, the first MMseqs2 search may ask onc
 
 The same sequences give the same codes on any computer. Codes of database plasmids, and every level that exists in the database, never change. Parts of a code that are new to the database are marked as provisional (`provisional_from`) and are comparable within one analysis, so analyse the isolates of one investigation together. Every export records the app and database version.
 
+### Changes in 4.1.3
+
+The app now downloads database release `db-2026.10.05`, which the paper cites; 4.1.2 downloaded `db-2026.10.03`. The two releases hold identical pLIN codes, so this changes no assignment: it corrects the replicon annotation, where 1,352 pOXA-48-like plasmids were labelled IncFII instead of IncL/M (see the database section below). The typing method and thresholds are unchanged, so codes are identical to 4.1.2.
+
 ### Changes in 4.1.2
 
 Licence is now the plain GNU General Public License v3.0 or later (the earlier mandatory-citation clause is replaced by a citation request in CITATION.cff). The typing method, thresholds and database are unchanged, so codes are identical to 4.1.1. Adds the scripts of the external validation and sensitivity analyses.
