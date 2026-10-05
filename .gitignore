@@ -134,3 +134,8 @@ generate_excel_tables.py
 generate_figure14_outbreak_validation.py
 compute_code_stability_expansion.py
 
+
+# Figure generators and their result folders: manuscript material, local only
+generate_figure*.py
+validate_figure*.py
+output/figure*_validation/
